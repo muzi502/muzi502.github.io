@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon.ico">
+  <link rel="mask-icon" href="/favicon.ico" color="#222">
+<link rel="stylesheet" href="/css/main.css">
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Roboto Mono:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://blog.502.li').hostname,
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":true,"scrollpercent":true},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"buttons","active":null,"storage":true,"lazyload":true,"nav":{"disqus":{"text":"Load Disqus","order":-1}}},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":false,"async":true,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+  <meta name="description" content="项目背景接到新项目的机器无法访问外网，所以只能离线安装 Docker，总体思路是从一台可访问外网的机器上下载下来 docker-ce 的 rpm 包及其依赖，再把这些 rpm 传到要部署的机器上安装就行。其中踩了一些坑，在此记录一下。 新项目的机器是系统是 CentOS 7.5 (1804)，所以在 ESXi 上重新开一台虚拟机，装上 CentOS 7.5 (1804)，这一点比较重要。因为刚开始">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CentOS7 离线安装 Docker-ce">
+<meta property="og:url" content="https://blog.502.li/centos7-offline-install-docker.html">
+<meta property="og:site_name" content="木子">
+<meta property="og:description" content="项目背景接到新项目的机器无法访问外网，所以只能离线安装 Docker，总体思路是从一台可访问外网的机器上下载下来 docker-ce 的 rpm 包及其依赖，再把这些 rpm 传到要部署的机器上安装就行。其中踩了一些坑，在此记录一下。 新项目的机器是系统是 CentOS 7.5 (1804)，所以在 ESXi 上重新开一台虚拟机，装上 CentOS 7.5 (1804)，这一点比较重要。因为刚开始">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2019-09-02T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-02-23T02:38:57.272Z">
+<meta property="article:author" content="木子">
+<meta property="article:tag" content="Docker">
+<meta name="twitter:card" content="summary">
+<link rel="canonical" href="https://blog.502.li/centos7-offline-install-docker.html">
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+  <title>CentOS7 离线安装 Docker-ce | 木子</title>
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+<link rel="alternate" href="/atom.xml" title="木子" type="application/atom+xml">
+</head>
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">木子</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+    <a href="/" rel="section"><i class="fa fa-fw fa-desktop"></i>Home</a>
+  </li>
+        <li class="menu-item menu-item-books">
+    <a href="/booklist.html" rel="section"><i class="fa fa-fw fa-book"></i>Books</a>
+  </li>
+        <li class="menu-item menu-item-kindle">
+    <a href="https://kindle.502.li/" rel="noopener" target="_blank"><i class="fa fa-fw fa-book"></i>Kindle</a>
+  </li>
+        <li class="menu-item menu-item-friend">
+    <a href="/link/" rel="section"><i class="fa fa-fw fa-link"></i>Friend</a>
+  </li>
+        <li class="menu-item menu-item-about">
+    <a href="/about.html" rel="section"><i class="fa fa-fw fa-user-circle-o"></i>About</a>
+  </li>
+  </ul>
+</nav>
+</div>
+    </header>
+  <div class="reading-progress-bar"></div>
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div class="content">
+  <div class="posts-expand">
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.502.li/centos7-offline-install-docker.html">
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://blog.502.li/favicon.ico">
+      <meta itemprop="name" content="木子">
+      <meta itemprop="description" content="">
+    </span>
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木子">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          CentOS7 离线安装 Docker-ce
+        </h1>
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              <time title="创建时间：2019-09-03 2019-09-03T00:00:00+08:00" itemprop="dateCreated datePublished" datetime="2019-09-03T00:00:00+08:00">2019-09-03</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-02-23 2020-02-23T10:38:57+08:00" itemprop="dateModified" datetime="2020-02-23T10:38:57+08:00">2020-02-23</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%8A%80%E6%9C%AF/" itemprop="url" rel="index">
+                    <span itemprop="name">技术</span>
+                  </a>
+                </span>
+            </span>
+  <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-comment-o"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    <a title="disqus" href="/centos7-offline-install-docker.html#comments" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="centos7-offline-install-docker.html" itemprop="commentCount"></span>
+    </a>
+  </span>
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>9.4k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>16 分钟</span>
+            </span>
+        </div>
+      </header>
+    <div class="post-body" itemprop="articleBody">
+        <h2 id="项目背景"><a href="#项目背景" class="headerlink" title="项目背景"></a>项目背景</h2><p>接到新项目的机器无法访问外网，所以只能离线安装 Docker，总体思路是从一台可访问外网的机器上下载下来 docker-ce 的 rpm 包及其依赖，再把这些 rpm 传到要部署的机器上安装就行。其中踩了一些坑，在此记录一下。</p>
+<p>新项目的机器是系统是 CentOS 7.5 (1804)，所以在 ESXi 上重新开一台虚拟机，装上 CentOS 7.5 (1804)，这一点比较重要。因为刚开始的时候使用的是 CentOS 7.6 (1810)，但环境不一致导致一些依赖的包版本也不一致，7.6 上一些依赖包版本要比 7.5 高一些，最主要的就是 <code>libsepol</code>、 <code>libsemanage</code>、 <code>selinux-policy</code> 等，都是和 SELinux 相关的依赖，虽然可以加个 <code>skip-broken</code> 参数强制安装，但因为是线上生产环境，为了保险起见还是决定将这几个依赖包升级到要求的版本。</p>
+<h2 id="下载-rpm-包"><a href="#下载-rpm-包" class="headerlink" title="下载 rpm 包"></a>下载 rpm 包</h2><p>在另一条可访问外网的机器上下载</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">mkdir -p /root/docker-ce</span><br><span class="line">yum install -y yum-utils createrepo</span><br><span class="line">yum-config-manager --add-repo http://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo</span><br><span class="line"><span class="comment"># yum-utils 用来添加 docker 的 yum 源</span></span><br><span class="line"><span class="comment"># createrepo 用来创建本地 yum 源</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 查看 yum 源中的版本</span></span><br><span class="line">yum list docker-ce --showduplicates | sort -r</span><br><span class="line">yum list docker-ce-cli --showduplicates | sort -r</span><br><span class="line">yum install --downloadonly --downloaddir=/root/docker-ce docker-ce docker-ce-cli containerd.io</span><br><span class="line">mv /var/cache/yum/x86_64/7/updates/packages/* /root/docker-ce</span><br><span class="line">mv /var/cache/yum/x86_64/7/base/packages/* /root/docker-ce</span><br><span class="line">mv /var/cache/yum/x86_64/7/extras/packages/* /root/docker-ce</span><br><span class="line"><span class="comment"># 需要注意的是 --downloadonly 参数只会将所安装的包及其依赖下载到你指定的位置，但需要升级的包,即 Updating dependencies 默认下载到了# /var/cache/yum/x86_64/7/ 这几个目录下，这一点比较坑。</span></span><br></pre></td></tr></table></figure>
+<p>提示要安装 3 个包 即 <code>docker-ce</code> 、<code>docker-ce-cli</code> 、<code>containerd.io</code> 加9个依赖包，一共十二个包会下载到我们指定路径下，剩余 10 个要升级的依赖包即<code>Updating dependencies</code>并不会下载到指定的路径下，而是根据对应的 <code>Repository</code>下载到 <code>/var/cache/yum/x86_64/7/</code> 目录下，所以也需要将这些包也一同移动到我们指定的路径下。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">Package                            Version                Repository</span><br><span class="line">stalling:</span><br><span class="line">containerd.io                      1.2.6-3.3.el7          docker-ce-stable</span><br><span class="line">docker-ce                          3:19.03.1-3.el7        docker-ce-stable</span><br><span class="line">docker-ce-cli                      1:19.03.1-3.el7        docker-ce-stable</span><br><span class="line"></span><br><span class="line">Installing dependencies:</span><br><span class="line">audit-libs-python                  2.8.4-4.el7            base</span><br><span class="line">checkpolicy                        2.5-8.el7              base</span><br><span class="line">container-selinux                  2:2.107-1.el7_6        extras</span><br><span class="line">libcgroup                          0.41-20.el7            base</span><br><span class="line">libseccomp                         2.3.1-3.el7            base</span><br><span class="line">libsemanage-python                 2.5-14.el7             base</span><br><span class="line">policycoreutils-python             2.5-29.el7_6.1         updates</span><br><span class="line">python-IPy                         0.75-6.el7             base</span><br><span class="line">setools-libs                       3.3.8-4.el7            base</span><br><span class="line"></span><br><span class="line">Updating dependencies:</span><br><span class="line">audit                              2.8.4-4.el7            base</span><br><span class="line">audit-libs                         2.8.4-4.el7            base</span><br><span class="line">libselinux                         2.5-14.1.el7           base</span><br><span class="line">libselinux-python                  2.5-14.1.el7           base</span><br><span class="line">libselinux-utils                   2.5-14.1.el7           base</span><br><span class="line">libsemanage                        2.5-14.el7             base</span><br><span class="line">libsepol                           2.5-10.el7             base</span><br><span class="line">policycoreutils                    2.5-29.el7_6.1         updates</span><br><span class="line">selinux-policy                     3.13.1-229.el7_6.15    updates</span><br><span class="line">selinux-policy-targeted            3.13.1-229.el7_6.15    updates</span><br><span class="line"></span><br><span class="line">Transaction Summary</span><br><span class="line">====================================================</span><br><span class="line">Install  3 Packages (+ 9 Dependent packages)</span><br><span class="line">Upgrade             ( 10 Dependent packages)</span><br></pre></td></tr></table></figure>
+<p>最终所需要的 rpm 包的如下，包含依赖机器需要升级的包，一共 29 个</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">audit-2.8.4-4.el7.x86_64.rpm</span><br><span class="line">audit-libs-2.8.4-4.el7.x86_64.rpm</span><br><span class="line">audit-libs-python-2.8.4-4.el7.x86_64.rpm</span><br><span class="line">checkpolicy-2.5-8.el7.x86_64.rpm</span><br><span class="line">containerd.io-1.2.6-3.3.el7.x86_64.rpm</span><br><span class="line">container-selinux-2.107-1.el7_6.noarch.rpm</span><br><span class="line">device-mapper-1.02.149-10.el7_6.8.x86_64.rpm</span><br><span class="line">device-mapper-event-1.02.149-10.el7_6.8.x86_64.rpm</span><br><span class="line">device-mapper-event-libs-1.02.149-10.el7_6.8.x86_64.rpm</span><br><span class="line">device-mapper-libs-1.02.149-10.el7_6.8.x86_64.rpm</span><br><span class="line">docker-ce-19.03.1-3.el7.x86_64.rpm</span><br><span class="line">docker-ce-cli-19.03.1-3.el7.x86_64.rpm</span><br><span class="line">libcgroup-0.41-20.el7.x86_64.rpm</span><br><span class="line">libseccomp-2.3.1-3.el7.x86_64.rpm</span><br><span class="line">libselinux-2.5-14.1.el7.x86_64.rpm</span><br><span class="line">libselinux-python-2.5-14.1.el7.x86_64.rpm</span><br><span class="line">libselinux-utils-2.5-14.1.el7.x86_64.rpm</span><br><span class="line">libsemanage-2.5-14.el7.x86_64.rpm</span><br><span class="line">libsemanage-python-2.5-14.el7.x86_64.rpm</span><br><span class="line">libsepol-2.5-10.el7.x86_64.rpm</span><br><span class="line">libtool-ltdl-2.4.2-22.el7_3.x86_64.rpm</span><br><span class="line">lvm2-2.02.180-10.el7_6.8.x86_64.rpm</span><br><span class="line">lvm2-libs-2.02.180-10.el7_6.8.x86_64.rpm</span><br><span class="line">policycoreutils-2.5-29.el7_6.1.x86_64.rpm</span><br><span class="line">policycoreutils-python-2.5-29.el7_6.1.x86_64.rpm</span><br><span class="line">python-IPy-0.75-6.el7.noarch.rpm</span><br><span class="line">selinux-policy-3.13.1-229.el7_6.15.noarch.rpm</span><br><span class="line">selinux-policy-targeted-3.13.1-229.el7_6.15.noarch.rpm</span><br><span class="line">setools-libs-3.3.8-4.el7.x86_64.rpm</span><br></pre></td></tr></table></figure>
+<h2 id="生成本地-yum-源"><a href="#生成本地-yum-源" class="headerlink" title="生成本地 yum 源"></a>生成本地 yum 源</h2><p>这一步操作可以在本地这台机器上生成 yum 元数据信息，也可以在生产环境那台机器上执行，不过需要单独安装createrepo 工具来生成。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">createrepo -d /root/docker-ce/</span><br><span class="line"><span class="comment"># 最终会在本地 /root/docker-ce/ 目录的 repodata 目录下生成所含软件包的元数据据信息</span></span><br><span class="line">tree /root/docker-ce/repodata</span><br><span class="line">.</span><br><span class="line">├── 1a232695bdd68ade6ebd6549ef9267e1b7f870566820f627237bc3db93281aaf-filelists.xml.gz</span><br><span class="line">├── 658e130ccd8e0d62a4b1334ff65c14b223e528c50352a9e2cfc44cc4535693fd-other.sqlite.bz2</span><br><span class="line">├── 6601f7512ba24f28ce37e5afa4c5f48b812dfcb019516e630438a1d11088ecdd-other.xml.gz</span><br><span class="line">├── d3e511a8557503650c8083eb97ef7500afa0f43eb0f66db15aa155226c03054b-primary.sqlite.bz2</span><br><span class="line">├── db2fa3329ff03fd2b70814a57703502c28898ba09b548593abcce1166964554d-primary.xml.gz</span><br><span class="line">├── ff326b22deaf8f3f728203069f42476e35e5c62688fb78691087314edeaf6b13-filelists.sqlite.bz2</span><br><span class="line">└── repomd.xml</span><br><span class="line">0 directories, 7 files</span><br></pre></td></tr></table></figure>
+<p><code>repomd.xml</code> 包含这些软件包的元数据信息</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">repomd</span> <span class="attr">xmlns</span>=<span class="string">"http://linux.duke.edu/metadata/repo"</span> <span class="attr">xmlns:rpm</span>=<span class="string">"http://linux.duke.edu/metadata/rpm"</span>&gt;</span></span><br><span class="line"> <span class="tag">&lt;<span class="name">revision</span>&gt;</span>1567506793<span class="tag">&lt;/<span class="name">revision</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">data</span> <span class="attr">type</span>=<span class="string">"filelists"</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">checksum</span> <span class="attr">type</span>=<span class="string">"sha256"</span>&gt;</span>1a232695bdd68ade6ebd6549ef9267e1b7f870566820f627237bc3db93281aaf<span class="tag">&lt;/<span class="name">checksum</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">open-checksum</span> <span class="attr">type</span>=<span class="string">"sha256"</span>&gt;</span>9653a695d402fdd138ca4ca0ab4387e1687b67a8486af6955cdae070c0a6a7c1<span class="tag">&lt;/<span class="name">open-checksum</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">location</span> <span class="attr">href</span>=<span class="string">"repodata/1a232695bdd68ade6ebd6549ef9267e1b7f870566820f627237bc3db93281aaf-filelists.xml.gz"</span>/&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">timestamp</span>&gt;</span>1567506794<span class="tag">&lt;/<span class="name">timestamp</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">size</span>&gt;</span>15489<span class="tag">&lt;/<span class="name">size</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">open-size</span>&gt;</span>181439<span class="tag">&lt;/<span class="name">open-size</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">data</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">data</span> <span class="attr">type</span>=<span class="string">"primary"</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">checksum</span> <span class="attr">type</span>=<span class="string">"sha256"</span>&gt;</span>db2fa3329ff03fd2b70814a57703502c28898ba09b548593abcce1166964554d<span class="tag">&lt;/<span class="name">checksum</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">open-checksum</span> <span class="attr">type</span>=<span class="string">"sha256"</span>&gt;</span>1ab8f25d3566bee756fa62cf7f6c5d944d52d6440cb00ef37779d0e6a38d81fe<span class="tag">&lt;/<span class="name">open-checksum</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">location</span> <span class="attr">href</span>=<span class="string">"repodata/db2fa3329ff03fd2b70814a57703502c28898ba09b548593abcce1166964554d-primary.xml.gz"</span>/&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">timestamp</span>&gt;</span>1567506794<span class="tag">&lt;/<span class="name">timestamp</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">size</span>&gt;</span>19103<span class="tag">&lt;/<span class="name">size</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">open-size</span>&gt;</span>198571<span class="tag">&lt;/<span class="name">open-size</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">data</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">data</span> <span class="attr">type</span>=<span class="string">"primary_db"</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">checksum</span> <span class="attr">type</span>=<span class="string">"sha256"</span>&gt;</span>d3e511a8557503650c8083eb97ef7500afa0f43eb0f66db15aa155226c03054b<span class="tag">&lt;/<span class="name">checksum</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">open-checksum</span> <span class="attr">type</span>=<span class="string">"sha256"</span>&gt;</span>d6df45954bb239439baa86c486159ca009ad076107729f69df6cfb06d04b76d1<span class="tag">&lt;/<span class="name">open-checksum</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">location</span> <span class="attr">href</span>=<span class="string">"repodata/d3e511a8557503650c8083eb97ef7500afa0f43eb0f66db15aa155226c03054b-primary.sqlite.bz2"</span>/&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">timestamp</span>&gt;</span>1567506794<span class="tag">&lt;/<span class="name">timestamp</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">database_version</span>&gt;</span>10<span class="tag">&lt;/<span class="name">database_version</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">size</span>&gt;</span>55692<span class="tag">&lt;/<span class="name">size</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">open-size</span>&gt;</span>344064<span class="tag">&lt;/<span class="name">open-size</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">data</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">data</span> <span class="attr">type</span>=<span class="string">"other_db"</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">checksum</span> <span class="attr">type</span>=<span class="string">"sha256"</span>&gt;</span>658e130ccd8e0d62a4b1334ff65c14b223e528c50352a9e2cfc44cc4535693fd<span class="tag">&lt;/<span class="name">checksum</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">open-checksum</span> <span class="attr">type</span>=<span class="string">"sha256"</span>&gt;</span>f0d99fae751fa3f6cd7b6e4e69cd0cf80a569b972d83103469fe21f4464aa569<span class="tag">&lt;/<span class="name">open-checksum</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">location</span> <span class="attr">href</span>=<span class="string">"repodata/658e130ccd8e0d62a4b1334ff65c14b223e528c50352a9e2cfc44cc4535693fd-other.sqlite.bz2"</span>/&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">timestamp</span>&gt;</span>1567506794<span class="tag">&lt;/<span class="name">timestamp</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">database_version</span>&gt;</span>10<span class="tag">&lt;/<span class="name">database_version</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">size</span>&gt;</span>15817<span class="tag">&lt;/<span class="name">size</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">open-size</span>&gt;</span>64512<span class="tag">&lt;/<span class="name">open-size</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">data</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">data</span> <span class="attr">type</span>=<span class="string">"other"</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">checksum</span> <span class="attr">type</span>=<span class="string">"sha256"</span>&gt;</span>6601f7512ba24f28ce37e5afa4c5f48b812dfcb019516e630438a1d11088ecdd<span class="tag">&lt;/<span class="name">checksum</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">open-checksum</span> <span class="attr">type</span>=<span class="string">"sha256"</span>&gt;</span>905cc2a9cdc825e3bf9f790219661f36f5adb733b4238cf9d9f6b0db596a1936<span class="tag">&lt;/<span class="name">open-checksum</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">location</span> <span class="attr">href</span>=<span class="string">"repodata/6601f7512ba24f28ce37e5afa4c5f48b812dfcb019516e630438a1d11088ecdd-other.xml.gz"</span>/&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">timestamp</span>&gt;</span>1567506794<span class="tag">&lt;/<span class="name">timestamp</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">size</span>&gt;</span>10380<span class="tag">&lt;/<span class="name">size</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">open-size</span>&gt;</span>60522<span class="tag">&lt;/<span class="name">open-size</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">data</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">data</span> <span class="attr">type</span>=<span class="string">"filelists_db"</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">checksum</span> <span class="attr">type</span>=<span class="string">"sha256"</span>&gt;</span>ff326b22deaf8f3f728203069f42476e35e5c62688fb78691087314edeaf6b13<span class="tag">&lt;/<span class="name">checksum</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">open-checksum</span> <span class="attr">type</span>=<span class="string">"sha256"</span>&gt;</span>1a2a1ddbf42881778fc5c4603545d730db0d833c711166a82ff9f589092459f0<span class="tag">&lt;/<span class="name">open-checksum</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">location</span> <span class="attr">href</span>=<span class="string">"repodata/ff326b22deaf8f3f728203069f42476e35e5c62688fb78691087314edeaf6b13-filelists.sqlite.bz2"</span>/&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">timestamp</span>&gt;</span>1567506794<span class="tag">&lt;/<span class="name">timestamp</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">database_version</span>&gt;</span>10<span class="tag">&lt;/<span class="name">database_version</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">size</span>&gt;</span>24426<span class="tag">&lt;/<span class="name">size</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">open-size</span>&gt;</span>123904<span class="tag">&lt;/<span class="name">open-size</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">data</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">repomd</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<h2 id="离线安装-docker-ce"><a href="#离线安装-docker-ce" class="headerlink" title="离线安装 docker-ce"></a>离线安装 docker-ce</h2><p>将上面生成的文件夹 <code>/root/docker-ce</code>  利用 scp 的方式上传到需要安装的机器上</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 备份原有的 yum repo</span></span><br><span class="line">ls /etc/yum.repos.d | xargs -I&#123;&#125; mv /etc/yum.repos.d/&#123;&#125; /etc/yum.repos.d/&#123;&#125;.bak</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">cat &gt;&gt;/etc/yum.repos.d/docker-ce.repo &lt;&lt; EOF</span><br><span class="line">[<span class="built_in">local</span>-yum]</span><br><span class="line">name=<span class="built_in">local</span>-yum</span><br><span class="line">baseurl=file:///root/docker-ce</span><br><span class="line">enabled=1</span><br><span class="line">gpgcheck=0</span><br><span class="line">EOF</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">yum clean all</span><br><span class="line">rm -rf /var/cache/yum</span><br><span class="line">yum makecache</span><br><span class="line">yum list | grep docker</span><br><span class="line">yum install docker-ce docker-ce-cli containerd.io</span><br><span class="line">systemctl start docker</span><br><span class="line">systemctl <span class="built_in">enable</span> docker</span><br><span class="line">docker info</span><br></pre></td></tr></table></figure>
+<p>这样就大功告成啦</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line">docker info</span><br><span class="line">Client:</span><br><span class="line"> Debug Mode: false</span><br><span class="line"></span><br><span class="line">Server:</span><br><span class="line"> Containers: 0</span><br><span class="line">  Running: 0</span><br><span class="line">  Paused: 0</span><br><span class="line">  Stopped: 0</span><br><span class="line"> Images: 0</span><br><span class="line"> Server Version: 19.03.1</span><br><span class="line"> Storage Driver: overlay2</span><br><span class="line">  Backing Filesystem: extfs</span><br><span class="line">  Supports d_type: true</span><br><span class="line">  Native Overlay Diff: true</span><br><span class="line"> Logging Driver: json-file</span><br><span class="line"> Cgroup Driver: cgroupfs</span><br><span class="line"> Plugins:</span><br><span class="line">  Volume: local</span><br><span class="line">  Network: bridge host ipvlan macvlan null overlay</span><br><span class="line">  Log: awslogs fluentd gcplogs gelf journald json-file local logentries splunk syslog</span><br><span class="line"> Swarm: inactive</span><br><span class="line"> Runtimes: runc</span><br><span class="line"> Default Runtime: runc</span><br><span class="line"> Init Binary: docker-init</span><br><span class="line"> containerd version: 894b81a4b802e4eb2a91d1ce216b8817763c29fb</span><br><span class="line"> runc version: 425e105d5a03fabd737a126ad93d62a9eeede87f</span><br><span class="line"> init version: fec3683</span><br><span class="line"> Security Options:</span><br><span class="line">  seccomp</span><br><span class="line">   Profile: default</span><br><span class="line"> Kernel Version: 3.10.0-862.el7.x86_64</span><br><span class="line"> Operating System: CentOS Linux 7 (Core)</span><br><span class="line"> OSType: linux</span><br><span class="line"> Architecture: x86_64</span><br><span class="line"> CPUs: 2</span><br><span class="line"> Total Memory: 1.779GiB</span><br><span class="line"> Name: centos1804</span><br><span class="line"> ID: SAFG:3ERG:A52Y:NIDH:65B5:QMKS:DYPH:XVW4:CA6M:UFMR:AKDJ:WQJK</span><br><span class="line"> Docker Root Dir: /var/lib/docker</span><br><span class="line"> Debug Mode: false</span><br><span class="line"> Registry: https://index.docker.io/v1/</span><br><span class="line"> Labels:</span><br><span class="line"> Experimental: false</span><br><span class="line"> Insecure Registries:</span><br><span class="line">  127.0.0.0/8</span><br><span class="line"> Live Restore Enabled: false</span><br></pre></td></tr></table></figure>
+<h2 id="经验？"><a href="#经验？" class="headerlink" title="经验？"></a>经验？</h2><ol>
+<li>通过 yum history 回滚是不会回滚升级的版本的</li>
+<li>需要注意的是 –downloadonly 参数只会将所安装的包及其依赖下载到你指定的位置，但需要升级的包,即 Updating dependencies 默认下载到了# /var/cache/yum/x86_64/7/ 这几个目录下，这一点比较坑</li>
+<li>createrepo  创建本地 yum 源</li>
+<li>此方案不仅仅是用与 docker ，离线安装其他包也是支持的</li>
+</ol>
+    </div>
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Docker/" rel="tag"><i class="fa fa-tag"></i> Docker</a>
+          </div>
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/esxi-vmbase.html" rel="prev" title="手搓虚拟机模板">
+      <i class="fa fa-chevron-left"></i> 手搓虚拟机模板
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/ffmepg-rtsp.html" rel="next" title="使用 FFmpeg 远程读取 rtsp 监控视频流">
+      使用 FFmpeg 远程读取 rtsp 监控视频流 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+  </article>
+  </div>
+          </div>
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+        </div>
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#项目背景"><span class="nav-number">1.</span> <span class="nav-text">项目背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#下载-rpm-包"><span class="nav-number">2.</span> <span class="nav-text">下载 rpm 包</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#生成本地-yum-源"><span class="nav-number">3.</span> <span class="nav-text">生成本地 yum 源</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#离线安装-docker-ce"><span class="nav-number">4.</span> <span class="nav-text">离线安装 docker-ce</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#经验？"><span class="nav-number">5.</span> <span class="nav-text">经验？</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木子"
+      src="https://blog.502.li/favicon.ico">
+  <p class="site-author-name" itemprop="name">木子</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">65</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">72</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/muzi502" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;muzi502" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:blog@502.li" title="E-Mail → mailto:blog@502.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://twitter.com/muzi_ii" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;muzi_ii" rel="noopener" target="_blank"><i class="fa fa-fw fa-twitter"></i>Twitter</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://t.me/muzi_ii" title="Telegram → https:&#x2F;&#x2F;t.me&#x2F;muzi_ii" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Telegram</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://kindle.502.li/" title="Kindle → https:&#x2F;&#x2F;kindle.502.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-book"></i>Kindle</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://https//t.me/rss_kubernetes" title="Channel → https:&#x2F;&#x2F;https:&#x2F;&#x2F;t.me&#x2F;rss_kubernetes" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Channel</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-fw fa-rss"></i>RSS</a>
+      </span>
+  </div>
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+      </div>
+    </main>
+    <footer class="footer">
+      <div class="footer-inner">
+<div class="copyright">
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木子</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">793k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">22:02</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">主题 – <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a>
+  </div>
+      </div>
+    </footer>
+  </div>
+  <script src="/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script>
+<script src="/js/schemes/pisces.js"></script>
+<script src="/js/next-boot.js"></script>
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://muzi.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: {page: {
+            url: "https://blog.502.li/centos7-offline-install-docker.html",
+            identifier: "centos7-offline-install-docker.html",
+            title: "CentOS7 离线安装 Docker-ce"
+          }
+        }
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://muzi.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+</body>
+</html>

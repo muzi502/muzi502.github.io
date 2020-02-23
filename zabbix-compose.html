@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon.ico">
+  <link rel="mask-icon" href="/favicon.ico" color="#222">
+<link rel="stylesheet" href="/css/main.css">
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Roboto Mono:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://blog.502.li').hostname,
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":true,"scrollpercent":true},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"buttons","active":null,"storage":true,"lazyload":true,"nav":{"disqus":{"text":"Load Disqus","order":-1}}},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":false,"async":true,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+  <meta name="description" content="0.运行环境(a). 要部署在docker容器中的服务：MySQL 、zabbix-server 、 zabbix-web 、 zabbix-java-gateway (b). zabbix服务端机器所需软件包版本OS: CentOS Linux release 7.6.1810 (Core) 1234567docker-ce-stable 18.09.6docker-compose 1.24.0">
+<meta property="og:type" content="article">
+<meta property="og:title" content="zabbix 监控服务">
+<meta property="og:url" content="https://blog.502.li/zabbix-compose.html">
+<meta property="og:site_name" content="木子">
+<meta property="og:description" content="0.运行环境(a). 要部署在docker容器中的服务：MySQL 、zabbix-server 、 zabbix-web 、 zabbix-java-gateway (b). zabbix服务端机器所需软件包版本OS: CentOS Linux release 7.6.1810 (Core) 1234567docker-ce-stable 18.09.6docker-compose 1.24.0">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2019-05-12T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-02-23T02:38:57.264Z">
+<meta property="article:author" content="木子">
+<meta property="article:tag" content="zabbix">
+<meta property="article:tag" content="运维">
+<meta property="article:tag" content="监控">
+<meta name="twitter:card" content="summary">
+<link rel="canonical" href="https://blog.502.li/zabbix-compose.html">
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+  <title>zabbix 监控服务 | 木子</title>
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+<link rel="alternate" href="/atom.xml" title="木子" type="application/atom+xml">
+</head>
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">木子</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+    <a href="/" rel="section"><i class="fa fa-fw fa-desktop"></i>Home</a>
+  </li>
+        <li class="menu-item menu-item-books">
+    <a href="/booklist.html" rel="section"><i class="fa fa-fw fa-book"></i>Books</a>
+  </li>
+        <li class="menu-item menu-item-kindle">
+    <a href="https://kindle.502.li/" rel="noopener" target="_blank"><i class="fa fa-fw fa-book"></i>Kindle</a>
+  </li>
+        <li class="menu-item menu-item-friend">
+    <a href="/link/" rel="section"><i class="fa fa-fw fa-link"></i>Friend</a>
+  </li>
+        <li class="menu-item menu-item-about">
+    <a href="/about.html" rel="section"><i class="fa fa-fw fa-user-circle-o"></i>About</a>
+  </li>
+  </ul>
+</nav>
+</div>
+    </header>
+  <div class="reading-progress-bar"></div>
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div class="content">
+  <div class="posts-expand">
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.502.li/zabbix-compose.html">
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://blog.502.li/favicon.ico">
+      <meta itemprop="name" content="木子">
+      <meta itemprop="description" content="">
+    </span>
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木子">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          zabbix 监控服务
+        </h1>
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              <time title="创建时间：2019-05-13 2019-05-13T00:00:00+08:00" itemprop="dateCreated datePublished" datetime="2019-05-13T00:00:00+08:00">2019-05-13</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-02-23 2020-02-23T10:38:57+08:00" itemprop="dateModified" datetime="2020-02-23T10:38:57+08:00">2020-02-23</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%8A%80%E6%9C%AF/" itemprop="url" rel="index">
+                    <span itemprop="name">技术</span>
+                  </a>
+                </span>
+            </span>
+  <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-comment-o"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    <a title="disqus" href="/zabbix-compose.html#comments" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="zabbix-compose.html" itemprop="commentCount"></span>
+    </a>
+  </span>
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>7.1k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>12 分钟</span>
+            </span>
+        </div>
+      </header>
+    <div class="post-body" itemprop="articleBody">
+        <h2 id="0-运行环境"><a href="#0-运行环境" class="headerlink" title="0.运行环境"></a>0.运行环境</h2><p>(a). 要部署在docker容器中的服务：<code>MySQL</code> 、<code>zabbix-server</code> 、 <code>zabbix-web</code> 、 <code>zabbix-java-gateway</code></p>
+<p>(b). zabbix服务端机器所需软件包版本<br>OS: CentOS Linux release 7.6.1810 (Core)</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">docker-ce-stable 18.09.6</span><br><span class="line">docker-compose 1.24.0</span><br><span class="line">MySQL-server 5.7</span><br><span class="line">zabbix-server 4.0.7 LTS</span><br><span class="line">zabbix-web 4.0.7 LTS</span><br><span class="line">zabbix-get 4.0.7 LTS</span><br><span class="line">zabbix-java-gateway 4.0.7 LTS</span><br></pre></td></tr></table></figure>
+<p>(c). zabbix服务端机器所需的docker镜像</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">mysql:5.7</span><br><span class="line">zabbix/zabbix-java-gateway:centos-4.0-latest</span><br><span class="line">zabbix/zabbix-server-mysql:centos-4.0-latest</span><br><span class="line">zabbix/zabbix-web-nginx-mysql:centos-4.0-latest</span><br></pre></td></tr></table></figure>
+<p>(d). 被监控机器所需软件包</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">CentOS  zabbix-agent 4.0.7 LTS</span><br><span class="line">Windows Server 2012  zabbix_agent-4.0.7-win-amd64-openssl LTS</span><br></pre></td></tr></table></figure>
+<h2 id="1-安装docker和docker-compose"><a href="#1-安装docker和docker-compose" class="headerlink" title="1.安装docker和docker-compose"></a>1.安装docker和docker-compose</h2><p>1.安装 yum-utils 提供 yum-config-manager 工具<br>devicemapper存储驱动依赖 device-mapper-persistent-data 和 lvm2</p>
+<figure class="highlight plain"><figcaption><span>yum install -y yum-utils device-mapper-persistent-data lvm2```</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">2.添加aliyun软件包源</span><br><span class="line">&#96;&#96;&#96;sudo yum-config-manager --add-repo https:&#x2F;&#x2F;mirrors.aliyun.com&#x2F;docker-ce&#x2F;linux&#x2F;centos&#x2F;docker-ce.repo</span><br></pre></td></tr></table></figure>
+<p>3.安装docker-ce-stable</p>
+<figure class="highlight plain"><figcaption><span>yum list docker-ce.x86_64  --showduplicates |sort -r``` 选择docker-ce-stable版</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">4.添加Docker 用户和用户组</span><br><span class="line">&#96;&#96;&#96;sudo usermod -aG docker $USER</span><br></pre></td></tr></table></figure>
+<p>(a)或使用官方脚本安装，aliyun镜像站点</p>
+<figure class="highlight plain"><figcaption><span>curl -fsSL</span><a href="https://get.docker.com" target="_blank" rel="noopener">| bash -s docker --mirror Aliyun```</a></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">6.启动docker并添加到开机自启</span><br><span class="line">sudo systemctl start docker.service</span><br><span class="line">sudo systemctl enable docker.service</span><br><span class="line">5.安装docker-compose，需要在GitHub上下载二进制文件，速度会很慢，先下载到本地再scp复制到&#x2F;usr&#x2F;local&#x2F;bin</span><br><span class="line">&#96;&#96;&#96;sudo curl -L &quot;https:&#x2F;&#x2F;github.com&#x2F;docker&#x2F;compose&#x2F;releases&#x2F;download&#x2F;1.24.0&#x2F;docker-compose-$(uname -s)-$(uname -m)&quot; -o &#x2F;usr&#x2F;local&#x2F;bin&#x2F;docker-compose</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><figcaption><span>chmod +x</span><a href="/usr/local/bin/docker-compose```">link</a></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#96;&#96;&#96;sudo ln -s &#x2F;usr&#x2F;local&#x2F;bin&#x2F;docker-compose &#x2F;usr&#x2F;bin&#x2F;docker-compose</span><br></pre></td></tr></table></figure>
+<p>6.使用 docker 镜像加速器来加速下载 docker 镜像下载速度</p>
+<figure class="highlight plain"><figcaption><span>curl -sSL</span><a href="https://get.daocloud.io/daotools/set_mirror.sh" target="_blank" rel="noopener">| sh -s http://f1361db2.m.daocloud.io```</a></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#96;&#96;&#96;sudo systemctl restart docker.service</span><br></pre></td></tr></table></figure>
+<h2 id="2-使用docker-compose启动"><a href="#2-使用docker-compose启动" class="headerlink" title="2.使用docker-compose启动"></a>2.使用docker-compose启动</h2><p>1.复制zabbix-compose.yml文件到工程目录<br>2.按需修改docker-compose文件中的环境变量、PSAAWORD等信息</p>
+<figure class="highlight yml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">version:</span> <span class="string">'3.0'</span></span><br><span class="line"><span class="attr">services:</span></span><br><span class="line">  <span class="attr">mysql:</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">mysql:5.7</span></span><br><span class="line">    <span class="attr">container_name:</span> <span class="string">mysql</span></span><br><span class="line">    <span class="attr">environment:</span></span><br><span class="line">      <span class="attr">MYSQL_USER:</span> <span class="string">zabbix</span></span><br><span class="line">      <span class="attr">MYSQL_DATABASE:</span> <span class="string">zabbix</span></span><br><span class="line">      <span class="attr">MYSQL_PASSWORD:</span> <span class="string">zabbix</span></span><br><span class="line">      <span class="attr">MYSQL_ROOT_PASSWORD:</span> <span class="string">zabbix</span></span><br><span class="line">    <span class="attr">volumes:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">/data/mysql:/var/lib/mysql</span></span><br><span class="line">    <span class="attr">ports:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span><span class="string">:3306:3306</span></span><br><span class="line">    <span class="attr">restart:</span> <span class="string">always</span></span><br><span class="line">    <span class="attr">networks:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">zabbix</span></span><br><span class="line">    <span class="attr">command:</span> <span class="string">['mysqld',</span> <span class="string">'--character-set-server=utf8'</span><span class="string">,</span> <span class="string">'--collation-server=utf8_bin'</span><span class="string">]</span></span><br><span class="line"></span><br><span class="line">  <span class="attr">zabbix-java-gateway:</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">zabbix/zabbix-java-gateway:centos-4.0-latest</span></span><br><span class="line">    <span class="attr">container_name:</span> <span class="string">zabbix-java-gateway</span></span><br><span class="line">    <span class="attr">ports:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="number">10052</span><span class="string">:10052</span></span><br><span class="line">    <span class="attr">restart:</span> <span class="string">always</span></span><br><span class="line">    <span class="attr">networks:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">zabbix</span></span><br><span class="line"></span><br><span class="line">  <span class="attr">zabbix-server:</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">zabbix/zabbix-server-mysql:centos-4.0-latest</span></span><br><span class="line">    <span class="attr">container_name:</span> <span class="string">zabbix-server</span></span><br><span class="line">    <span class="attr">environment:</span></span><br><span class="line">      <span class="attr">ZBX_JAVAGATEWAY:</span> <span class="string">zabbix-java-gateway</span></span><br><span class="line">      <span class="attr">ZBX_JAVAGATEWAY_ENABLE:</span> <span class="string">"true"</span></span><br><span class="line">      <span class="attr">DB_SERVER_HOST:</span> <span class="string">mysql</span></span><br><span class="line">      <span class="attr">MYSQL_DATABASE:</span> <span class="string">zabbix</span></span><br><span class="line">      <span class="attr">MYSQL_USER:</span> <span class="string">zabbix</span></span><br><span class="line">      <span class="attr">MYSQL_PASSWORD:</span> <span class="string">zabbix</span></span><br><span class="line">      <span class="attr">MYSQL_ROOT_PASSWORD:</span> <span class="string">zabbix</span></span><br><span class="line">    <span class="attr">volumes:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">/data/zabbix/alertscripts:/usr/lib/zabbix/alertscripts</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">/data/zabbix/externalscripts:/usr/lib/zabbix/externalscripts</span></span><br><span class="line">    <span class="attr">links:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">mysql</span></span><br><span class="line">    <span class="attr">ports:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="number">10051</span><span class="string">:10051</span></span><br><span class="line">    <span class="attr">depends_on:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">mysql</span></span><br><span class="line">    <span class="attr">restart:</span> <span class="string">always</span></span><br><span class="line">    <span class="attr">networks:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">zabbix</span></span><br><span class="line"></span><br><span class="line">  <span class="attr">zabbix-web:</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">zabbix/zabbix-web-nginx-mysql:centos-4.0-latest</span></span><br><span class="line">    <span class="attr">container_name:</span> <span class="string">zabbix-web</span></span><br><span class="line">    <span class="attr">environment:</span></span><br><span class="line">      <span class="attr">PHP_TZ:</span> <span class="string">Asia/Shanghai</span></span><br><span class="line">      <span class="attr">DB_SERVER_HOST:</span> <span class="string">mysql</span></span><br><span class="line">      <span class="attr">MYSQL_DATABASE:</span> <span class="string">zabbix</span></span><br><span class="line">      <span class="attr">MYSQL_USER:</span> <span class="string">zabbix</span></span><br><span class="line">      <span class="attr">MYSQL_PASSWORD:</span> <span class="string">zabbix</span></span><br><span class="line">      <span class="attr">MYSQL_ROOT_PASSWORD:</span> <span class="string">zabbix</span></span><br><span class="line">    <span class="attr">links:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">mysql</span></span><br><span class="line">    <span class="attr">ports:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="number">80</span><span class="string">:80</span></span><br><span class="line">    <span class="attr">depends_on:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">zabbix-server</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">mysql</span></span><br><span class="line">    <span class="attr">restart:</span> <span class="string">always</span></span><br><span class="line">    <span class="attr">networks:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">zabbix</span></span><br><span class="line"></span><br><span class="line"><span class="attr">networks:</span></span><br><span class="line">  <span class="attr">zabbix:</span></span><br><span class="line">    <span class="attr">driver:</span> <span class="string">bridge</span></span><br></pre></td></tr></table></figure>
+<p>3.启动容器</p>
+<figure class="highlight plain"><figcaption><span>docker-compose -f zabbix-compose.yml up -d```</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">4.添加监听端口防火墙规则</span><br><span class="line">zabbix web &#96;&#96;&#96;sudo firewall-cmd --zone&#x3D;public --add-port&#x3D;80&#x2F;tcp --permanent</span><br></pre></td></tr></table></figure>
+<p>zabbix-server <code>sudo firewall-cmd --zone=public --add-port=10051/tcp --permanent</code><br>zabbix-java-gateway <code>sudo firewall-cmd --zone=public --add-port=10052/tcp --permanent</code></p>
+<h2 id="3-部署zabbix-agent"><a href="#3-部署zabbix-agent" class="headerlink" title="3.部署zabbix-agent"></a>3.部署zabbix-agent</h2><h3 id="1-CentOS7"><a href="#1-CentOS7" class="headerlink" title="1.CentOS7"></a>1.CentOS7</h3><p>1.下载安装 zabbix-agent rpm包</p>
+<figure class="highlight plain"><figcaption><span>rpm -Uvh</span><a href="https://repo.zabbix.com/zabbix/4.0/rhel/7/x86_64/zabbix-agent-4.0.7-1.el7.x86_64.rpm```" target="_blank" rel="noopener">link</a></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">2.修改 &#x2F;etc&#x2F;zabbix&#x2F;zabbix_agentd.conf 配置文件，为zabbix-server的IP</span><br><span class="line">&#96;&#96;&#96;Server&#x3D;</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#96;&#96;&#96;ServerActive&#x3D;</span><br></pre></td></tr></table></figure>
+<p>3.为zabbix-agent监听端口10050添加添加防火墙出站规则</p>
+<figure class="highlight plain"><figcaption><span>firewall-cmd --zone</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#96;&#96;&#96;sudo firewall-cmd --reload</span><br></pre></td></tr></table></figure>
+<h3 id="4-Windows-Server-2012"><a href="#4-Windows-Server-2012" class="headerlink" title="4.Windows Server 2012"></a>4.Windows Server 2012</h3><p>1.下载zabbix-agent windows 安装包，安装在需要监控的Windows server机器上<br>下载地址为<code>https://assets.zabbix.com/downloads/4.0.7/zabbix_agent-4.0.7-win-amd64-openssl.msi</code><br>默认安装路径为<code>C:\Program Files\Zabbix Agent</code><br>2.修改配置文件<code>C:\Program Files\Zabbix Agent\zabbix_agentd.conf</code> 为zabbix-server的IP</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#96;&#96;&#96;SourceIP&#x3D;</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">3.添加zabbix-agent监听端口10050防火墙规则</span><br><span class="line">4.打开任务管理器重新启动zabbix-agent服务</span><br><span class="line"></span><br><span class="line">## 4.进入zabbix web管理界面添加监控主机</span><br><span class="line"></span><br><span class="line">http:&#x2F;&#x2F;zabbix-webIP&#x2F;zabbix</span><br><span class="line">默认用户名为&#96;&#96;&#96;Admin</span><br></pre></td></tr></table></figure>
+<p>默认密码为<code>zabbix</code><br>管理-&gt;主机-&gt;创建主机<br>主机名称: 自定义名称 (注意:Windows 端需要和zabbix_agentd.conf配置文件中的Hostname相同)<br>群组: -&gt;选择 按需添加<br>IP地址: 所需监控机器IP 端口10050<br>-&gt;模板 按需链接所需要的监控模板</p>
+<h2 id="5-添加邮件报警"><a href="#5-添加邮件报警" class="headerlink" title="5.添加邮件报警"></a>5.添加邮件报警</h2><p>1.管理-&gt;报警媒介类型-&gt;Email<br>2.修改以下配置:<br>SMTP服务器: smtp.office365.com<br>SMTP HELO: smtp.office365.com<br>SMTP 电邮: outlook 的邮箱地址<br>安全链接: STARTTLS<br>认证: 用户和密码<br>3.创建报警动作<br>配置-&gt;动作-&gt;创建动作<br>名称: Zabbix_warning<br>计算方式: 默认<br>条件: 按需选择添加触发报警条件<br>-&gt;操作<br>默认操作步骤持续时间: 1h<br>默认标题: <code>『服务器警报』 {HOST.NAME}:{ITEM.NAME}:{EVENT.NAME}</code><br>消息内容:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">告警主机: &#123;HOSTNAME1&#125;</span><br><span class="line">告警时间: &#123;EVENT.DATE&#125; &#123;EVENT.TIME&#125;</span><br><span class="line">告警等级: &#123;TRIGGER.SEVERITY&#125;</span><br><span class="line">告警信息: &#123;TRIGGER.NAME&#125;</span><br><span class="line">告警项目: &#123;TRIGGER.KEY1&#125;</span><br><span class="line">问题详情: &#123;ITEM.NAME&#125;: &#123;ITEM.VALUE&#125;</span><br><span class="line">当前状态: &#123;TRIGGER.STATUS&#125;: &#123;ITEM.VALUE1&#125;</span><br><span class="line">事件ID: &#123;EVENT.ID&#125;</span><br></pre></td></tr></table></figure>
+<p>-&gt;操作</p>
+<figure class="highlight plain"><figcaption><span>Zabbix administrators 通过 Email```</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">4.管理-&gt;用户-&gt;Admin-&gt;报警媒介-&gt;添加</span><br><span class="line">类型: Email</span><br><span class="line">收件人: 接收报警信息的邮件地址</span><br><span class="line"></span><br><span class="line">## 6.添加手机&#x2F;短信报警</span><br><span class="line"></span><br><span class="line">1.zabbix_phone.sh</span><br><span class="line"></span><br><span class="line">&#96;&#96;&#96;bash</span><br><span class="line">#!&#x2F;bin&#x2F;bash</span><br><span class="line"># -*- coding: utf-8 -*-</span><br><span class="line"># date 2019-05-10</span><br><span class="line"># zabbix报警，通过电话通知警报信息接收人，通过短信发送警报信息</span><br><span class="line"># 修改To&#x3D;+86***********为警报信息接收人手机，需要到twilio绑定该手机号</span><br><span class="line"></span><br><span class="line"># via phone</span><br><span class="line">curl -X POST https:&#x2F;&#x2F;api.twilio.com&#x2F;2010-04-01&#x2F;Accounts&#x2F;ACe4a6468bf4ffda94718c3749&#x2F;Calls.json \</span><br><span class="line">--data-urlencode &quot;Url&#x3D;http:&#x2F;&#x2F;demo.twilio.com&#x2F;docs&#x2F;voice.xml&quot; \</span><br><span class="line">--data-urlencode &quot;To&#x3D;+86***********&quot; \</span><br><span class="line">--data-urlencode &quot;From&#x3D;+1**********&quot; \</span><br><span class="line">-u ACe4a6 04cd7 1970c9 ab7 &gt;&gt; twilio.log</span><br><span class="line"></span><br><span class="line"># via message</span><br><span class="line">curl -X POST https:&#x2F;&#x2F;api.twilio.com&#x2F;2010-04-01&#x2F;Accounts&#x2F;ACe4a64b4ffda94718c3749&#x2F;Messages.json \</span><br><span class="line">--data-urlencode &quot;StatusCallback&#x3D;http:&#x2F;&#x2F;postb.in&#x2F;1234abcd&quot; \</span><br><span class="line">--data-urlencode &quot;Body&#x3D; $1 &quot; \</span><br><span class="line">--data-urlencode &quot;To&#x3D;+86***********&quot; \</span><br><span class="line">--data-urlencode &quot;From&#x3D;+1**********&quot; \</span><br><span class="line">-u ACe4a646 1970c93 aab7 &gt;&gt; twilio.log</span><br></pre></td></tr></table></figure>
+<p>2.将该脚本复制到zabbix-server容器中<code>/usr/lib/zabbix/alertscripts/</code>目录下<br>zabbix-compose.yml 默认映射的存储卷为<code>/data/zabbix/alertscripts</code></p>
+<p>3.修改脚本权限</p>
+<figure class="highlight plain"><figcaption><span>zabbix zabbix_phone.sh```</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#96;&#96;&#96;chmod +x zabbix_phone.sh</span><br></pre></td></tr></table></figure>
+<p>4.在zabbix-web管理界面 添加报警媒介规则<br>管理-&gt;报警媒介类型-&gt;创建媒体类型<br>名称: Phone_warning<br>类型: 脚本<br>脚本名称: zabbix_phone.sh<br>脚本参数: {ALERT.MESSAGE}<br>-&gt; 点击更新保存</p>
+<p>5.创建报警动作<br>配置-&gt;动作-&gt;创建动作<br>名称: Zabbix_warning<br>计算方式: 默认<br>条件: 按需选择添加触发报警条件<br>-&gt;操作<br>默认操作步骤持续时间: 1h<br>默认标题: 『服务器警报』 {HOST.NAME}:{ITEM.NAME}:{EVENT.NAME}<br>消息内容:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">告警主机: &#123;HOSTNAME1&#125;</span><br><span class="line">告警时间: &#123;EVENT.DATE&#125; &#123;EVENT.TIME&#125;</span><br><span class="line">告警等级: &#123;TRIGGER.SEVERITY&#125;</span><br><span class="line">告警信息: &#123;TRIGGER.NAME&#125;</span><br><span class="line">告警项目: &#123;TRIGGER.KEY1&#125;</span><br><span class="line">问题详情: &#123;ITEM.NAME&#125;: &#123;ITEM.VALUE&#125;</span><br><span class="line">当前状态: &#123;TRIGGER.STATUS&#125;: &#123;ITEM.VALUE1&#125;</span><br><span class="line">事件ID: &#123;EVENT.ID&#125;</span><br></pre></td></tr></table></figure>
+<p>-&gt;操作<br>发送消息给用户群组: Zabbix administrators 通过 Email<br>发送消息给用户: Admin (Zabbix Administrator) 通过 Phone_warning</p>
+<p>3.管理-&gt;用户-&gt;Admin-&gt;报警媒介-&gt;添加<br>类型: Phone_warning<br>收件人: @ALL</p>
+<h2 id="7-zabbix自动发现"><a href="#7-zabbix自动发现" class="headerlink" title="7.zabbix自动发现"></a>7.zabbix自动发现</h2><p>配置-&gt;自动发现-&gt;创建发现规则<br>名称: Local network<br>IP范围: 按需指定监控机器IP地址网段<br>更新间隔: 1h<br>检查: Zabbix客户端”system.uname”<br>设备唯一性准则: IP地址</p>
+    </div>
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/zabbix/" rel="tag"><i class="fa fa-tag"></i> zabbix</a>
+              <a href="/tags/%E8%BF%90%E7%BB%B4/" rel="tag"><i class="fa fa-tag"></i> 运维</a>
+              <a href="/tags/%E7%9B%91%E6%8E%A7/" rel="tag"><i class="fa fa-tag"></i> 监控</a>
+          </div>
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/oracle-rips-redhat.html" rel="prev" title="Oracle rips RedHat and 'sort of' launches a new Linux">
+      <i class="fa fa-chevron-left"></i> Oracle rips RedHat and 'sort of' launches a new Linux
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/fuch-rush-app-dir.html" rel="next" title="清理毒瘤app在sdcard目录下拉屎产生的文件夹">
+      清理毒瘤app在sdcard目录下拉屎产生的文件夹 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+  </article>
+  </div>
+          </div>
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+        </div>
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#0-运行环境"><span class="nav-number">1.</span> <span class="nav-text">0.运行环境</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#1-安装docker和docker-compose"><span class="nav-number">2.</span> <span class="nav-text">1.安装docker和docker-compose</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-使用docker-compose启动"><span class="nav-number">3.</span> <span class="nav-text">2.使用docker-compose启动</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-部署zabbix-agent"><span class="nav-number">4.</span> <span class="nav-text">3.部署zabbix-agent</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-CentOS7"><span class="nav-number">4.1.</span> <span class="nav-text">1.CentOS7</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-Windows-Server-2012"><span class="nav-number">4.2.</span> <span class="nav-text">4.Windows Server 2012</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-添加邮件报警"><span class="nav-number">5.</span> <span class="nav-text">5.添加邮件报警</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#7-zabbix自动发现"><span class="nav-number">6.</span> <span class="nav-text">7.zabbix自动发现</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木子"
+      src="https://blog.502.li/favicon.ico">
+  <p class="site-author-name" itemprop="name">木子</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">65</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">72</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/muzi502" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;muzi502" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:blog@502.li" title="E-Mail → mailto:blog@502.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://twitter.com/muzi_ii" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;muzi_ii" rel="noopener" target="_blank"><i class="fa fa-fw fa-twitter"></i>Twitter</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://t.me/muzi_ii" title="Telegram → https:&#x2F;&#x2F;t.me&#x2F;muzi_ii" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Telegram</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://kindle.502.li/" title="Kindle → https:&#x2F;&#x2F;kindle.502.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-book"></i>Kindle</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://https//t.me/rss_kubernetes" title="Channel → https:&#x2F;&#x2F;https:&#x2F;&#x2F;t.me&#x2F;rss_kubernetes" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Channel</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-fw fa-rss"></i>RSS</a>
+      </span>
+  </div>
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+      </div>
+    </main>
+    <footer class="footer">
+      <div class="footer-inner">
+<div class="copyright">
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木子</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">793k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">22:02</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">主题 – <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a>
+  </div>
+      </div>
+    </footer>
+  </div>
+  <script src="/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script>
+<script src="/js/schemes/pisces.js"></script>
+<script src="/js/next-boot.js"></script>
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://muzi.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: {page: {
+            url: "https://blog.502.li/zabbix-compose.html",
+            identifier: "zabbix-compose.html",
+            title: "zabbix 监控服务"
+          }
+        }
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://muzi.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+</body>
+</html>

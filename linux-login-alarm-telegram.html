@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon.ico">
+  <link rel="mask-icon" href="/favicon.ico" color="#222">
+<link rel="stylesheet" href="/css/main.css">
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Roboto Mono:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://blog.502.li').hostname,
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":true,"scrollpercent":true},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"buttons","active":null,"storage":true,"lazyload":true,"nav":{"disqus":{"text":"Load Disqus","order":-1}}},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":false,"async":true,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+  <meta name="description" content="弄啥咧 汝担心自己服务器挂了吗？ 汝担心服务器被爆破脱裤？ 汝担心非法用户登录服务器😂 汝的服务器使用口令登录，而且还是 123456 的那种😂  虽然，咱拿到 VPS 第一件事儿就是禁止密码登录，禁止 root 登录，仅仅允许普通用户使用密钥登录。理论上来讲，只要我的私钥不泄露，想要爆破登录上去，不可能、不可能、不可能😂。AES-256 密钥的机密强度，即便是穷尽最强的超算来破解，也得需要">
+<meta property="og:type" content="article">
+<meta property="og:title" content="VPS 安全加固之用户登录后向 telegram 发送登录信息">
+<meta property="og:url" content="https://blog.502.li/linux-login-alarm-telegram.html">
+<meta property="og:site_name" content="木子">
+<meta property="og:description" content="弄啥咧 汝担心自己服务器挂了吗？ 汝担心服务器被爆破脱裤？ 汝担心非法用户登录服务器😂 汝的服务器使用口令登录，而且还是 123456 的那种😂  虽然，咱拿到 VPS 第一件事儿就是禁止密码登录，禁止 root 登录，仅仅允许普通用户使用密钥登录。理论上来讲，只要我的私钥不泄露，想要爆破登录上去，不可能、不可能、不可能😂。AES-256 密钥的机密强度，即便是穷尽最强的超算来破解，也得需要">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://blog.502.li/img/image-20200102212730956.png">
+<meta property="og:image" content="https://blog.502.li/img/image-20200102213100935.png">
+<meta property="og:image" content="https://blog.502.li/img/image-20200102213250311.png">
+<meta property="og:image" content="https://blog.502.li/img/image-20200102213314119.png">
+<meta property="og:image" content="https://blog.502.li/img/image-20200102213405851.png">
+<meta property="og:image" content="https://blog.502.li/img/image-20200102214900940.png">
+<meta property="og:image" content="https://blog.502.li/img/image-20200102220002156.png">
+<meta property="og:image" content="https://blog.502.li/img/image-20200102215325530.png">
+<meta property="og:image" content="https://blog.502.li/img/image-20200102220642854.png">
+<meta property="og:image" content="https://blog.502.li/img/image-20200102222349027.png">
+<meta property="article:published_time" content="2020-01-01T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-02-23T02:38:57.320Z">
+<meta property="article:author" content="木子">
+<meta property="article:tag" content="linux">
+<meta property="article:tag" content="telegram">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog.502.li/img/image-20200102212730956.png">
+<link rel="canonical" href="https://blog.502.li/linux-login-alarm-telegram.html">
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+  <title>VPS 安全加固之用户登录后向 telegram 发送登录信息 | 木子</title>
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+<link rel="alternate" href="/atom.xml" title="木子" type="application/atom+xml">
+</head>
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">木子</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+    <a href="/" rel="section"><i class="fa fa-fw fa-desktop"></i>Home</a>
+  </li>
+        <li class="menu-item menu-item-books">
+    <a href="/booklist.html" rel="section"><i class="fa fa-fw fa-book"></i>Books</a>
+  </li>
+        <li class="menu-item menu-item-kindle">
+    <a href="https://kindle.502.li/" rel="noopener" target="_blank"><i class="fa fa-fw fa-book"></i>Kindle</a>
+  </li>
+        <li class="menu-item menu-item-friend">
+    <a href="/link/" rel="section"><i class="fa fa-fw fa-link"></i>Friend</a>
+  </li>
+        <li class="menu-item menu-item-about">
+    <a href="/about.html" rel="section"><i class="fa fa-fw fa-user-circle-o"></i>About</a>
+  </li>
+  </ul>
+</nav>
+</div>
+    </header>
+  <div class="reading-progress-bar"></div>
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div class="content">
+  <div class="posts-expand">
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.502.li/linux-login-alarm-telegram.html">
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://blog.502.li/favicon.ico">
+      <meta itemprop="name" content="木子">
+      <meta itemprop="description" content="">
+    </span>
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木子">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          VPS 安全加固之用户登录后向 telegram 发送登录信息
+        </h1>
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              <time title="创建时间：2020-01-02 2020-01-02T00:00:00+08:00" itemprop="dateCreated datePublished" datetime="2020-01-02T00:00:00+08:00">2020-01-02</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-02-23 2020-02-23T10:38:57+08:00" itemprop="dateModified" datetime="2020-02-23T10:38:57+08:00">2020-02-23</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%B7%A5%E5%85%B7/" itemprop="url" rel="index">
+                    <span itemprop="name">工具</span>
+                  </a>
+                </span>
+            </span>
+  <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-comment-o"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    <a title="disqus" href="/linux-login-alarm-telegram.html#comments" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="linux-login-alarm-telegram.html" itemprop="commentCount"></span>
+    </a>
+  </span>
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>4.1k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>7 分钟</span>
+            </span>
+        </div>
+      </header>
+    <div class="post-body" itemprop="articleBody">
+        <h2 id="弄啥咧"><a href="#弄啥咧" class="headerlink" title="弄啥咧"></a>弄啥咧</h2><ul>
+<li>汝担心自己服务器挂了吗？</li>
+<li>汝担心服务器被爆破脱裤？</li>
+<li>汝担心非法用户登录服务器😂</li>
+<li>汝的服务器使用口令登录，而且还是 123456 的那种😂</li>
+</ul>
+<p>虽然，咱拿到 VPS 第一件事儿就是禁止密码登录，禁止 root 登录，仅仅允许普通用户使用密钥登录。理论上来讲，只要我的私钥不泄露，想要爆破登录上去，不可能、不可能、不可能😂。AES-256 密钥的机密强度，即便是穷尽最强的超算来破解，也得需要几十年。</p>
+<p>那么，有什么办法当用户登录到服务器上时发送个警报信息到咱手机上，来确认是咱本人或者是咱授权的用户登录。发送信息到咱手机，且及时能收到的话，常见的就这三种：</p>
+<h3 id="通过-email"><a href="#通过-email" class="headerlink" title="通过 email"></a>通过 email</h3><p>email 发送确实可以，但有些限制，比如 GCP 就 ban 掉了 GCE 的 25 端口，常规手段就无法发送邮件了。而且，Linux 命令行下配置 Email 的发送客户端实在是令人头疼。遂就弃坑啦😂，折腾起来不方便。</p>
+<h3 id="通过手机"><a href="#通过手机" class="headerlink" title="通过手机"></a>通过手机</h3><p>之前我是使用 twiio 的短信服务来发送信息的，通过 twiio 的 api 很简单地就能发送，不想 email 那样配来陪去地，使用一条 curl 命令就能完成发送短信到手机。不过 twiio 很有限制，免费用户会有 10$ 的额度，而且需要绑定信用卡，也比较麻烦，遂卒😂</p>
+<h3 id="通过-telegram-bot"><a href="#通过-telegram-bot" class="headerlink" title="通过 telegram bot"></a>通过 telegram bot</h3><p>主角上场啦，就是咱们大名鼎鼎的电报机器人啦。不得不说 telegram 真心很好用啊，聊天功能比微信QQ这种狗屎玩意儿高到不知道哪里去了。反正我很讨厌恶心使用微信和QQ，这种毒瘤软件。功能臃肿无比而且最基本的消息同步功能做的跟狗屎一样烂。呵呵，也就这样烂狗屎软件却垄断了国内聊天软件。而 telegram 只把聊天功能做到优秀，其开放的电报机器人更是催生出了无数有趣且实用的机器人。而且啊，你用 telegram bot 不需要实名认证、也不需要你上传身份证。</p>
+<p>通过 telegram 的 api ，使用 bot 你可以很轻松地向自己发送消息，比微信QQ 那种狗屎玩意好用的多。</p>
+<blockquote>
+<p>需要注意的是，如果是 IOS 用户的话，通过 IOS 的通知消息推送机制，可以不挂梯子就能正常收到 telegram 的通知。包括其他需要挂梯子的应用也是，比如 Google voice。</p>
+</blockquote>
+<h2 id="怎么弄"><a href="#怎么弄" class="headerlink" title="怎么弄"></a>怎么弄</h2><h3 id="首先有个-telegram-账号"><a href="#首先有个-telegram-账号" class="headerlink" title="首先有个 telegram 账号"></a>首先有个 telegram 账号</h3><p>网上教程很多，在此不赘述。推荐某宝买个 Google Voice 来注册，千万千万不要使用 +86 手机号注册，注册完成之后墙裂建议在 app 或者桌面端 的<code>settings</code> ==&gt; <code>Privacy and  Security</code> 那些设置选项里全部设置为 <code>Nobody</code> 。另外再开启 <code>Local Passcode</code> 以及 <code>Two-setp verification</code> 。千千万万别拿着 +86 的手机号到处冲塔，你快很被安排上的。</p>
+<p><img src="https://blog.502.li/img/image-20200102212730956.png" alt="image-20200102212730956"></p>
+<h3 id="注册-bot"><a href="#注册-bot" class="headerlink" title="注册 bot"></a>注册 bot</h3><h4 id="1-打开与-BotFather-的对话框"><a href="#1-打开与-BotFather-的对话框" class="headerlink" title="1.打开与 @BotFather 的对话框"></a>1.打开与 @BotFather 的对话框</h4><p><img src="https://blog.502.li/img/image-20200102213100935.png" alt="image-20200102213100935"></p>
+<h4 id="2-发送-start-开始会话"><a href="#2-发送-start-开始会话" class="headerlink" title="2.发送/start 开始会话"></a>2.发送/start 开始会话</h4><p><img src="https://blog.502.li/img/image-20200102213250311.png" alt="image-20200102213250311"></p>
+<h4 id="3-发送-newbot"><a href="#3-发送-newbot" class="headerlink" title="3.发送/newbot"></a>3.发送/newbot</h4><p><img src="https://blog.502.li/img/image-20200102213314119.png" alt="image-20200102213314119"></p>
+<blockquote>
+<p>Alright, a new bot. How are we going to call it? Please choose a name for your bot.</p>
+</blockquote>
+<h4 id="4-发送-Bot-的-name-和-username"><a href="#4-发送-Bot-的-name-和-username" class="headerlink" title="4.发送 Bot 的 name 和 username"></a>4.发送 Bot 的 name 和 username</h4><blockquote>
+<p>Good. Now let’s choose a username for your bot. It must end in <code>bot</code>. Like this, for example: TetrisBot or tetris_bot.</p>
+</blockquote>
+<p><img src="https://blog.502.li/img/image-20200102213405851.png" alt="image-20200102213405851"></p>
+<p>bot 有两个名字，第一个发送的是 <code>first_name</code>: “linuxloginbot”，第二个发送的是”<code>username</code>“: “linuxlogin_bot” 。其中 username 有要求，要 <code>xxx_bot</code> 来命名 比如 <code>linuxlogin_bot</code></p>
+<h4 id="5-得到-Bot-的-token，用于标识这个-Bot"><a href="#5-得到-Bot-的-token，用于标识这个-Bot" class="headerlink" title="5.得到 Bot 的 token，用于标识这个 Bot"></a>5.得到 Bot 的 token，用于标识这个 Bot</h4><p><img src="https://blog.502.li/img/image-20200102214900940.png" alt="image-20200102214900940"></p>
+<blockquote>
+<p>Done! Congratulations on your new bot. You will find it at t.me/linuxlogin_bot. You can now add a description, about section and profile picture for your bot, see /help for a list of commands. By the way, when you’ve finished creating your cool bot, ping our Bot Support if you want a better username for it. Just make sure the bot is fully operational before you do this.</p>
+<p>Use this token to access the HTTP API:</p>
+<p>1067765083:AAFjONxxx-F2Y6IRSxxxxxVAAgRxxx89MXpk</p>
+<p>Keep your token secure and store it safely, it can be used by anyone to control your bot.</p>
+<p>For a description of the Bot API, see this page: <a href="https://core.telegram.org/bots/api" target="_blank" rel="noopener">https://core.telegram.org/bots/api</a></p>
+</blockquote>
+<p>由上面得到的<code>1067765083:AAFjONxxx-F2Y6x89MXpk</code> 格式的字符串为该 bot 的 token，发送信息需要这个 token ，要保存好，不要泄露出去。</p>
+<h4 id="6-得到自己的-chat-ID"><a href="#6-得到自己的-chat-ID" class="headerlink" title="6.得到自己的 chat ID"></a>6.得到自己的 chat ID</h4><p>telegram 中每个用户、频道、群组都会有一个 chat ID ，而 telegram bot 的 chat ID 就是你自己，也就是说，bot 机器人想你发送信息是通过你的 ID 来标识的，也可以将 bot 加入到频道或者群组中，向群组中发送信息。</p>
+<p>通过 <code>@getidsbot</code> 这个机器人来获取自己的 ID，ID 一般都是 6 开头的。</p>
+<p><img src="https://blog.502.li/img/image-20200102220002156.png" alt="image-20200102220002156"></p>
+<h4 id="7-和-bot-对话"><a href="#7-和-bot-对话" class="headerlink" title="7. 和 bot 对话"></a>7. 和 bot 对话</h4><p>这一步非常重要，当 bot 新建完成之后就点击你的 bot 链接，然后在点击下面的 start 按钮。你不点击 start 开始和 bot 会话的话，bot 是无法想你发送信息的。我就在这个坑里爬了很久😂</p>
+<p><img src="https://blog.502.li/img/image-20200102215325530.png" alt="image-20200102215325530"></p>
+<h4 id="7-构造-GET-请求"><a href="#7-构造-GET-请求" class="headerlink" title="7.构造 GET 请求"></a>7.构造 GET 请求</h4><p>可以参考 telegram bot api 的官方文档<a href="https://core.telegram.org/bots/api" target="_blank" rel="noopener">Telegram Bot API</a></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">https:&#x2F;&#x2F;api.telegram.org&#x2F;bot（ 这里加上你的token ）&#x2F;sendMessage?chat_id&#x3D;66666666 &amp;text&#x3D;message</span><br></pre></td></tr></table></figure>
+<ul>
+<li>例如：</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">https:&#x2F;&#x2F;api.telegram.org&#x2F;bot1067796083:AAFjONLJ9-F2Y6IRSmQoBVAAgRhd589MXpk&#x2F;sendMessage?chat_id&#x3D;613640483&amp;text&#x3D;message</span><br></pre></td></tr></table></figure>
+<p>把这段 <code>url</code> 复制粘贴到浏览器测试一下即可，或者通过 <code>curl</code> &amp; <code>wget</code>命令也可以。看看你的 telegram 能否正常接受消息。如果出现的话，恭喜你成功了第一步😂</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="attr">"ok"</span>: <span class="literal">true</span>,</span><br><span class="line">  <span class="attr">"result"</span>: &#123;</span><br><span class="line">    <span class="attr">"message_id"</span>: <span class="number">2</span>,</span><br><span class="line">    <span class="attr">"from"</span>: &#123;</span><br><span class="line">      <span class="attr">"id"</span>: <span class="number">13</span>,</span><br><span class="line">      <span class="attr">"is_bot"</span>: <span class="literal">true</span>,</span><br><span class="line">      <span class="attr">"first_name"</span>: <span class="string">"linuxloginbot"</span>,</span><br><span class="line">      <span class="attr">"username"</span>: <span class="string">"linuxlogin_bot"</span></span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="attr">"chat"</span>: &#123;</span><br><span class="line">      <span class="attr">"id"</span>: <span class="number">13</span>,</span><br><span class="line">      <span class="attr">"first_name"</span>: <span class="string">"木子"</span>,</span><br><span class="line">      <span class="attr">"username"</span>: <span class="string">"muzi_ii"</span>,</span><br><span class="line">      <span class="attr">"type"</span>: <span class="string">"private"</span></span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="attr">"date"</span>: <span class="number">1577973988</span>,</span><br><span class="line">    <span class="attr">"text"</span>: <span class="string">"message"</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><img src="https://blog.502.li/img/image-20200102220642854.png" alt="image-20200102220642854"></p>
+<h4 id="8-用户登录后执行脚本"><a href="#8-用户登录后执行脚本" class="headerlink" title="8.用户登录后执行脚本"></a>8.用户登录后执行脚本</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#!/bin/bash</span></span><br><span class="line"><span class="comment"># filename: 00-ssh-login-alarm-telegram.sh</span></span><br><span class="line"><span class="comment"># date: 2019-12-18</span></span><br><span class="line"><span class="comment"># for: ssh login alarm to telegram</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># token 和 id 修改为自己的</span></span><br><span class="line">token=97xxx718:AAExExPY9zxxxxxQ0L7iA2MCGYRQ</span><br><span class="line">id=613420483</span><br><span class="line"></span><br><span class="line">message=$(hostname &amp;&amp; TZ=UTC-8 date &amp;&amp; who &amp;&amp; w | awk  <span class="string">'BEGIN&#123;OFS="\t"&#125;&#123;print $1,$8&#125;'</span>)</span><br><span class="line"></span><br><span class="line">curl -s <span class="string">"https://api.telegram.org/bot<span class="variable">$&#123;token&#125;</span>/sendMessage?chat_id=<span class="variable">$&#123;id&#125;</span>"</span> --data-binary <span class="string">"&amp;text=<span class="variable">$&#123;message&#125;</span>"</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>将该脚本放到 <code>/etc/profile.d/</code> 目录下，并 把该脚本的权限设置为<code>555</code> ，即任何用户都可执行。</li>
+<li><code>/etc/profile.d/</code> 下的脚本文件会在用户登录成功后自动执行，如还需要其他的操作追加在脚本里即可。</li>
+<li>message 需要传递的数据根据自身需求设定即可，通过 <code>&amp;&amp;</code>  将多个命令的执行结果传递到 message 变量。<code>hostname</code> 获取主机名，以区分多台服务器；<code>TZ=UTC-8 date</code> 来获取登录时刻的北京时间；<code>who</code> 用来获取当前用户和 IP 等信息；<code>w</code> 命令用于获取当前用户登录后执行的命令。</li>
+</ul>
+<h4 id="大功告成啦"><a href="#大功告成啦" class="headerlink" title="大功告成啦"></a>大功告成啦</h4><p>ssh 退出登录，测试一下😋</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">Oracle</span><br><span class="line">Thu Jan  2 22:23:33 UTC 2020</span><br><span class="line">ubuntu   pts/0        2020-01-02 09:23 (5.129.16.28)</span><br><span class="line">09:23:33 load</span><br><span class="line">USER WHAT</span><br><span class="line">ubuntu -bash</span><br></pre></td></tr></table></figure>
+<p><img src="https://blog.502.li/img/image-20200102222349027.png" alt="image-20200102222349027"></p>
+<h2 id="解锁其他功能？"><a href="#解锁其他功能？" class="headerlink" title="解锁其他功能？"></a>解锁其他功能？</h2><h3 id="监控某个端口是否存活"><a href="#监控某个端口是否存活" class="headerlink" title="监控某个端口是否存活"></a>监控某个端口是否存活</h3><p>这个适用于宿舍，比如，我的笔记本使用 frpc 和服务器端的 frps 保持长连接，如果我的笔记本被盗或者网络挂了，那么服务端的端口会 down 掉的，通过监控这个端口来判断笔记本的状态。只要笔记本和 frps 断掉就发送警报信息到 telegram。</p>
+<h3 id="发送-nginx-当日访问量最高的链接"><a href="#发送-nginx-当日访问量最高的链接" class="headerlink" title="发送 nginx 当日访问量最高的链接"></a>发送 nginx 当日访问量最高的链接</h3><p>因为不喜欢 Google Analytics 来在自己的博客上收集读者们的隐私数据，所以就自己手搓脚本，通过 nginx 日志来获取博客访问数据。简单粗暴😂</p>
+<h3 id="发送服务器监控信息"><a href="#发送服务器监控信息" class="headerlink" title="发送服务器监控信息"></a>发送服务器监控信息</h3><p>服务器磁盘满了；服务器被日了；服务器被 down 掉了……</p>
+    </div>
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/linux/" rel="tag"><i class="fa fa-tag"></i> linux</a>
+              <a href="/tags/telegram/" rel="tag"><i class="fa fa-tag"></i> telegram</a>
+          </div>
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/dockerfile-tips.html" rel="prev" title="Dockerfile 搓镜像的小技巧">
+      <i class="fa fa-chevron-left"></i> Dockerfile 搓镜像的小技巧
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/make-e-book-from-html.html" rel="next" title="网页小说制作 kindle 电子书">
+      网页小说制作 kindle 电子书 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+  </article>
+  </div>
+          </div>
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+        </div>
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#弄啥咧"><span class="nav-number">1.</span> <span class="nav-text">弄啥咧</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#通过-email"><span class="nav-number">1.1.</span> <span class="nav-text">通过 email</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#通过手机"><span class="nav-number">1.2.</span> <span class="nav-text">通过手机</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#通过-telegram-bot"><span class="nav-number">1.3.</span> <span class="nav-text">通过 telegram bot</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#怎么弄"><span class="nav-number">2.</span> <span class="nav-text">怎么弄</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#首先有个-telegram-账号"><span class="nav-number">2.1.</span> <span class="nav-text">首先有个 telegram 账号</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#注册-bot"><span class="nav-number">2.2.</span> <span class="nav-text">注册 bot</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-打开与-BotFather-的对话框"><span class="nav-number">2.2.1.</span> <span class="nav-text">1.打开与 @BotFather 的对话框</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-发送-start-开始会话"><span class="nav-number">2.2.2.</span> <span class="nav-text">2.发送&#x2F;start 开始会话</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-发送-newbot"><span class="nav-number">2.2.3.</span> <span class="nav-text">3.发送&#x2F;newbot</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-发送-Bot-的-name-和-username"><span class="nav-number">2.2.4.</span> <span class="nav-text">4.发送 Bot 的 name 和 username</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#5-得到-Bot-的-token，用于标识这个-Bot"><span class="nav-number">2.2.5.</span> <span class="nav-text">5.得到 Bot 的 token，用于标识这个 Bot</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#6-得到自己的-chat-ID"><span class="nav-number">2.2.6.</span> <span class="nav-text">6.得到自己的 chat ID</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#7-和-bot-对话"><span class="nav-number">2.2.7.</span> <span class="nav-text">7. 和 bot 对话</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#7-构造-GET-请求"><span class="nav-number">2.2.8.</span> <span class="nav-text">7.构造 GET 请求</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#8-用户登录后执行脚本"><span class="nav-number">2.2.9.</span> <span class="nav-text">8.用户登录后执行脚本</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#大功告成啦"><span class="nav-number">2.2.10.</span> <span class="nav-text">大功告成啦</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#解锁其他功能？"><span class="nav-number">3.</span> <span class="nav-text">解锁其他功能？</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#监控某个端口是否存活"><span class="nav-number">3.1.</span> <span class="nav-text">监控某个端口是否存活</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#发送-nginx-当日访问量最高的链接"><span class="nav-number">3.2.</span> <span class="nav-text">发送 nginx 当日访问量最高的链接</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#发送服务器监控信息"><span class="nav-number">3.3.</span> <span class="nav-text">发送服务器监控信息</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木子"
+      src="https://blog.502.li/favicon.ico">
+  <p class="site-author-name" itemprop="name">木子</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">65</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">72</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/muzi502" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;muzi502" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:blog@502.li" title="E-Mail → mailto:blog@502.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://twitter.com/muzi_ii" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;muzi_ii" rel="noopener" target="_blank"><i class="fa fa-fw fa-twitter"></i>Twitter</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://t.me/muzi_ii" title="Telegram → https:&#x2F;&#x2F;t.me&#x2F;muzi_ii" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Telegram</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://kindle.502.li/" title="Kindle → https:&#x2F;&#x2F;kindle.502.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-book"></i>Kindle</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://https//t.me/rss_kubernetes" title="Channel → https:&#x2F;&#x2F;https:&#x2F;&#x2F;t.me&#x2F;rss_kubernetes" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Channel</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-fw fa-rss"></i>RSS</a>
+      </span>
+  </div>
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+      </div>
+    </main>
+    <footer class="footer">
+      <div class="footer-inner">
+<div class="copyright">
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木子</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">793k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">22:02</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">主题 – <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a>
+  </div>
+      </div>
+    </footer>
+  </div>
+  <script src="/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script>
+<script src="/js/schemes/pisces.js"></script>
+<script src="/js/next-boot.js"></script>
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://muzi.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: {page: {
+            url: "https://blog.502.li/linux-login-alarm-telegram.html",
+            identifier: "linux-login-alarm-telegram.html",
+            title: "VPS 安全加固之用户登录后向 telegram 发送登录信息"
+          }
+        }
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://muzi.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+</body>
+</html>

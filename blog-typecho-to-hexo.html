@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon.ico">
+  <link rel="mask-icon" href="/favicon.ico" color="#222">
+<link rel="stylesheet" href="/css/main.css">
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Roboto Mono:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://blog.502.li').hostname,
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":true,"scrollpercent":true},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"buttons","active":null,"storage":true,"lazyload":true,"nav":{"disqus":{"text":"Load Disqus","order":-1}}},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":false,"async":true,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+  <meta name="description" content="Typecho年初的时候终于把博客写了起来，到现在也水了大概 50 篇博客文章。大一大二的时候也整个，当时还是使用 Wordpress ，只是玩心太重没能坚持下来写。直到毕业后找到了第一份工作，955 工作制，才有时间精心打理这个博客。 博客使用的是  NexT.Mist 的主题 ，不得不说 NexT.Mist  主题是我用过的 typecho 里面最好的主题，没有之一。我拿来后经过大刀阔斧地删除">
+<meta property="og:type" content="article">
+<meta property="og:title" content="博客从 typecho 迁移到 hexo">
+<meta property="og:url" content="https://blog.502.li/blog-typecho-to-hexo.html">
+<meta property="og:site_name" content="木子">
+<meta property="og:description" content="Typecho年初的时候终于把博客写了起来，到现在也水了大概 50 篇博客文章。大一大二的时候也整个，当时还是使用 Wordpress ，只是玩心太重没能坚持下来写。直到毕业后找到了第一份工作，955 工作制，才有时间精心打理这个博客。 博客使用的是  NexT.Mist 的主题 ，不得不说 NexT.Mist  主题是我用过的 typecho 里面最好的主题，没有之一。我拿来后经过大刀阔斧地删除">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://blog.502.li/img/image-20191121112230084.png">
+<meta property="og:image" content="https://blog.502.li/img/image-20191121112335945.png">
+<meta property="og:image" content="https://blog.502.li/img/image-20191121112940929.png">
+<meta property="og:image" content="https://blog.502.li/img/image-20191121132219406.png">
+<meta property="og:image" content="https://blog.502.li/img/image-20191121112120336.png">
+<meta property="og:image" content="https://blog.502.li/img/image-20191121112401015.png">
+<meta property="article:published_time" content="2019-11-20T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-02-23T02:38:57.276Z">
+<meta property="article:author" content="木子">
+<meta property="article:tag" content="typecho">
+<meta property="article:tag" content="blog">
+<meta property="article:tag" content="hexo">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog.502.li/img/image-20191121112230084.png">
+<link rel="canonical" href="https://blog.502.li/blog-typecho-to-hexo.html">
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+  <title>博客从 typecho 迁移到 hexo | 木子</title>
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+<link rel="alternate" href="/atom.xml" title="木子" type="application/atom+xml">
+</head>
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">木子</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+    <a href="/" rel="section"><i class="fa fa-fw fa-desktop"></i>Home</a>
+  </li>
+        <li class="menu-item menu-item-books">
+    <a href="/booklist.html" rel="section"><i class="fa fa-fw fa-book"></i>Books</a>
+  </li>
+        <li class="menu-item menu-item-kindle">
+    <a href="https://kindle.502.li/" rel="noopener" target="_blank"><i class="fa fa-fw fa-book"></i>Kindle</a>
+  </li>
+        <li class="menu-item menu-item-friend">
+    <a href="/link/" rel="section"><i class="fa fa-fw fa-link"></i>Friend</a>
+  </li>
+        <li class="menu-item menu-item-about">
+    <a href="/about.html" rel="section"><i class="fa fa-fw fa-user-circle-o"></i>About</a>
+  </li>
+  </ul>
+</nav>
+</div>
+    </header>
+  <div class="reading-progress-bar"></div>
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div class="content">
+  <div class="posts-expand">
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.502.li/blog-typecho-to-hexo.html">
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://blog.502.li/favicon.ico">
+      <meta itemprop="name" content="木子">
+      <meta itemprop="description" content="">
+    </span>
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木子">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          博客从 typecho 迁移到 hexo
+        </h1>
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              <time title="创建时间：2019-11-21 2019-11-21T00:00:00+08:00" itemprop="dateCreated datePublished" datetime="2019-11-21T00:00:00+08:00">2019-11-21</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-02-23 2020-02-23T10:38:57+08:00" itemprop="dateModified" datetime="2020-02-23T10:38:57+08:00">2020-02-23</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%8A%80%E6%9C%AF/" itemprop="url" rel="index">
+                    <span itemprop="name">技术</span>
+                  </a>
+                </span>
+            </span>
+  <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-comment-o"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    <a title="disqus" href="/blog-typecho-to-hexo.html#comments" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="blog-typecho-to-hexo.html" itemprop="commentCount"></span>
+    </a>
+  </span>
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>2.4k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>4 分钟</span>
+            </span>
+        </div>
+      </header>
+    <div class="post-body" itemprop="articleBody">
+        <h2 id="Typecho"><a href="#Typecho" class="headerlink" title="Typecho"></a>Typecho</h2><p>年初的时候终于把博客写了起来，到现在也水了大概 50 篇博客文章。大一大二的时候也整个，当时还是使用 Wordpress ，只是玩心太重没能坚持下来写。直到毕业后找到了第一份工作，955 工作制，才有时间精心打理这个博客。</p>
+<p>博客使用的是  <a href="https://github.com/zgq354/typecho-theme-next" target="_blank" rel="noopener">NexT.Mist</a> 的主题 ，不得不说 <a href="https://github.com/zgq354/typecho-theme-next" target="_blank" rel="noopener">NexT.Mist</a>  主题是我用过的 typecho 里面最好的主题，没有之一。我拿来后经过大刀阔斧地删除了很多无用的内容，并把归档设置为首页。能精简的就精简掉，没有花里胡哨的花架子。但也有一些缺点，比如：对中文排版不够好，我希望二级标题三级标题还有引用等能呈现的突兀一些，尤其是在移动端的时候，三级标题以及四级标题几乎和正文一样了；代码高亮字体太小，不美观。</p>
+<p><img src="https://blog.502.li/img/image-20191121112230084.png" alt="首页很精简"></p>
+<p><img src="https://blog.502.li/img/image-20191121112335945.png" alt="中文排版多级标题很差"></p>
+<p><img src="https://blog.502.li/img/image-20191121112940929.png" alt="代码高亮字体太小"></p>
+<h2 id="hugo"><a href="#hugo" class="headerlink" title="hugo"></a>hugo</h2><p>期间也折腾了 hugo，但 hugo 的主题没有找到像 next 一样的，很僵硬。不过我平时写文档最后还是喜欢用  hugo 来生成。或者用 Typora 导出 PDF 然后上交给领导😂。在我看来 hugo 最大的优势就是精简和极速。就单单一个 hugo 二进制可执行文件即可创建站点，不像 hexo 那样要依赖上千的包和上万个文件。hugo 的这一点比 hexo 高到不知道哪里去了😂。</p>
+<h2 id="hexo"><a href="#hexo" class="headerlink" title="hexo"></a>hexo</h2><p>感觉 hexo 的主题无论是在数量还是质量抑或是美学上不知道比 hugo 高到不知到哪里去了😂</p>
+<p>无意间在发现了  <a href="https://www.elietio.xyz/" target="_blank" rel="noopener">零の轨迹</a>  的博客，使用的也是   <a href="https://theme-next.org/" target="_blank" rel="noopener">NexT.Gemini</a>  主题，主题很符合我的期望，遂采用了   <a href="https://theme-next.org/" target="_blank" rel="noopener">NexT.Gemini</a>  主题。克隆下来博主的 <a href="https://github.com/Elietio/Elietio.github.io" target="_blank" rel="noopener">Elietio.github.io</a> repo 就撸起袖子加油干。</p>
+<h3 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h3><p> 网上类似的教程一搜一大把，写得其实很详细 。由于 hexo 是使用 nodejs 开发，所以需要装 nodejs 以及 nodejs 的包管理器 yarn，不推荐用 npm。我的环境是 Debian 10。debian 10 上已经有 nodejs 的包了，所以直接 apt 一把梭就 ok </p>
+<blockquote>
+<p> 官方是使用 npm 进行安装，个人推荐使用 <a href="https://yarnpkg.com/zh-Hans/" target="_blank" rel="noopener">yarn</a> 进行安装，关于 yarn 和 npm 优劣分析，可以参考这篇文章《<a href="http://web.jobbole.com/88459/" target="_blank" rel="noopener">Yarn vs npm: 你需要知道的一切</a>》 </p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 添加 nodejs 包管理器 yarn 的源</span></span><br><span class="line">curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -</span><br><span class="line"><span class="built_in">echo</span> <span class="string">"deb https://dl.yarnpkg.com/debian/ stable main"</span> | sudo tee /etc/apt/sources.list.d/yarn.list</span><br><span class="line">sudo apt update &amp;&amp; sudo apt install yarn</span><br><span class="line"><span class="comment"># 安装 hexo</span></span><br><span class="line">yarn global add hexo-cli</span><br><span class="line">git <span class="built_in">clone</span> https://github.com/Elietio/Elietio.github.io hexo</span><br><span class="line"><span class="built_in">cd</span> hexo</span><br><span class="line">git checkout hexo</span><br><span class="line">yarn install</span><br><span class="line">hexo g</span><br></pre></td></tr></table></figure>
+<h3 id="精简"><a href="#精简" class="headerlink" title="精简"></a>精简</h3><p>使用 yarn 安装完依赖后，原项目太臃肿了，还是第一次见人把 models 放进 git repo 里的😂。咱就精简一下吧，去掉那些花里胡哨的东西，四博客更加轻量和精简。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">8.0K    _config.yml</span><br><span class="line">4.0K    gulpfile.js</span><br><span class="line">34M     live2d_models</span><br><span class="line">86M     node_modules</span><br><span class="line">4.0K    package.json</span><br><span class="line">368K    package-lock.json</span><br><span class="line">4.0K    README.md</span><br><span class="line">1.0K    scaffolds</span><br><span class="line">1.4M    <span class="built_in">source</span></span><br><span class="line">7.4M    themes</span><br><span class="line">260K    yarn.lock</span><br></pre></td></tr></table></figure>
+<h3 id="精简第三方插件"><a href="#精简第三方插件" class="headerlink" title="精简第三方插件"></a>精简第三方插件</h3><p>第三方插件装在了 <code>themes/next/source/lib</code> ，有很多我不需要的。所以需要一个一个精简掉。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">3.8M    algolia-instant-search   <span class="comment"># 站内搜索</span></span><br><span class="line">20K     canvas-nest              <span class="comment"># 绘画</span></span><br><span class="line">16K     canvas-ribbon            <span class="comment"># 绘画</span></span><br><span class="line">436K    font-awesome             <span class="comment"># 字体</span></span><br><span class="line">84K     jquery</span><br><span class="line">84K     needsharebutton          <span class="comment"># 分享</span></span><br><span class="line">77K     pace                     <span class="comment"># 加载图标</span></span><br><span class="line">649K    three                    <span class="comment"># 3D</span></span><br><span class="line">304K    velocity                 <span class="comment"># 异步加载库</span></span><br></pre></td></tr></table></figure>
+<h4 id="精简后"><a href="#精简后" class="headerlink" title="精简后"></a>精简后</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">432K    font-awesome</span><br><span class="line">84K     jquery</span><br><span class="line">24K     jquery_lazyload</span><br></pre></td></tr></table></figure>
+<p>最后我只保留了字体和  jQuery 以及装了个 <code>jquery_lazyload</code> 用来延迟加载大量的图片文件。</p>
+<p>同时在 <code>layout</code> 目录里的文件也精简掉了很多，去掉了看板娘、分享、赞赏、热度、加载进度条等花里胡哨的东西。对于我来说只追求文章内容的排版，这一堆幺蛾子没啥用，都是一堆花架子。</p>
+<h3 id="fuck-baidu"><a href="#fuck-baidu" class="headerlink" title="fuck baidu"></a>fuck baidu</h3><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># sitemap</span></span><br><span class="line"><span class="attr">sitemap:</span></span><br><span class="line">  <span class="attr">path:</span> <span class="string">sitemap.xml</span></span><br><span class="line"><span class="attr">baidusitemap:</span></span><br><span class="line">  <span class="attr">path:</span> <span class="string">baidusitemap.xml</span></span><br></pre></td></tr></table></figure>
+<p>原项目里使用的 <code>baidusitemap.xml</code> ，对于咱这种对 baidu 恨之入骨的人来说当人是无法忍受的了，所以就关键字搜索 baidu ，干掉了所有与百度相关的代码。</p>
+<p><img src="https://blog.502.li/img/image-20191121132219406.png" alt="image-20191121132219406"></p>
+<h2 id="精简后-1"><a href="#精简后-1" class="headerlink" title="精简后"></a>精简后</h2><p>经过四个多小时的精简终于达到了我所满足的地步，文件数量以及静态文件也比自带的减少一倍，在 Google page test 都能达到 92 分，如果加上 CDN 的话分还能再高一些。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">1.0K    bower.json</span><br><span class="line">36K     _config.yml</span><br><span class="line">0       crowdin.yml</span><br><span class="line">4.0K    gulpfile.coffee</span><br><span class="line">72K     languages</span><br><span class="line">159K    layout</span><br><span class="line">4.0K    LICENSE.md</span><br><span class="line">4.0K    package.json</span><br><span class="line">32K     README.md</span><br><span class="line">94K     scripts</span><br><span class="line">868K    <span class="built_in">source</span></span><br></pre></td></tr></table></figure>
+<h2 id="效果图"><a href="#效果图" class="headerlink" title="效果图"></a>效果图</h2><p><img src="https://blog.502.li/img/image-20191121112120336.png" alt="image-20191121112120336"></p>
+<p><img src="https://blog.502.li/img/image-20191121112401015.png" alt="目录和多级标题很nice"></p>
+<p>  <a href="https://theme-next.org/" target="_blank" rel="noopener">NexT.Gemini</a>  主题的引用部分背景色好评，用来提醒读者我是<del>引用</del>剽窃别人的还是不错滴😂，我倒是喜欢用 <code>剽窃</code>二字替代<code>引用</code>，用来自嘲自己知识水平不足只能靠剽窃😀。</p>
+<h2 id="后续"><a href="#后续" class="headerlink" title="后续"></a>后续</h2><p>后续尝试着把目前在使用的 hexo 主题 移植到 hugo 上，对于这种菜鸡运维来说还是挺难的。</p>
+    </div>
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/typecho/" rel="tag"><i class="fa fa-tag"></i> typecho</a>
+              <a href="/tags/blog/" rel="tag"><i class="fa fa-tag"></i> blog</a>
+              <a href="/tags/hexo/" rel="tag"><i class="fa fa-tag"></i> hexo</a>
+          </div>
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/amusing-ourselves-to-death-reading-notes.html" rel="prev" title="娱乐至死 | 如何远离手机 | 阅读">
+      <i class="fa fa-chevron-left"></i> 娱乐至死 | 如何远离手机 | 阅读
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/Kindle-Oasis2-vs-Paperwhite3.html" rel="next" title="Kindle Oasis 和 Kindle Paperwhite3 使用体验">
+      Kindle Oasis 和 Kindle Paperwhite3 使用体验 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+  </article>
+  </div>
+          </div>
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+        </div>
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Typecho"><span class="nav-number">1.</span> <span class="nav-text">Typecho</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#hugo"><span class="nav-number">2.</span> <span class="nav-text">hugo</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#hexo"><span class="nav-number">3.</span> <span class="nav-text">hexo</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#安装"><span class="nav-number">3.1.</span> <span class="nav-text">安装</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#精简"><span class="nav-number">3.2.</span> <span class="nav-text">精简</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#精简第三方插件"><span class="nav-number">3.3.</span> <span class="nav-text">精简第三方插件</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#精简后"><span class="nav-number">3.3.1.</span> <span class="nav-text">精简后</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#fuck-baidu"><span class="nav-number">3.4.</span> <span class="nav-text">fuck baidu</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#精简后-1"><span class="nav-number">4.</span> <span class="nav-text">精简后</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#效果图"><span class="nav-number">5.</span> <span class="nav-text">效果图</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#后续"><span class="nav-number">6.</span> <span class="nav-text">后续</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木子"
+      src="https://blog.502.li/favicon.ico">
+  <p class="site-author-name" itemprop="name">木子</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">65</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">72</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/muzi502" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;muzi502" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:blog@502.li" title="E-Mail → mailto:blog@502.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://twitter.com/muzi_ii" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;muzi_ii" rel="noopener" target="_blank"><i class="fa fa-fw fa-twitter"></i>Twitter</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://t.me/muzi_ii" title="Telegram → https:&#x2F;&#x2F;t.me&#x2F;muzi_ii" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Telegram</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://kindle.502.li/" title="Kindle → https:&#x2F;&#x2F;kindle.502.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-book"></i>Kindle</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://https//t.me/rss_kubernetes" title="Channel → https:&#x2F;&#x2F;https:&#x2F;&#x2F;t.me&#x2F;rss_kubernetes" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Channel</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-fw fa-rss"></i>RSS</a>
+      </span>
+  </div>
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+      </div>
+    </main>
+    <footer class="footer">
+      <div class="footer-inner">
+<div class="copyright">
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木子</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">793k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">22:02</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">主题 – <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a>
+  </div>
+      </div>
+    </footer>
+  </div>
+  <script src="/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script>
+<script src="/js/schemes/pisces.js"></script>
+<script src="/js/next-boot.js"></script>
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://muzi.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: {page: {
+            url: "https://blog.502.li/blog-typecho-to-hexo.html",
+            identifier: "blog-typecho-to-hexo.html",
+            title: "博客从 typecho 迁移到 hexo"
+          }
+        }
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://muzi.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+</body>
+</html>

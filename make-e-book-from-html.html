@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon.ico">
+  <link rel="mask-icon" href="/favicon.ico" color="#222">
+<link rel="stylesheet" href="/css/main.css">
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Roboto Mono:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://blog.502.li').hostname,
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":true,"scrollpercent":true},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"buttons","active":null,"storage":true,"lazyload":true,"nav":{"disqus":{"text":"Load Disqus","order":-1}}},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":false,"async":true,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+  <meta name="description" content="弄啥咧上个月看完了心理测量者动画第一季和第二季，剧场版还有刚刚完结的第三季。看完之后对这部作品想更加深入地了解一下。对反乌托邦题材的作品也更加感兴趣了，就像之前看的《1984》、《美丽新世界》等等。综合最近读过的书，以及生活中的遭遇，准备写一篇万字左右的感想。（:又挖坑啦😂 去亚马逊 kindle 商店里找了找并没有中文版，搜了一下貌似也没与找到纸质出版的中文版。读原文是不可能的啦，日本语苦手�">
+<meta property="og:type" content="article">
+<meta property="og:title" content="网页小说制作 kindle 电子书">
+<meta property="og:url" content="https://blog.502.li/make-e-book-from-html.html">
+<meta property="og:site_name" content="木子">
+<meta property="og:description" content="弄啥咧上个月看完了心理测量者动画第一季和第二季，剧场版还有刚刚完结的第三季。看完之后对这部作品想更加深入地了解一下。对反乌托邦题材的作品也更加感兴趣了，就像之前看的《1984》、《美丽新世界》等等。综合最近读过的书，以及生活中的遭遇，准备写一篇万字左右的感想。（:又挖坑啦😂 去亚马逊 kindle 商店里找了找并没有中文版，搜了一下貌似也没与找到纸质出版的中文版。读原文是不可能的啦，日本语苦手�">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://blog.502.li/img/image-20200103094338061.png">
+<meta property="og:image" content="https://blog.502.li/img/image-20200103095824495.png">
+<meta property="og:image" content="https://blog.502.li/img/image-20200103100302697.png">
+<meta property="og:image" content="https://blog.502.li/img/image-20200103103719653.png">
+<meta property="og:image" content="https://blog.502.li/img/image-20200103104121602.png">
+<meta property="og:image" content="https://blog.502.li/img/image-20200103105014635.png">
+<meta property="og:image" content="https://blog.502.li/img/image-20200103105027192.png">
+<meta property="og:image" content="https://blog.502.li/img/image-20200103105034243.png">
+<meta property="og:image" content="https://blog.502.li/img/image-20200103104618047.png">
+<meta property="article:published_time" content="2020-01-03T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-02-23T02:38:57.320Z">
+<meta property="article:author" content="木子">
+<meta property="article:tag" content="kindle">
+<meta property="article:tag" content="电子书">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog.502.li/img/image-20200103094338061.png">
+<link rel="canonical" href="https://blog.502.li/make-e-book-from-html.html">
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+  <title>网页小说制作 kindle 电子书 | 木子</title>
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+<link rel="alternate" href="/atom.xml" title="木子" type="application/atom+xml">
+</head>
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">木子</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+    <a href="/" rel="section"><i class="fa fa-fw fa-desktop"></i>Home</a>
+  </li>
+        <li class="menu-item menu-item-books">
+    <a href="/booklist.html" rel="section"><i class="fa fa-fw fa-book"></i>Books</a>
+  </li>
+        <li class="menu-item menu-item-kindle">
+    <a href="https://kindle.502.li/" rel="noopener" target="_blank"><i class="fa fa-fw fa-book"></i>Kindle</a>
+  </li>
+        <li class="menu-item menu-item-friend">
+    <a href="/link/" rel="section"><i class="fa fa-fw fa-link"></i>Friend</a>
+  </li>
+        <li class="menu-item menu-item-about">
+    <a href="/about.html" rel="section"><i class="fa fa-fw fa-user-circle-o"></i>About</a>
+  </li>
+  </ul>
+</nav>
+</div>
+    </header>
+  <div class="reading-progress-bar"></div>
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div class="content">
+  <div class="posts-expand">
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.502.li/make-e-book-from-html.html">
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://blog.502.li/favicon.ico">
+      <meta itemprop="name" content="木子">
+      <meta itemprop="description" content="">
+    </span>
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木子">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          网页小说制作 kindle 电子书
+        </h1>
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              <time title="创建时间：2020-01-04 2020-01-04T00:00:00+08:00" itemprop="dateCreated datePublished" datetime="2020-01-04T00:00:00+08:00">2020-01-04</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-02-23 2020-02-23T10:38:57+08:00" itemprop="dateModified" datetime="2020-02-23T10:38:57+08:00">2020-02-23</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%B7%A5%E5%85%B7/" itemprop="url" rel="index">
+                    <span itemprop="name">工具</span>
+                  </a>
+                </span>
+            </span>
+  <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-comment-o"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    <a title="disqus" href="/make-e-book-from-html.html#comments" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="make-e-book-from-html.html" itemprop="commentCount"></span>
+    </a>
+  </span>
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>7.5k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>12 分钟</span>
+            </span>
+        </div>
+      </header>
+    <div class="post-body" itemprop="articleBody">
+        <h2 id="弄啥咧"><a href="#弄啥咧" class="headerlink" title="弄啥咧"></a>弄啥咧</h2><p>上个月看完了<a href="https://zh.wikipedia.org/zh/PSYCHO-PASS" target="_blank" rel="noopener">心理测量者</a>动画第一季和第二季，剧场版还有刚刚完结的第三季。看完之后对这部作品想更加深入地了解一下。对反乌托邦题材的作品也更加感兴趣了，就像之前看的《1984》、《美丽新世界》等等。综合最近读过的书，以及生活中的遭遇，准备写一篇万字左右的感想。（:又挖坑啦😂</p>
+<p>去亚马逊 kindle 商店里找了找并没有中文版，搜了一下貌似也没与找到纸质出版的中文版。读原文是不可能的啦，日本语苦手😂。只能去找现有的资源了，在 <a href="http://www.qinxiaoshuo.com/book/PSYCHO-PASS心理测量者" target="_blank" rel="noopener">亲小说</a> 网站上找到了资源😂，但并没有下载全文的选项，对于咱这种靠技术搬砖的社畜来讲，还是拒绝当伸手党，把这些文本抓取下来，自己制作一个 mobi 格式的电子书看吧。</p>
+<p><img src="https://blog.502.li/img/image-20200103094338061.png" alt="image-20200103094338061"></p>
+<p>看了一下，心理测量者这本书的 <a href="http://www.qinxiaoshuo.com/book/PSYCHO-PASS心理测量者" target="_blank" rel="noopener">目录页面</a> 包含了所有的章节，就想到了大致思路。</p>
+<ul>
+<li>从这本书的目录页面过滤出来所有章节的 URL</li>
+<li>分析各个章节的源码，过滤出中文小说文本内容</li>
+<li>shell 脚本 for 循环，通过 curl 遍历上一步获取到的 URL ，通过关键字过滤出中文文本</li>
+<li>获取完全部章节的文本之后，分析一下文本，添加 <code>&lt;h2&gt;</code> 标签二级标题，方便生成目录</li>
+<li>完成上述步骤后，生成的文本中还有大量的 html 标签没有去除，需要使用 <code>pandoc</code> 转 <code>.docx</code>，或者转成 <code>markdown</code>来把<code>&lt;br/&gt;</code> 换行符以及 <code>&lt;p&gt;</code> 标签去除掉换成 <code>\n</code> 换行符。</li>
+<li>最终得到 <code>.docx</code> 之后，使用 <code>Calibre</code> 将 <code>.docx</code> 转换成 Kindle 支持的 <code>mobi</code> 格式</li>
+</ul>
+<h2 id="怎么弄"><a href="#怎么弄" class="headerlink" title="怎么弄"></a>怎么弄</h2><h3 id="获取各章节的-URL"><a href="#获取各章节的-URL" class="headerlink" title="获取各章节的 URL"></a>获取各章节的 URL</h3><ul>
+<li><code>ctrl + s</code> 另保存 <code>pass.html</code> 这个目录页的源代码，拿到这个页面的源代码之后，仔细分析一下，可以看到，这个页面的各个章节还是比较有规律的。通过简单的  grep 和 sed 替换就很轻松地把这些 URL 提取出来。</li>
+</ul>
+<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">div</span> <span class="attr">class</span>=<span class="string">"chapters"</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">a</span> <span class="attr">alt</span>=<span class="string">"序"</span> <span class="attr">href</span>=<span class="string">"http://www.qinxiaoshuo.com/read/0/1716/5d77d35056fec85e5b101448.html"</span>&gt;</span>序<span class="tag">&lt;/<span class="name">a</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">a</span> <span class="attr">alt</span>=<span class="string">"01 犯罪系数"</span> <span class="attr">href</span>=<span class="string">"http://www.qinxiaoshuo.com/read/0/1716/5d77d35156fec85e5b101449.html"</span>&gt;</span>01 犯罪系数<span class="tag">&lt;/<span class="name">a</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">a</span> <span class="attr">alt</span>=<span class="string">"02 有能者"</span> <span class="attr">href</span>=<span class="string">"http://www.qinxiaoshuo.com/read/0/1716/5d77d35156fec85e5b10144a.html"</span>&gt;</span>02 有能者<span class="tag">&lt;/<span class="name">a</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">a</span> <span class="attr">alt</span>=<span class="string">"03 饲育的作法"</span> <span class="attr">href</span>=<span class="string">"http://www.qinxiaoshuo.com/read/0/1716/5d77d35156fec85e5b10144b.html"</span>&gt;</span>03 饲育的作法<span class="tag">&lt;/<span class="name">a</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">a</span> <span class="attr">alt</span>=<span class="string">"04 谁都不知道的你的假面"</span> <span class="attr">href</span>=<span class="string">"http://www.qinxiaoshuo.com/read/0/1716/5d77d35156fec85e5b10144c.html"</span>&gt;</span>04 谁都不知道的你的假面<span class="tag">&lt;/<span class="name">a</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">a</span> <span class="attr">alt</span>=<span class="string">"05 无人知道的你的面孔"</span> <span class="attr">href</span>=<span class="string">"http://www.qinxiaoshuo.com/read/0/1716/5d77d35156fec85e5b10144d.html"</span>&gt;</span>05 无人知道的你的面孔<span class="tag">&lt;/<span class="name">a</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">a</span> <span class="attr">alt</span>=<span class="string">"06 狂王子的归还"</span> <span class="attr">href</span>=<span class="string">"http://www.qinxiaoshuo.com/read/0/1716/5d77d35156fec85e5b10144e.html"</span>&gt;</span>06 狂王子的归还<span class="tag">&lt;/<span class="name">a</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">a</span> <span class="attr">alt</span>=<span class="string">"07 紫兰的花语"</span> <span class="attr">href</span>=<span class="string">"http://www.qinxiaoshuo.com/read/0/1716/5d77d35256fec85e5b10144f.html"</span>&gt;</span>07 紫兰的花语<span class="tag">&lt;/<span class="name">a</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">a</span> <span class="attr">alt</span>=<span class="string">"08 之后是，沉默"</span> <span class="attr">href</span>=<span class="string">"http://www.qinxiaoshuo.com/read/0/1716/5d77d35256fec85e5b101450.html"</span>&gt;</span>08 之后是，沉默<span class="tag">&lt;/<span class="name">a</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">a</span> <span class="attr">alt</span>=<span class="string">"09 乐园的果实"</span> <span class="attr">href</span>=<span class="string">"http://www.qinxiaoshuo.com/read/0/1716/5d77d35256fec85e5b101451.html"</span>&gt;</span>09 乐园的果实<span class="tag">&lt;/<span class="name">a</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">a</span> <span class="attr">alt</span>=<span class="string">"10 玛土撒拉的游戏"</span> <span class="attr">href</span>=<span class="string">"http://www.qinxiaoshuo.com/read/0/1716/5d77d35256fec85e5b101452.html"</span>&gt;</span>10 玛土撒拉的游戏<span class="tag">&lt;/<span class="name">a</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">a</span> <span class="attr">alt</span>=<span class="string">"11 圣者的晚餐"</span> <span class="attr">href</span>=<span class="string">"http://www.qinxiaoshuo.com/read/0/1716/5d77d35256fec85e5b101453.html"</span>&gt;</span>11 圣者的晚餐<span class="tag">&lt;/<span class="name">a</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">div</span> <span class="attr">class</span>=<span class="string">"volume volume_close"</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">div</span> <span class="attr">class</span>=<span class="string">"volume_title"</span> <span class="attr">onclick</span>=<span class="string">"exchange_volume(this)"</span>&gt;</span></span><br><span class="line">第二卷 下</span><br><span class="line"><span class="tag">&lt;<span class="name">i</span> <span class="attr">class</span>=<span class="string">"volume_expand"</span>&gt;</span><span class="tag">&lt;/<span class="name">i</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">div</span> <span class="attr">class</span>=<span class="string">"volume_info"</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">img</span> <span class="attr">src</span>=<span class="string">"./PSYCHO-PASS心理测量者_轻小说在线阅读_亲小说网_files/1716.jpg"</span> <span class="attr">onerror</span>=<span class="string">"this.src=<span class="symbol">&amp;#39;</span>http:\/\/static.qinxiaoshuo.com:4000/bookimg/1716.jpg<span class="symbol">&amp;#39;</span>;this.onerror=null"</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">span</span>&gt;</span>第二卷 下<span class="tag">&lt;/<span class="name">span</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">div</span> <span class="attr">class</span>=<span class="string">"chapters"</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">a</span> <span class="attr">alt</span>=<span class="string">"XX 消逝的情人节"</span> <span class="attr">href</span>=<span class="string">"http://www.qinxiaoshuo.com/read/0/1716/5d77d35256fec85e5b101454.html"</span>&gt;</span>XX 消逝的情人节<span class="tag">&lt;/<span class="name">a</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">a</span> <span class="attr">alt</span>=<span class="string">"12 youthful days"</span> <span class="attr">href</span>=<span class="string">"http://www.qinxiaoshuo.com/read/0/1716/5d77d35256fec85e5b101455.html"</span>&gt;</span>12 youthful days<span class="tag">&lt;/<span class="name">a</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">a</span> <span class="attr">alt</span>=<span class="string">"13 深渊来的招待"</span> <span class="attr">href</span>=<span class="string">"http://www.qinxiaoshuo.com/read/0/1716/5d77d35356fec85e5b101456.html"</span>&gt;</span>13 深渊来的招待<span class="tag">&lt;/<span class="name">a</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">a</span> <span class="attr">alt</span>=<span class="string">"14 甜蜜的毒"</span> <span class="attr">href</span>=<span class="string">"http://www.qinxiaoshuo.com/read/0/1716/5d77d35356fec85e5b101457.html"</span>&gt;</span>14 甜蜜的毒<span class="tag">&lt;/<span class="name">a</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">a</span> <span class="attr">alt</span>=<span class="string">"15 硫磺洒落的城市"</span> <span class="attr">href</span>=<span class="string">"http://www.qinxiaoshuo.com/read/0/1716/5d77d35356fec85e5b101458.html"</span>&gt;</span>15 硫磺洒落的城市<span class="tag">&lt;/<span class="name">a</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">a</span> <span class="attr">alt</span>=<span class="string">"16 制裁之门"</span> <span class="attr">href</span>=<span class="string">"http://www.qinxiaoshuo.com/read/0/1716/5d77d35356fec85e5b101459.html"</span>&gt;</span>16 制裁之门<span class="tag">&lt;/<span class="name">a</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">a</span> <span class="attr">alt</span>=<span class="string">"17 铁石心肠"</span> <span class="attr">href</span>=<span class="string">"http://www.qinxiaoshuo.com/read/0/1716/5d77d35356fec85e5b10145a.html"</span>&gt;</span>17 铁石心肠<span class="tag">&lt;/<span class="name">a</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">a</span> <span class="attr">alt</span>=<span class="string">"18 无果之约"</span> <span class="attr">href</span>=<span class="string">"http://www.qinxiaoshuo.com/read/0/1716/5d77d35356fec85e5b10145b.html"</span>&gt;</span>18 无果之约<span class="tag">&lt;/<span class="name">a</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">a</span> <span class="attr">alt</span>=<span class="string">"19 透明的影"</span> <span class="attr">href</span>=<span class="string">"http://www.qinxiaoshuo.com/read/0/1716/5d77d35356fec85e5b10145c.html"</span>&gt;</span>19 透明的影<span class="tag">&lt;/<span class="name">a</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">a</span> <span class="attr">alt</span>=<span class="string">"20 正义所在"</span> <span class="attr">href</span>=<span class="string">"http://www.qinxiaoshuo.com/read/0/1716/5d77d35456fec85e5b10145d.html"</span>&gt;</span>20 正义所在<span class="tag">&lt;/<span class="name">a</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">a</span> <span class="attr">alt</span>=<span class="string">"21 血的褒奖"</span> <span class="attr">href</span>=<span class="string">"http://www.qinxiaoshuo.com/read/0/1716/5d77d35456fec85e5b10145e.html"</span>&gt;</span>21 血的褒奖<span class="tag">&lt;/<span class="name">a</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">a</span> <span class="attr">alt</span>=<span class="string">"22 完美的世界"</span> <span class="attr">href</span>=<span class="string">"http://www.qinxiaoshuo.com/read/0/1716/5d77d35456fec85e5b10145f.html"</span>&gt;</span>22 完美的世界<span class="tag">&lt;/<span class="name">a</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">a</span> <span class="attr">alt</span>=<span class="string">"尾声"</span> <span class="attr">href</span>=<span class="string">"http://www.qinxiaoshuo.com/read/0/1716/5d77d35456fec85e5b101460.html"</span>&gt;</span>尾声<span class="tag">&lt;/<span class="name">a</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">a</span> <span class="attr">alt</span>=<span class="string">"唐之杜志恩和六合冢弥生"</span> <span class="attr">href</span>=<span class="string">"http://www.qinxiaoshuo.com/read/0/1716/5d77d35456fec85e5b101461.html"</span>&gt;</span>唐之杜志恩和六合冢弥生<span class="tag">&lt;/<span class="name">a</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">a</span> <span class="attr">alt</span>=<span class="string">"涛声响彻的房间"</span> <span class="attr">href</span>=<span class="string">"http://www.qinxiaoshuo.com/read/0/1716/5d77d35456fec85e5b101462.html"</span>&gt;</span>涛声响彻的房间<span class="tag">&lt;/<span class="name">a</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>其中 <code>alt</code> 是过滤出每个章节 <code>URL</code> 行的关键字</li>
+<li>使用 <code>awk</code> 截取去掉 <code>html</code> 标签，只保留 <code>URL</code> </li>
+<li>其实应该用正则表达式来截取这些 URL ，哎咱太菜了，书到用时方恨少啊😥，正则不会 <code>awk</code> 来凑😂</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">grep alt pass.html | awk -F <span class="string">"href=\""</span> <span class="string">'&#123;print $2&#125;'</span>| awk -F <span class="string">"\""</span> <span class="string">'&#123;print $1&#125;'</span></span><br><span class="line">http://www.qinxiaoshuo.com/<span class="built_in">read</span>/0/1716/5d77d35056fec85e5b101448.html</span><br><span class="line">http://www.qinxiaoshuo.com/<span class="built_in">read</span>/0/1716/5d77d35156fec85e5b101449.html</span><br><span class="line">http://www.qinxiaoshuo.com/<span class="built_in">read</span>/0/1716/5d77d35156fec85e5b10144a.html</span><br><span class="line">http://www.qinxiaoshuo.com/<span class="built_in">read</span>/0/1716/5d77d35156fec85e5b10144b.html</span><br><span class="line">http://www.qinxiaoshuo.com/<span class="built_in">read</span>/0/1716/5d77d35156fec85e5b10144c.html</span><br><span class="line">http://www.qinxiaoshuo.com/<span class="built_in">read</span>/0/1716/5d77d35156fec85e5b10144d.html</span><br><span class="line">http://www.qinxiaoshuo.com/<span class="built_in">read</span>/0/1716/5d77d35156fec85e5b10144e.html</span><br><span class="line">http://www.qinxiaoshuo.com/<span class="built_in">read</span>/0/1716/5d77d35256fec85e5b10144f.html</span><br><span class="line">http://www.qinxiaoshuo.com/<span class="built_in">read</span>/0/1716/5d77d35256fec85e5b101450.html</span><br><span class="line">http://www.qinxiaoshuo.com/<span class="built_in">read</span>/0/1716/5d77d35256fec85e5b101451.html</span><br><span class="line">http://www.qinxiaoshuo.com/<span class="built_in">read</span>/0/1716/5d77d35256fec85e5b101452.html</span><br><span class="line">http://www.qinxiaoshuo.com/<span class="built_in">read</span>/0/1716/5d77d35256fec85e5b101453.html</span><br><span class="line">http://www.qinxiaoshuo.com/<span class="built_in">read</span>/0/1716/5d77d35256fec85e5b101454.html</span><br><span class="line">http://www.qinxiaoshuo.com/<span class="built_in">read</span>/0/1716/5d77d35256fec85e5b101455.html</span><br><span class="line">http://www.qinxiaoshuo.com/<span class="built_in">read</span>/0/1716/5d77d35356fec85e5b101456.html</span><br><span class="line">http://www.qinxiaoshuo.com/<span class="built_in">read</span>/0/1716/5d77d35356fec85e5b101457.html</span><br><span class="line">http://www.qinxiaoshuo.com/<span class="built_in">read</span>/0/1716/5d77d35356fec85e5b101458.html</span><br><span class="line">http://www.qinxiaoshuo.com/<span class="built_in">read</span>/0/1716/5d77d35356fec85e5b101459.html</span><br><span class="line">http://www.qinxiaoshuo.com/<span class="built_in">read</span>/0/1716/5d77d35356fec85e5b10145a.html</span><br><span class="line">http://www.qinxiaoshuo.com/<span class="built_in">read</span>/0/1716/5d77d35356fec85e5b10145b.html</span><br><span class="line">http://www.qinxiaoshuo.com/<span class="built_in">read</span>/0/1716/5d77d35356fec85e5b10145c.html</span><br><span class="line">http://www.qinxiaoshuo.com/<span class="built_in">read</span>/0/1716/5d77d35456fec85e5b10145d.html</span><br><span class="line">http://www.qinxiaoshuo.com/<span class="built_in">read</span>/0/1716/5d77d35456fec85e5b10145e.html</span><br><span class="line">http://www.qinxiaoshuo.com/<span class="built_in">read</span>/0/1716/5d77d35456fec85e5b10145f.html</span><br><span class="line">http://www.qinxiaoshuo.com/<span class="built_in">read</span>/0/1716/5d77d35456fec85e5b101460.html</span><br><span class="line">http://www.qinxiaoshuo.com/<span class="built_in">read</span>/0/1716/5d77d35456fec85e5b101461.html</span><br><span class="line">http://www.qinxiaoshuo.com/<span class="built_in">read</span>/0/1716/5d77d35456fec85e5b101462.html</span><br></pre></td></tr></table></figure>
+<h3 id="分析各个章节的源码"><a href="#分析各个章节的源码" class="headerlink" title="分析各个章节的源码"></a>分析各个章节的源码</h3><p><img src="https://blog.502.li/img/image-20200103095824495.png" alt="image-20200103095824495"></p>
+<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">div</span> <span class="attr">id</span>=<span class="string">"chapter_content"</span>&gt;</span></span><br><span class="line">            第一卷 上  序<span class="tag">&lt;<span class="name">br</span>/&gt;</span><span class="tag">&lt;<span class="name">br</span>/&gt;</span>网译版 转自 豆瓣()<span class="tag">&lt;<span class="name">br</span>/&gt;</span><span class="tag">&lt;<span class="name">br</span>/&gt;</span>翻译：クリーオウ<span class="tag">&lt;<span class="name">br</span>/&gt;</span><span class="tag">&lt;<span class="name">br</span>/&gt;</span>……………………</span><br><span class="line"><span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>可见，每个章节的中文文本，全部在 <code>&lt;div id=&quot;chapter_content&quot;&gt;</code> ，而且中文文本全部压缩在了一行里，可以通过 <code>&lt;br/&gt;&lt;br/&gt;</code> 这个关键字来过滤出这一行中文文本。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl http://www.qinxiaoshuo.com/<span class="built_in">read</span>/0/1716/5d77d35056fec85e5b101448.html | grep <span class="string">"&lt;br/&gt;&lt;br/&gt;"</span></span><br></pre></td></tr></table></figure>
+<p><img src="https://blog.502.li/img/image-20200103100302697.png" alt="image-20200103100302697"></p>
+<h3 id="遍历各个章节"><a href="#遍历各个章节" class="headerlink" title="遍历各个章节"></a>遍历各个章节</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">╭─root@debian ~/book</span><br><span class="line">╰─$ grep alt pass.html | awk -F <span class="string">"href=\""</span> <span class="string">'&#123;print $2&#125;'</span>| awk -F <span class="string">"\""</span> <span class="string">'&#123;print $1&#125;'</span>&gt; url.log</span><br><span class="line">╭─root@debian ~/book</span><br><span class="line">╰─$ <span class="keyword">for</span> url <span class="keyword">in</span> $(cat url.log);<span class="keyword">do</span> curl <span class="variable">$&#123;url&#125;</span> | grep <span class="string">"&lt;br/&gt;&lt;br/&gt;"</span> &gt;&gt; pass_book.html;<span class="keyword">done</span></span><br></pre></td></tr></table></figure>
+<h3 id="添加-lt-h2-gt-二级标题"><a href="#添加-lt-h2-gt-二级标题" class="headerlink" title="添加 &lt;h2&gt; 二级标题"></a>添加 <code>&lt;h2&gt;</code> 二级标题</h3><p>在每一行的行首添加一个 <code>&lt;h2&gt;</code> 标签，接着使用 sed 替换每一行第一个 <code>&lt;br/&gt;&lt;br/&gt;</code> 匹配项为 <code>&lt;h2/&gt;</code> 一定要添加闭合标签，不然的话在转换成 markdown 或者 .docx 时候会把这一整行当作二级标题。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sed -i <span class="string">'s/^/&lt;h2&gt;/g'</span> pass_book.html</span><br><span class="line">sed -i <span class="string">'s/&lt;br\/&gt;&lt;br\/&gt;/&lt;h2\/&gt;/'</span> pass_book.html</span><br></pre></td></tr></table></figure>
+<h3 id="转换为-markdown-格式"><a href="#转换为-markdown-格式" class="headerlink" title="转换为 markdown 格式"></a>转换为 markdown 格式</h3><p>使用 <code>pandoc</code> 转 <code>markdown</code> 的效果很不理想，其中有大量的 <code>\</code> 需要删除掉，还是转 .docx 的格式合适一些，而且 <code>Calibre</code> 也支持 <code>.docx</code> 格式</p>
+<p><img src="https://blog.502.li/img/image-20200103103719653.png" alt="image-20200103103719653"></p>
+<h3 id="转-mobi-格式"><a href="#转-mobi-格式" class="headerlink" title="转 mobi 格式"></a>转 mobi 格式</h3><p>打开 calibre 导入刚刚制作好的 .docx 文件，点击 <code>转换书籍</code> 那里，根据对应的设备设置好参数。</p>
+<p><img src="https://blog.502.li/img/image-20200103104121602.png" alt="image-20200103104121602"></p>
+<h3 id="制作完成"><a href="#制作完成" class="headerlink" title="制作完成"></a>制作完成</h3><p><img src="https://blog.502.li/img/image-20200103105014635.png" alt="image-20200103105014635"></p>
+<p><img src="https://blog.502.li/img/image-20200103105027192.png" alt="image-20200103105027192"></p>
+<p><img src="https://blog.502.li/img/image-20200103105034243.png" alt="image-20200103105034243"></p>
+<h3 id="效果"><a href="#效果" class="headerlink" title="效果"></a>效果</h3><p><img src="https://blog.502.li/img/image-20200103104618047.png" alt="image-20200103104618047"></p>
+<h3 id="注意事项"><a href="#注意事项" class="headerlink" title="注意事项"></a>注意事项</h3><ul>
+<li>由于总共文本有 20 万字，转换成 azw3 格式会卡死 kindle，不知道什么原因😥</li>
+<li>还有什么更好的办法评论区交流一哈😂</li>
+</ul>
+    </div>
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/kindle/" rel="tag"><i class="fa fa-tag"></i> kindle</a>
+              <a href="/tags/%E7%94%B5%E5%AD%90%E4%B9%A6/" rel="tag"><i class="fa fa-tag"></i> 电子书</a>
+          </div>
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/linux-login-alarm-telegram.html" rel="prev" title="VPS 安全加固之用户登录后向 telegram 发送登录信息">
+      <i class="fa fa-chevron-left"></i> VPS 安全加固之用户登录后向 telegram 发送登录信息
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/PSYCHO-PASS-booklist.html" rel="next" title="PSYCHO-PASS 心理测量者小说读后感">
+      PSYCHO-PASS 心理测量者小说读后感 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+  </article>
+  </div>
+          </div>
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+        </div>
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#弄啥咧"><span class="nav-number">1.</span> <span class="nav-text">弄啥咧</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#怎么弄"><span class="nav-number">2.</span> <span class="nav-text">怎么弄</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#获取各章节的-URL"><span class="nav-number">2.1.</span> <span class="nav-text">获取各章节的 URL</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#分析各个章节的源码"><span class="nav-number">2.2.</span> <span class="nav-text">分析各个章节的源码</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#遍历各个章节"><span class="nav-number">2.3.</span> <span class="nav-text">遍历各个章节</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#添加-lt-h2-gt-二级标题"><span class="nav-number">2.4.</span> <span class="nav-text">添加 &lt;h2&gt; 二级标题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#转换为-markdown-格式"><span class="nav-number">2.5.</span> <span class="nav-text">转换为 markdown 格式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#转-mobi-格式"><span class="nav-number">2.6.</span> <span class="nav-text">转 mobi 格式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#制作完成"><span class="nav-number">2.7.</span> <span class="nav-text">制作完成</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#效果"><span class="nav-number">2.8.</span> <span class="nav-text">效果</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#注意事项"><span class="nav-number">2.9.</span> <span class="nav-text">注意事项</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木子"
+      src="https://blog.502.li/favicon.ico">
+  <p class="site-author-name" itemprop="name">木子</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">65</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">72</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/muzi502" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;muzi502" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:blog@502.li" title="E-Mail → mailto:blog@502.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://twitter.com/muzi_ii" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;muzi_ii" rel="noopener" target="_blank"><i class="fa fa-fw fa-twitter"></i>Twitter</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://t.me/muzi_ii" title="Telegram → https:&#x2F;&#x2F;t.me&#x2F;muzi_ii" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Telegram</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://kindle.502.li/" title="Kindle → https:&#x2F;&#x2F;kindle.502.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-book"></i>Kindle</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://https//t.me/rss_kubernetes" title="Channel → https:&#x2F;&#x2F;https:&#x2F;&#x2F;t.me&#x2F;rss_kubernetes" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Channel</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-fw fa-rss"></i>RSS</a>
+      </span>
+  </div>
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+      </div>
+    </main>
+    <footer class="footer">
+      <div class="footer-inner">
+<div class="copyright">
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木子</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">793k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">22:02</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">主题 – <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a>
+  </div>
+      </div>
+    </footer>
+  </div>
+  <script src="/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script>
+<script src="/js/schemes/pisces.js"></script>
+<script src="/js/next-boot.js"></script>
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://muzi.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: {page: {
+            url: "https://blog.502.li/make-e-book-from-html.html",
+            identifier: "make-e-book-from-html.html",
+            title: "网页小说制作 kindle 电子书"
+          }
+        }
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://muzi.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+</body>
+</html>

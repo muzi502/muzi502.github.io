@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon.ico">
+  <link rel="mask-icon" href="/favicon.ico" color="#222">
+<link rel="stylesheet" href="/css/main.css">
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Roboto Mono:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://blog.502.li').hostname,
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":true,"scrollpercent":true},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"buttons","active":null,"storage":true,"lazyload":true,"nav":{"disqus":{"text":"Load Disqus","order":-1}}},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":false,"async":true,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+  <meta name="description" content="Oracle rips RedHat and ‘sort of’ launches a new Linux原文链接  今天看到推特上RedHat换了新的logo，不过还是那顶红帽子。其实RedHat曾经被Oracle绿过，换成绿帽子再适合不过了。😂即兴找了一下当年Oracle撕碎RedHat的报道文章。Oracle曾诚意满满地派了100多个程序员帮助红帽子公司开发RedHat Linux发行版，">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Oracle rips RedHat and &#39;sort of&#39; launches a new Linux">
+<meta property="og:url" content="https://blog.502.li/oracle-rips-redhat.html">
+<meta property="og:site_name" content="木子">
+<meta property="og:description" content="Oracle rips RedHat and ‘sort of’ launches a new Linux原文链接  今天看到推特上RedHat换了新的logo，不过还是那顶红帽子。其实RedHat曾经被Oracle绿过，换成绿帽子再适合不过了。😂即兴找了一下当年Oracle撕碎RedHat的报道文章。Oracle曾诚意满满地派了100多个程序员帮助红帽子公司开发RedHat Linux发行版，">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2019-05-02T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-02-23T02:38:57.264Z">
+<meta property="article:author" content="木子">
+<meta property="article:tag" content="Linux">
+<meta name="twitter:card" content="summary">
+<link rel="canonical" href="https://blog.502.li/oracle-rips-redhat.html">
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+  <title>Oracle rips RedHat and 'sort of' launches a new Linux | 木子</title>
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+<link rel="alternate" href="/atom.xml" title="木子" type="application/atom+xml">
+</head>
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">木子</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+    <a href="/" rel="section"><i class="fa fa-fw fa-desktop"></i>Home</a>
+  </li>
+        <li class="menu-item menu-item-books">
+    <a href="/booklist.html" rel="section"><i class="fa fa-fw fa-book"></i>Books</a>
+  </li>
+        <li class="menu-item menu-item-kindle">
+    <a href="https://kindle.502.li/" rel="noopener" target="_blank"><i class="fa fa-fw fa-book"></i>Kindle</a>
+  </li>
+        <li class="menu-item menu-item-friend">
+    <a href="/link/" rel="section"><i class="fa fa-fw fa-link"></i>Friend</a>
+  </li>
+        <li class="menu-item menu-item-about">
+    <a href="/about.html" rel="section"><i class="fa fa-fw fa-user-circle-o"></i>About</a>
+  </li>
+  </ul>
+</nav>
+</div>
+    </header>
+  <div class="reading-progress-bar"></div>
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div class="content">
+  <div class="posts-expand">
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.502.li/oracle-rips-redhat.html">
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://blog.502.li/favicon.ico">
+      <meta itemprop="name" content="木子">
+      <meta itemprop="description" content="">
+    </span>
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木子">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Oracle rips RedHat and 'sort of' launches a new Linux
+        </h1>
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              <time title="创建时间：2019-05-03 2019-05-03T00:00:00+08:00" itemprop="dateCreated datePublished" datetime="2019-05-03T00:00:00+08:00">2019-05-03</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-02-23 2020-02-23T10:38:57+08:00" itemprop="dateModified" datetime="2020-02-23T10:38:57+08:00">2020-02-23</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E4%BA%92%E8%81%94%E7%BD%91/" itemprop="url" rel="index">
+                    <span itemprop="name">互联网</span>
+                  </a>
+                </span>
+            </span>
+  <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-comment-o"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    <a title="disqus" href="/oracle-rips-redhat.html#comments" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="oracle-rips-redhat.html" itemprop="commentCount"></span>
+    </a>
+  </span>
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>4.1k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>7 分钟</span>
+            </span>
+        </div>
+      </header>
+    <div class="post-body" itemprop="articleBody">
+        <h2 id="Oracle-rips-RedHat-and-‘sort-of’-launches-a-new-Linux"><a href="#Oracle-rips-RedHat-and-‘sort-of’-launches-a-new-Linux" class="headerlink" title="Oracle rips RedHat and ‘sort of’ launches a new Linux"></a>Oracle rips RedHat and ‘sort of’ launches a new Linux</h2><p><a href="https://www.computerworld.com/article/2469218/oracle-rips-red-hat-and--sort-of--launches-a-new-linux.html" target="_blank" rel="noopener">原文链接</a></p>
+<hr>
+<p>今天看到推特上RedHat换了新的logo，不过还是那顶红帽子。其实RedHat曾经被Oracle绿过，换成绿帽子再适合不过了。😂<br>即兴找了一下当年Oracle撕碎RedHat的报道文章。<br>Oracle曾诚意满满地派了100多个程序员帮助红帽子公司开发RedHat Linux发行版，慢慢地Oracle公司的员工逐渐掌握了RedHat的开发，相当于把RedHat架空了。RedHat被绿了一把😂。后来Oracle推出了自己的Oracle Linux，接着收购SUN公司。拥有了硬件基础。自此Oracle从硬件到OS再到数据库都有了自己的产品。推出了Oracle一体机。<br>很难想象不可一世的RedHat被Oracle打趴在地。</p>
+<hr>
+<p><a href="http://www.oracle.com" target="_blank" rel="noopener">Oracle</a> made a weird announcement at its <a href="http://www.oracle.com/us/openworld/splash/index.html" target="_blank" rel="noopener">Oracle OpenWorld</a> love-fest and trade-show. The company announced that it was releasing its own Linux: the <a href="http://www.marketwatch.com/story/oracle-debuts-oracles-unbreakable-enterprise-kernel-for-oracle-linux-2010-09-20-111130" target="_blank" rel="noopener">Oracle’s Unbreakable Enterprise Kernel for Oracle Linux</a>.</p>
+<p>Funny, and I thought Larry Ellison already had his own Linux, <a href="http://practical-tech.com/uncategorized/oracles-red-hat-rip-off/" target="_blank" rel="noopener">Unbreakable Linux, which Oracle introduced not quite four-years ago</a>. Of course, <a href="http://www.oracle.com/us/technologies/linux/index.html" target="_blank" rel="noopener">Oracle Unbreakable Linux</a> wasn’t really Oracle’s Linux. It was <a href="http://www.RedHat.com" target="_blank" rel="noopener">RedHat</a>‘s <a href="http://www.RedHat.com/rhel" target="_blank" rel="noopener">RedHat Enterprise Linux (RHEL)</a> with an Oracle Linux logo pasted on the front.<br><strong>[ Find your 2017 salary info and our detailed report at <a href="http://www.computerworld.com/category/it-salary-watch/" target="_blank" rel="noopener">IT Salary Watch</a> ]</strong><br>But, this time, Oracle swears its new Oracle Linux is different. The company claims that it’s been optimized for Oracle software and hardware and that Unbreakable Enterprise Kernel is faster than RHEL To be precise, Oracle claims its more than 75 percent faster, as shown by Online Transaction Processing (OLTP) performance tests; 200 percent faster at <a href="http://www.infinibandta.org/" target="_blank" rel="noopener">InfiniBand</a> messaging; and is 137 percent faster at solid state disk access than a “RedHat Compatible Kernel.”</p>
+<p>Speaking as the guy who designed and ran the very <a href="http://practical-tech.com/infrastructure/linux-up-close-time-to-switch" target="_blank" rel="noopener">first Linux server benchmarks</a> back  in 1999, I’m not impressed by Oracle’s claims. An expert can make any operating system look like the greatest thing since sliced bread and its rival look like a two-day old dead dog.</p>
+<p>I’m sure on Sun/Oracle hardware, tuned Unbreakable Enterprise Kernel can beat un-tuned RHEL. So what? It will take more than Oracle’s employees claiming Oracle’s new Linux is great before I buy it.</p>
+<p>Oracle’s Unbreakable Enterprise Kernel for Oracle Linux–what a name!–is based on the stable 2.6.32 mainline Linux kernel. For some reason, a few idiots seem to think this represents a Linux fork. Nope. It doesn’t. When you get past all the hype, Oracle’s new Linux just a Linux distribution that’s been optimized for Sun/Oracle hardware. Specifically, Oracle sees this as their Linux for the company’s <a href="http://www.oracle.com/us/products/middleware/exalogic/index.html" target="_blank" rel="noopener">Oracle Exalogic Elastic Cloud</a> and high-end, <a href="http://practical-tech.com/infrastructure/numa-theory-and-practice" target="_blank" rel="noopener">Non-Uniform Memory Access (NUMA)</a> servers.<br><strong>[ <a href="https://pluralsight.pxf.io/c/321564/424552/7490?u=https%3A%2F%2Fwww.pluralsight.com%2Fpaths%2Fupgrading-your-technology-career" target="_blank" rel="noopener">Looking to upgrade your career in tech? This comprehensive online course teaches you how.</a> ]</strong><br>At the time though, according to Edward Scriven, Oracle’s Chief Corporate Architect, Oracle will continue to sell its RHEL-compatible Linux under the name Oracle Linux. Still, Oracle insists in its press release that “Existing Oracle Linux 5 and RedHat Enterprise Linux 5 customers can easily upgrade to the Unbreakable Enterprise Kernel. No reinstall of the operating system is required.”</p>
+<p>What’s more surprising is that Oracle also asserts that “Third-party applications that run on RHEL 5 should run unchanged on Oracle Linux with the Unbreakable Enterprise Kernel, while delivering significant performance and reliability improvements for end users.”</p>
+<p>So what the heck is Oracle Unbreakable Enterprise Kernel Linux? It sounds to me like it’s just Oracle-branded RHEL that been tuned up for Oracle’s hardware. Color me totally unimpressed.</p>
+<p>Oh, according to reports, <a href="http://www.informationweek.com/blog/main/archives/2010/09/larry_ellison_r.html" target="_blank" rel="noopener">Ellison claims that Oracle’s new Linux “will be more modern</a>, it won’t be four years behind the mainline, there’ll be lots of timely enhancements from Oracle and the Linux community, and it will deliver much better performance.”</p>
+<p>OK, riddle me this. How can you be bleeding edge, offer stability for high-end applications, and stay compatible with a Linux that you claim is four-years behind the time? The answer to this conundrum? You can’t.</p>
+<p>Ellison also said, “We [Oracle] spend a lot of time finding and fixing bugs in RedHat Linux, and we have no problem with that–we do that with lots of operating systems.”But sometimes when we fix a RedHat Linux bug, RedHat can take a very long time before making the fix. We’d fix the bug for our customers, and we’d send the bug off to RedHat for them to fix, and sometimes the fix would be made very quickly but sometimes not..</p>
+<p>Really? You could have fooled me. Both <a href="http://blogs.computerworld.com/14576/who_writes_linux_big_business" target="_blank" rel="noopener">RedHat and Oracle are leading Linux development companies</a>, and I’ve not noticed Oracle cleaning up RedHat’s messes. RedHat does just fine at cleaning up its own code thank you very much.</p>
+<p>My take away from Oracle’s announcement is that Ellison hasn’t been able to damage RedHat nearly as much as he wanted to. So, now he’s resorting to an announcement that’s more noise than news. Sorry Oracle, RHEL’s that been tuned for your hardware and software is interesting, but it’s not much of a new distribution and the way you’re presenting it will only confuse your customers.</p>
+<h2 id="quote"><a href="#quote" class="headerlink" title="quote"></a>quote</h2><p><a href="https://www.computerworld.com/article/2469218/oracle-rips-red-hat-and--sort-of--launches-a-new-linux.html" target="_blank" rel="noopener">原文链接</a><br><a href="https://liuyandong.com/2017/10/22/121/" target="_blank" rel="noopener">孤独的圣斗士————甲骨文的拉里•埃里森(下)</a></p>
+    </div>
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Linux/" rel="tag"><i class="fa fa-tag"></i> Linux</a>
+          </div>
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/ops36.html" rel="prev" title="高效运维社区分享系列.运维三十六计">
+      <i class="fa fa-chevron-left"></i> 高效运维社区分享系列.运维三十六计
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/zabbix-compose.html" rel="next" title="zabbix 监控服务">
+      zabbix 监控服务 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+  </article>
+  </div>
+          </div>
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+        </div>
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Oracle-rips-RedHat-and-‘sort-of’-launches-a-new-Linux"><span class="nav-number">1.</span> <span class="nav-text">Oracle rips RedHat and ‘sort of’ launches a new Linux</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#quote"><span class="nav-number">2.</span> <span class="nav-text">quote</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木子"
+      src="https://blog.502.li/favicon.ico">
+  <p class="site-author-name" itemprop="name">木子</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">65</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">72</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/muzi502" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;muzi502" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:blog@502.li" title="E-Mail → mailto:blog@502.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://twitter.com/muzi_ii" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;muzi_ii" rel="noopener" target="_blank"><i class="fa fa-fw fa-twitter"></i>Twitter</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://t.me/muzi_ii" title="Telegram → https:&#x2F;&#x2F;t.me&#x2F;muzi_ii" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Telegram</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://kindle.502.li/" title="Kindle → https:&#x2F;&#x2F;kindle.502.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-book"></i>Kindle</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://https//t.me/rss_kubernetes" title="Channel → https:&#x2F;&#x2F;https:&#x2F;&#x2F;t.me&#x2F;rss_kubernetes" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Channel</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-fw fa-rss"></i>RSS</a>
+      </span>
+  </div>
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+      </div>
+    </main>
+    <footer class="footer">
+      <div class="footer-inner">
+<div class="copyright">
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木子</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">793k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">22:02</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">主题 – <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a>
+  </div>
+      </div>
+    </footer>
+  </div>
+  <script src="/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script>
+<script src="/js/schemes/pisces.js"></script>
+<script src="/js/next-boot.js"></script>
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://muzi.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: {page: {
+            url: "https://blog.502.li/oracle-rips-redhat.html",
+            identifier: "oracle-rips-redhat.html",
+            title: "Oracle rips RedHat and 'sort of' launches a new Linux"
+          }
+        }
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://muzi.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+</body>
+</html>

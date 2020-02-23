@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon.ico">
+  <link rel="mask-icon" href="/favicon.ico" color="#222">
+<link rel="stylesheet" href="/css/main.css">
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Roboto Mono:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://blog.502.li').hostname,
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":true,"scrollpercent":true},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"buttons","active":null,"storage":true,"lazyload":true,"nav":{"disqus":{"text":"Load Disqus","order":-1}}},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":false,"async":true,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+  <meta name="description" content="根据自己的网络，如何选择一个适合自己的镜像源呢？可能大家使用的发行版不同，还好有了 docker 这个玩具，能使用不同的发行版镜像启动容器来测试。那么就选定国内知名的镜像源来个测试，供大家参考选择一个合适的发行版。如果是公有云服务器的话，肯定是选择厂商的镜像源啦，内网传输速度超快，所以这次的测试对公有云服务器毫无意义，仅仅针对于办公或家用网络哈。 国内知名镜像源   所属 官网 评价    清华">
+<meta property="og:type" content="article">
+<meta property="og:title" content="国内镜像源伪评测">
+<meta property="og:url" content="https://blog.502.li/mirrors-test.html">
+<meta property="og:site_name" content="木子">
+<meta property="og:description" content="根据自己的网络，如何选择一个适合自己的镜像源呢？可能大家使用的发行版不同，还好有了 docker 这个玩具，能使用不同的发行版镜像启动容器来测试。那么就选定国内知名的镜像源来个测试，供大家参考选择一个合适的发行版。如果是公有云服务器的话，肯定是选择厂商的镜像源啦，内网传输速度超快，所以这次的测试对公有云服务器毫无意义，仅仅针对于办公或家用网络哈。 国内知名镜像源   所属 官网 评价    清华">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2019-09-17T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-02-23T02:38:57.272Z">
+<meta property="article:author" content="木子">
+<meta property="article:tag" content="Linux">
+<meta name="twitter:card" content="summary">
+<link rel="canonical" href="https://blog.502.li/mirrors-test.html">
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+  <title>国内镜像源伪评测 | 木子</title>
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+<link rel="alternate" href="/atom.xml" title="木子" type="application/atom+xml">
+</head>
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">木子</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+    <a href="/" rel="section"><i class="fa fa-fw fa-desktop"></i>Home</a>
+  </li>
+        <li class="menu-item menu-item-books">
+    <a href="/booklist.html" rel="section"><i class="fa fa-fw fa-book"></i>Books</a>
+  </li>
+        <li class="menu-item menu-item-kindle">
+    <a href="https://kindle.502.li/" rel="noopener" target="_blank"><i class="fa fa-fw fa-book"></i>Kindle</a>
+  </li>
+        <li class="menu-item menu-item-friend">
+    <a href="/link/" rel="section"><i class="fa fa-fw fa-link"></i>Friend</a>
+  </li>
+        <li class="menu-item menu-item-about">
+    <a href="/about.html" rel="section"><i class="fa fa-fw fa-user-circle-o"></i>About</a>
+  </li>
+  </ul>
+</nav>
+</div>
+    </header>
+  <div class="reading-progress-bar"></div>
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div class="content">
+  <div class="posts-expand">
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.502.li/mirrors-test.html">
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://blog.502.li/favicon.ico">
+      <meta itemprop="name" content="木子">
+      <meta itemprop="description" content="">
+    </span>
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木子">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          国内镜像源伪评测
+        </h1>
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              <time title="创建时间：2019-09-18 2019-09-18T00:00:00+08:00" itemprop="dateCreated datePublished" datetime="2019-09-18T00:00:00+08:00">2019-09-18</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-02-23 2020-02-23T10:38:57+08:00" itemprop="dateModified" datetime="2020-02-23T10:38:57+08:00">2020-02-23</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%8A%80%E6%9C%AF/" itemprop="url" rel="index">
+                    <span itemprop="name">技术</span>
+                  </a>
+                </span>
+            </span>
+  <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-comment-o"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    <a title="disqus" href="/mirrors-test.html#comments" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="mirrors-test.html" itemprop="commentCount"></span>
+    </a>
+  </span>
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>7.4k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>12 分钟</span>
+            </span>
+        </div>
+      </header>
+    <div class="post-body" itemprop="articleBody">
+        <p>根据自己的网络，如何选择一个适合自己的镜像源呢？可能大家使用的发行版不同，还好有了 docker 这个玩具，能使用不同的发行版镜像启动容器来测试。那么就选定国内知名的镜像源来个测试，供大家参考选择一个合适的发行版。如果是公有云服务器的话，肯定是选择厂商的镜像源啦，内网传输速度超快，所以这次的测试对公有云服务器毫无意义，仅仅针对于办公或家用网络哈。</p>
+<h2 id="国内知名镜像源"><a href="#国内知名镜像源" class="headerlink" title="国内知名镜像源"></a>国内知名镜像源</h2><table>
+<thead>
+<tr>
+<th align="center">所属</th>
+<th align="center">官网</th>
+<th align="center">评价</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">清华</td>
+<td align="center"><a href="https://mirrors.tuna.tsinghua.edu.cn/" target="_blank" rel="noopener">https://mirrors.tuna.tsinghua.edu.cn/</a></td>
+<td align="center">速度 NO.1</td>
+</tr>
+<tr>
+<td align="center">中科大</td>
+<td align="center"><a href="https://mirrors.ustc.edu.cn/" target="_blank" rel="noopener">https://mirrors.ustc.edu.cn/</a></td>
+<td align="center">速度最差</td>
+</tr>
+<tr>
+<td align="center">163</td>
+<td align="center"><a href="https://mirrors.163.com/" target="_blank" rel="noopener">https://mirrors.163.com/</a></td>
+<td align="center">速度 NO.3</td>
+</tr>
+<tr>
+<td align="center">阿里云</td>
+<td align="center"><a href="https://mirrors.aliyun.com/" target="_blank" rel="noopener">https://mirrors.aliyun.com/</a></td>
+<td align="center">速度 NO.2</td>
+</tr>
+<tr>
+<td align="center">华为</td>
+<td align="center"><a href="https://mirrors.huaweicloud.com/" target="_blank" rel="noopener">https://mirrors.huaweicloud.com/</a></td>
+<td align="center">速度最快</td>
+</tr>
+</tbody></table>
+<h2 id="测试系统"><a href="#测试系统" class="headerlink" title="测试系统"></a>测试系统</h2><p>选用 debian 10 ，安装的软件包有 <code>xfce4 gnome libreoffice  vlc</code> ，这三个包总大小 1014MB</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">apt install xfce4 gnome libreoffice  vlc -d -y</span><br><span class="line">0 upgraded, 1574 newly installed, 0 to remove and 0 not upgraded.</span><br><span class="line">Need to get 1014 MB of archives.</span><br><span class="line">After this operation, 3471 MB of additional disk space will be used.</span><br></pre></td></tr></table></figure>
+<h2 id="测试过程"><a href="#测试过程" class="headerlink" title="测试过程"></a>测试过程</h2><h3 id="测试环境"><a href="#测试环境" class="headerlink" title="测试环境"></a>测试环境</h3><p>公司办公网络是千兆内网，外网访问速度最快能达到 <code>50MB/s</code></p>
+<p>测试方法很简单，使用 sed 替换掉原来的镜像域名就行，都使用 http 的方式下载 加上 -d 参数只下载即可</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#!/bin/bash</span></span><br><span class="line"><span class="built_in">set</span> -xue</span><br><span class="line">sed -i <span class="string">'s/deb.debian.org/mirrors.aliyun.com/g'</span> /etc/apt/sources.list</span><br><span class="line">sed -i <span class="string">'s|security.debian.org/debian-security|mirrors.aliyun.com/debian-security|g'</span> /etc/apt/sources.list</span><br><span class="line">time apt update</span><br><span class="line">time apt install xfce4 gnome libreoffice  vlc -d -y</span><br></pre></td></tr></table></figure>
+<h3 id="清华"><a href="#清华" class="headerlink" title="清华"></a>清华</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">sed -i <span class="string">'s/deb.debian.org/mirrors.tuna.tsinghua.edu.cn/g'</span> /etc/apt/sources.list</span><br><span class="line">sed -i <span class="string">'s|security.debian.org/debian-security|mirrors.tuna.tsinghua.edu.cn/debian-security|g'</span> /etc/apt/sources.list</span><br><span class="line">apt update</span><br><span class="line">root@6586bff7e2bf:/<span class="comment"># time apt update</span></span><br><span class="line">Get:1 http://mirrors.tuna.tsinghua.edu.cn/debian buster InRelease [122 kB]</span><br><span class="line">Get:2 http://mirrors.tuna.tsinghua.edu.cn/debian-security buster/updates InRelease [39.1 kB]</span><br><span class="line">Get:3 http://mirrors.tuna.tsinghua.edu.cn/debian buster-updates InRelease [49.3 kB]</span><br><span class="line">Get:4 http://mirrors.tuna.tsinghua.edu.cn/debian buster/main amd64 Packages [7899 kB]</span><br><span class="line">Get:5 http://mirrors.tuna.tsinghua.edu.cn/debian-security buster/updates/main amd64 Packages [85.3 kB]</span><br><span class="line">Get:6 http://mirrors.tuna.tsinghua.edu.cn/debian buster-updates/main amd64 Packages [884 B]</span><br><span class="line">Fetched 8195 kB <span class="keyword">in</span> 2s (3821 kB/s)</span><br><span class="line">Reading package lists... Done</span><br><span class="line">Building dependency tree</span><br><span class="line">Reading state information... Done</span><br><span class="line">All packages are up to date.</span><br><span class="line"></span><br><span class="line">apt install xfce4 gnome libreoffice  vlc -d -y</span><br><span class="line">0 upgraded, 1574 newly installed, 0 to remove and 0 not upgraded.</span><br><span class="line">Need to get 1014 MB of archives.</span><br><span class="line">After this operation, 3471 MB of additional disk space will be used.</span><br><span class="line">Fetched 1014 MB <span class="keyword">in</span> 2min 3s (8246 kB/s)</span><br><span class="line">Download complete and <span class="keyword">in</span> download only mode</span><br></pre></td></tr></table></figure>
+<p>测试结果 <code>Fetched 1014 MB in 2min 3s (8246 kB/s)</code></p>
+<h3 id="中科大"><a href="#中科大" class="headerlink" title="中科大"></a>中科大</h3><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">sed -i 's/deb.debian.org/mirrors.ustc.edu.cn/g' /etc/apt/sources.list</span><br><span class="line">sed -i 's|security.debian.org/debian-security|mirrors.ustc.edu.cn/debian-security|g' /etc/apt/sources.list</span><br><span class="line">apt update</span><br><span class="line">root@1242bc5d5e5a:/# time apt update</span><br><span class="line">Get:1 http://mirrors.ustc.edu.cn/debian buster InRelease [122 kB]</span><br><span class="line">Get:2 http://mirrors.ustc.edu.cn/debian-security buster/updates InRelease [39.1 kB]</span><br><span class="line">Get:3 http://mirrors.ustc.edu.cn/debian buster-updates InRelease [49.3 kB]</span><br><span class="line">Get:4 http://mirrors.ustc.edu.cn/debian buster/main amd64 Packages [7899 kB]</span><br><span class="line">Get:5 http://mirrors.ustc.edu.cn/debian-security buster/updates/main amd64 Packages [85.3 kB]</span><br><span class="line">Get:6 http://mirrors.ustc.edu.cn/debian buster-updates/main amd64 Packages [884 B]</span><br><span class="line">Fetched 8195 kB in 4s (1896 kB/s)</span><br><span class="line">Reading package lists... Done</span><br><span class="line">Building dependency tree</span><br><span class="line">Reading state information... Done</span><br><span class="line">All packages are up to date.</span><br><span class="line"></span><br><span class="line">apt install xfce4 gnome libreoffice  vlc -d -y</span><br><span class="line">0 upgraded, 1574 newly installed, 0 to remove and 0 not upgraded.</span><br><span class="line">Need to get 1014 MB of archives.</span><br><span class="line">Fetched 1005 MB in 37min 31s (446 kB/s)</span><br><span class="line">E: Failed to fetch http://mirrors.ustc.edu.cn/debian/pool/main/t/totem/totem-common_3.30.0-4_all.deb  Connection failed [IP: 202.141.176.110 80]</span><br><span class="line">E: Failed to fetch http://mirrors.ustc.edu.cn/debian/pool/main/s/shotwell/shotwell_0.30.1-1_amd64.deb  Connection failed [IP: 202.141.176.110 80]</span><br><span class="line">E: Failed to fetch http://mirrors.ustc.edu.cn/debian/pool/main/d/dom4j/libdom4j-java_2.1.1-2_all.deb  Connection failed [IP: 202.141.176.110 80]</span><br><span class="line">E: Failed to fetch http://mirrors.ustc.edu.cn/debian/pool/main/x/xfonts-scalable/xfonts-scalable_1.0.3-1.1_all.deb  Connection failed [IP: 202.141.176.110 80]</span><br><span class="line">E: Some files failed to download</span><br></pre></td></tr></table></figure>
+<p>测试结果 <code>Fetched 1005 MB in 37min 31s (446 kB/s)</code> ，1000MB 的包下载用时将近 40 分钟</p>
+<p>测试过程中多次出现 <code>[Waiting for headers]</code>  速度有几分钟都在<code>17.6 kB/s 13h 58min 9s</code>、 <code>159 kB/s 1h 38min 9s</code> 🤦‍♂️ ，其中还出现了 <code>2850 PB/s 0s</code> 😂</p>
+<h3 id="163"><a href="#163" class="headerlink" title="163"></a>163</h3><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">sed -i 's/deb.debian.org/mirrors.163.com/g' /etc/apt/sources.list</span><br><span class="line">sed -i 's|security.debian.org/debian-security|mirrors.163.com/debian-security|g' /etc/apt/sources.list</span><br><span class="line">apt update</span><br><span class="line">root@66e0d532818e:/# apt update</span><br><span class="line">Get:1 http://mirrors.163.com/debian buster InRelease [122 kB]</span><br><span class="line">Get:2 http://mirrors.163.com/debian-security buster/updates InRelease [39.1 kB]</span><br><span class="line">Get:3 http://mirrors.163.com/debian buster-updates InRelease [49.3 kB]</span><br><span class="line">Get:4 http://mirrors.163.com/debian buster/main amd64 Packages [7899 kB]</span><br><span class="line">Get:5 http://mirrors.163.com/debian-security buster/updates/main amd64 Packages [85.3 kB]</span><br><span class="line">Get:6 http://mirrors.163.com/debian buster-updates/main amd64 Packages [884 B]</span><br><span class="line">Fetched 8195 kB in 3s (2939 kB/s)</span><br><span class="line"></span><br><span class="line">apt install xfce4 gnome libreoffice  vlc -d -y</span><br><span class="line">0 upgraded, 1574 newly installed, 0 to remove and 0 not upgraded.</span><br><span class="line">Need to get 1014 MB of archives.</span><br><span class="line"></span><br><span class="line">Fetched 1012 MB in 7min 21s (2295 kB/s)</span><br><span class="line">Download complete and in download only mode</span><br></pre></td></tr></table></figure>
+<p>测试结果 <code>Fetched 1012 MB in 7min 21s (2295 kB/s)</code></p>
+<h3 id="阿里云"><a href="#阿里云" class="headerlink" title="阿里云"></a>阿里云</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">sed -i <span class="string">'s/deb.debian.org/mirrors.aliyun.com/g'</span> /etc/apt/sources.list</span><br><span class="line">sed -i <span class="string">'s|security.debian.org/debian-security|mirrors.aliyun.com/debian-security|g'</span> /etc/apt/sources.list</span><br><span class="line">root@e4b82e40b6c6:/<span class="comment"># apt update</span></span><br><span class="line">Get:1 http://mirrors.aliyun.com/debian buster InRelease [122 kB]</span><br><span class="line">Get:2 http://mirrors.aliyun.com/debian-security buster/updates InRelease [39.1 kB]</span><br><span class="line">Get:3 http://mirrors.aliyun.com/debian buster-updates InRelease [49.3 kB]</span><br><span class="line">Get:4 http://mirrors.aliyun.com/debian buster/main amd64 Packages [7899 kB]</span><br><span class="line">Get:5 http://mirrors.aliyun.com/debian-security buster/updates/main amd64 Packages [85.3 kB]</span><br><span class="line">Get:6 http://mirrors.aliyun.com/debian buster-updates/main amd64 Packages [884 B]</span><br><span class="line">Fetched 8195 kB <span class="keyword">in</span> 1s (6489 kB/s)</span><br><span class="line">Reading package lists... Done</span><br><span class="line">Building dependency tree</span><br><span class="line">Reading state information... Done</span><br><span class="line">All packages are up to date.</span><br><span class="line"></span><br><span class="line">apt install xfce4 gnome libreoffice  vlc -d -y</span><br><span class="line">0 upgraded, 1574 newly installed, 0 to remove and 0 not upgraded.</span><br><span class="line">Need to get 1014 MB of archives.</span><br><span class="line">After this operation, 3471 MB of additional disk space will be used.</span><br><span class="line">Fetched 1014 MB <span class="keyword">in</span> 2min 54s (5815 kB/s)</span><br><span class="line">Download complete and <span class="keyword">in</span> download only mode</span><br></pre></td></tr></table></figure>
+<p>测试结果 <code>Fetched 1014 MB in 2min 54s (5815 kB/s)</code></p>
+<h3 id="华为"><a href="#华为" class="headerlink" title="华为"></a>华为</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">sed -i <span class="string">'s/deb.debian.org/mirrors.huaweicloud.com/g'</span> /etc/apt/sources.list</span><br><span class="line">sed -i <span class="string">'s|security.debian.org/debian-security|mirrors.huaweicloud.com/debian-security|g'</span> /etc/apt/sources.list</span><br><span class="line">apt update</span><br><span class="line"></span><br><span class="line">root@659549fb7f12:/<span class="comment"># apt update</span></span><br><span class="line">Get:1 http://mirrors.huaweicloud.com/debian buster InRelease [122 kB]</span><br><span class="line">Get:2 http://mirrors.huaweicloud.com/debian-security buster/updates InRelease [39.1 kB]</span><br><span class="line">Get:3 http://mirrors.huaweicloud.com/debian buster-updates InRelease [49.3 kB]</span><br><span class="line">Get:4 http://mirrors.huaweicloud.com/debian buster/main amd64 Packages [7899 kB]</span><br><span class="line">Get:5 http://mirrors.huaweicloud.com/debian-security buster/updates/main amd64 Packages [85.0 kB]</span><br><span class="line">Get:6 http://mirrors.huaweicloud.com/debian buster-updates/main amd64 Packages [884 B]</span><br><span class="line">Fetched 8194 kB <span class="keyword">in</span> 2s (4766 kB/s)</span><br><span class="line">Reading package lists... Done</span><br><span class="line">Building dependency tree</span><br><span class="line">Reading state information... Done</span><br><span class="line">All packages are up to date.</span><br><span class="line"></span><br><span class="line">apt install xfce4 gnome libreoffice  vlc -d -y</span><br><span class="line">0 upgraded, 1574 newly installed, 0 to remove and 0 not upgraded.</span><br><span class="line">Need to get 1014 MB of archives.</span><br><span class="line">After this operation, 3471 MB of additional disk space will be used.</span><br><span class="line">Fetched 1014 MB <span class="keyword">in</span> 1min 25s (12.0 MB/s)</span><br><span class="line">Download complete and <span class="keyword">in</span> download only mode</span><br></pre></td></tr></table></figure>
+<p>测试结果 <code>Fetched 1014 MB in 1min 25s (12.0 MB/s)</code> </p>
+<p>不得不说华为云镜像站真香啊。进度条上基本上都是 10MB/s 以上，从没出现低于 10MB/s 的，甚至峰值能达到 20MB/s</p>
+<h2 id="附录—测试数据表格"><a href="#附录—测试数据表格" class="headerlink" title="附录—测试数据表格"></a>附录—测试数据表格</h2><p><code>xfce4 、gnome 、libreoffice 、 vlc</code>  1574 个包，总大小 <code>1014 MB</code> 测试时间为白天工作时间</p>
+<table>
+<thead>
+<tr>
+<th align="center">序号</th>
+<th align="center">清华</th>
+<th align="center">中科大</th>
+<th align="center">163</th>
+<th align="center">阿里云</th>
+<th align="center">华为云</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">1</td>
+<td align="center">8246 kB/s</td>
+<td align="center">446 kB/s</td>
+<td align="center">2295 kB/s</td>
+<td align="center">5815 kB/s</td>
+<td align="center">12.0 MB/s</td>
+</tr>
+<tr>
+<td align="center">2</td>
+<td align="center">462 kB/s</td>
+<td align="center">980 kB/s</td>
+<td align="center">5498 kB/s</td>
+<td align="center">2642 kB/s</td>
+<td align="center">15.8 MB/s</td>
+</tr>
+<tr>
+<td align="center">3</td>
+<td align="center">1144 kB/s</td>
+<td align="center">657 kB/s</td>
+<td align="center">1333 kB/s</td>
+<td align="center">5938 kB/s</td>
+<td align="center">13.1 MB/s</td>
+</tr>
+</tbody></table>
+<h2 id="建议"><a href="#建议" class="headerlink" title="建议"></a>建议</h2><p>根据一轮的测试速度来看，华为胜出😂</p>
+<ol>
+<li>华为</li>
+<li>阿里云</li>
+<li>163</li>
+<li>清华</li>
+<li>中国科大</li>
+</ol>
+<p>就这四个选择吧，也和本地的网络有关系，我的是电信网络。之前我的测试环境的服务器一直在使用中科大的镜像站，每次都很慢，今天一测才知道，中科大的镜像站这么慢啊，以后还是选择华为云吧。</p>
+<p>撇开偏见，今天评论华为开源镜像站，前端 UI 无疑是国内镜像站里边做的最好的（虽然我不喜欢卡片式设计），下载速度是所有镜像站里面最快的（1574 个包，总大小 1014MB，平均都在 12MB/s 以上，峰值能达到 20MB/s）。其他的镜像站基本上都没能达到 10MB/s 以上。如果注册会员是不是下载速度翻倍，都能跑到 20MB/s 以上？</p>
+    </div>
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Linux/" rel="tag"><i class="fa fa-tag"></i> Linux</a>
+          </div>
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/The-Dictator%E2%80%99s-Handbook.html" rel="prev" title="独裁者手册读书笔记">
+      <i class="fa fa-chevron-left"></i> 独裁者手册读书笔记
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/esxi-openwrt.html" rel="next" title="OpenWRT 软路由">
+      OpenWRT 软路由 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+  </article>
+  </div>
+          </div>
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+        </div>
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#国内知名镜像源"><span class="nav-number">1.</span> <span class="nav-text">国内知名镜像源</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#测试系统"><span class="nav-number">2.</span> <span class="nav-text">测试系统</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#测试过程"><span class="nav-number">3.</span> <span class="nav-text">测试过程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#测试环境"><span class="nav-number">3.1.</span> <span class="nav-text">测试环境</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#清华"><span class="nav-number">3.2.</span> <span class="nav-text">清华</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#中科大"><span class="nav-number">3.3.</span> <span class="nav-text">中科大</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#163"><span class="nav-number">3.4.</span> <span class="nav-text">163</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#阿里云"><span class="nav-number">3.5.</span> <span class="nav-text">阿里云</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#华为"><span class="nav-number">3.6.</span> <span class="nav-text">华为</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#附录—测试数据表格"><span class="nav-number">4.</span> <span class="nav-text">附录—测试数据表格</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#建议"><span class="nav-number">5.</span> <span class="nav-text">建议</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木子"
+      src="https://blog.502.li/favicon.ico">
+  <p class="site-author-name" itemprop="name">木子</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">65</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">72</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/muzi502" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;muzi502" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:blog@502.li" title="E-Mail → mailto:blog@502.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://twitter.com/muzi_ii" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;muzi_ii" rel="noopener" target="_blank"><i class="fa fa-fw fa-twitter"></i>Twitter</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://t.me/muzi_ii" title="Telegram → https:&#x2F;&#x2F;t.me&#x2F;muzi_ii" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Telegram</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://kindle.502.li/" title="Kindle → https:&#x2F;&#x2F;kindle.502.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-book"></i>Kindle</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://https//t.me/rss_kubernetes" title="Channel → https:&#x2F;&#x2F;https:&#x2F;&#x2F;t.me&#x2F;rss_kubernetes" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Channel</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-fw fa-rss"></i>RSS</a>
+      </span>
+  </div>
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+      </div>
+    </main>
+    <footer class="footer">
+      <div class="footer-inner">
+<div class="copyright">
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木子</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">793k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">22:02</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">主题 – <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a>
+  </div>
+      </div>
+    </footer>
+  </div>
+  <script src="/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script>
+<script src="/js/schemes/pisces.js"></script>
+<script src="/js/next-boot.js"></script>
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://muzi.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: {page: {
+            url: "https://blog.502.li/mirrors-test.html",
+            identifier: "mirrors-test.html",
+            title: "国内镜像源伪评测"
+          }
+        }
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://muzi.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+</body>
+</html>

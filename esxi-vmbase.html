@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon.ico">
+  <link rel="mask-icon" href="/favicon.ico" color="#222">
+<link rel="stylesheet" href="/css/main.css">
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Roboto Mono:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://blog.502.li').hostname,
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":true,"scrollpercent":true},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"buttons","active":null,"storage":true,"lazyload":true,"nav":{"disqus":{"text":"Load Disqus","order":-1}}},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":false,"async":true,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+  <meta name="description" content="0. 背景由于工作环境是 ESXi 虚拟化，需要经常用一些模板开部署一些虚拟机，由于我的机器没有连接上 vCenter，只能靠上传 OVA 等虚拟机模板来部署，因此需要搓一些虚拟机模板出来。宿主机系统有 Debian 10、Debian 9、Ubuntu1804、Ubuntu 1604、CentOS7.6、Alpine 3.10、OpenWrt&#x2F;LEDE ，还有 Windows 😂。一般最小化安">
+<meta property="og:type" content="article">
+<meta property="og:title" content="手搓虚拟机模板">
+<meta property="og:url" content="https://blog.502.li/esxi-vmbase.html">
+<meta property="og:site_name" content="木子">
+<meta property="og:description" content="0. 背景由于工作环境是 ESXi 虚拟化，需要经常用一些模板开部署一些虚拟机，由于我的机器没有连接上 vCenter，只能靠上传 OVA 等虚拟机模板来部署，因此需要搓一些虚拟机模板出来。宿主机系统有 Debian 10、Debian 9、Ubuntu1804、Ubuntu 1604、CentOS7.6、Alpine 3.10、OpenWrt&#x2F;LEDE ，还有 Windows 😂。一般最小化安">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2019-08-27T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-02-23T02:38:57.272Z">
+<meta property="article:author" content="木子">
+<meta property="article:tag" content="虚拟机">
+<meta property="article:tag" content="VMware">
+<meta property="article:tag" content="ESXi">
+<meta name="twitter:card" content="summary">
+<link rel="canonical" href="https://blog.502.li/esxi-vmbase.html">
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+  <title>手搓虚拟机模板 | 木子</title>
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+<link rel="alternate" href="/atom.xml" title="木子" type="application/atom+xml">
+</head>
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">木子</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+    <a href="/" rel="section"><i class="fa fa-fw fa-desktop"></i>Home</a>
+  </li>
+        <li class="menu-item menu-item-books">
+    <a href="/booklist.html" rel="section"><i class="fa fa-fw fa-book"></i>Books</a>
+  </li>
+        <li class="menu-item menu-item-kindle">
+    <a href="https://kindle.502.li/" rel="noopener" target="_blank"><i class="fa fa-fw fa-book"></i>Kindle</a>
+  </li>
+        <li class="menu-item menu-item-friend">
+    <a href="/link/" rel="section"><i class="fa fa-fw fa-link"></i>Friend</a>
+  </li>
+        <li class="menu-item menu-item-about">
+    <a href="/about.html" rel="section"><i class="fa fa-fw fa-user-circle-o"></i>About</a>
+  </li>
+  </ul>
+</nav>
+</div>
+    </header>
+  <div class="reading-progress-bar"></div>
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div class="content">
+  <div class="posts-expand">
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.502.li/esxi-vmbase.html">
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://blog.502.li/favicon.ico">
+      <meta itemprop="name" content="木子">
+      <meta itemprop="description" content="">
+    </span>
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木子">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          手搓虚拟机模板
+        </h1>
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              <time title="创建时间：2019-08-28 2019-08-28T00:00:00+08:00" itemprop="dateCreated datePublished" datetime="2019-08-28T00:00:00+08:00">2019-08-28</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-02-23 2020-02-23T10:38:57+08:00" itemprop="dateModified" datetime="2020-02-23T10:38:57+08:00">2020-02-23</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%8A%80%E6%9C%AF/" itemprop="url" rel="index">
+                    <span itemprop="name">技术</span>
+                  </a>
+                </span>
+            </span>
+  <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-comment-o"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    <a title="disqus" href="/esxi-vmbase.html#comments" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="esxi-vmbase.html" itemprop="commentCount"></span>
+    </a>
+  </span>
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>8.3k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>14 分钟</span>
+            </span>
+        </div>
+      </header>
+    <div class="post-body" itemprop="articleBody">
+        <h3 id="0-背景"><a href="#0-背景" class="headerlink" title="0. 背景"></a>0. 背景</h3><p>由于工作环境是 ESXi 虚拟化，需要经常用一些模板开部署一些虚拟机，由于我的机器没有连接上 vCenter，只能靠上传 OVA 等虚拟机模板来部署，因此需要搓一些虚拟机模板出来。宿主机系统有 Debian 10、Debian 9、Ubuntu1804、Ubuntu 1604、CentOS7.6、Alpine 3.10、OpenWrt/LEDE ，还有 Windows 😂。一般最小化安装之后还是有可以精简的余地，删除掉一些不用的软件包，系统一般情况下都能精简到 700MB 左右，再使用 dd 暴力清零剩余空间，最后导出的 OVA 虚拟机模板在 450MB 左右。这样部署和上传的速度大大加快了。</p>
+<h3 id="1-Ubuntu-1804"><a href="#1-Ubuntu-1804" class="headerlink" title="1. Ubuntu 1804"></a>1. Ubuntu 1804</h3><h4 id="1-安装镜像"><a href="#1-安装镜像" class="headerlink" title="1. 安装镜像"></a>1. 安装镜像</h4><p><a href="http://mirrors.ustc.edu.cn/ubuntu-cdimage/releases/18.04/release/ubuntu-18.04.3-server-amd64.iso" target="_blank" rel="noopener">ubuntu-18.04.3-server-amd64.iso</a></p>
+<p>安装过程就不赘述了，主要是懒，安装过程图还要截图什么的，麻烦😂。建议使用 lvm 分区，安装上 openssh-server 就行，其他的组件一概不用安装，这样能减少系统占用空间的而大小。以后需要安装的话再安装就行。</p>
+<p>安装进入系统后使用 <code>sudo passwd</code> 来重置 root 的密码</p>
+<ol>
+<li>安装 ncdu 工具结合 du 用来分析系统根分区占用大小情况</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">apt update &amp;&amp; apt install ncdu -y</span><br></pre></td></tr></table></figure>
+<p>2.默认安装后的系统分区占用情况，虽然在安装的过程中</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">root@ubuntu:~<span class="comment"># df -h</span></span><br><span class="line">Filesystem                         Size  Used Avail Use% Mounted on</span><br><span class="line">udev                               1.9G     0  1.9G   0% /dev</span><br><span class="line">tmpfs                              393M  1.1M  392M   1% /run</span><br><span class="line">/dev/mapper/ubuntu--vg-ubuntu--lv   28G  5.7G   21G  22% /</span><br><span class="line">tmpfs                              2.0G     0  2.0G   0% /dev/shm</span><br><span class="line">tmpfs                              5.0M     0  5.0M   0% /run/lock</span><br><span class="line">tmpfs                              2.0G     0  2.0G   0% /sys/fs/cgroup</span><br><span class="line">/dev/sda2                          976M   76M  834M   9% /boot</span><br><span class="line">/dev/loop0                          91M   91M     0 100% /snap/core/6350</span><br><span class="line">tmpfs                              393M     0  393M   0% /run/user/1000</span><br><span class="line">root@ubuntu:~<span class="comment"># free -h</span></span><br><span class="line">              total        used        free      shared  buff/cache   available</span><br><span class="line">Mem:           3.8G        213M        2.9G        1.1M        759M        3.3G</span><br><span class="line">Swap:          3.8G          0B        3.8G</span><br></pre></td></tr></table></figure>
+<p>3.默认给分配了个 swap 文件，使用 swapoff -a 关闭 swap 就行，再修改 fstab 文件，删除 swap 那一行，或注释掉</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">root@ubuntu:~<span class="comment"># swapoff -a</span></span><br><span class="line">root@ubuntu:~<span class="comment"># rm -rf /swap.img</span></span><br><span class="line">root@ubuntu:~<span class="comment"># vi /etc/fstab</span></span><br></pre></td></tr></table></figure>
+<p>4.删除 swap file 之后的分区情况，占用的 1.8GB ，如果直接导出的话，OVA 文件至少得 2GB。我们接下来精简系统不需要得包和文件，最终 OVA 大小缩小到 450MB</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">root@ubuntu:~<span class="comment"># df -h</span></span><br><span class="line">Filesystem                         Size  Used Avail Use% Mounted on</span><br><span class="line">udev                               1.9G     0  1.9G   0% /dev</span><br><span class="line">tmpfs                              393M  1.1M  392M   1% /run</span><br><span class="line">/dev/mapper/ubuntu--vg-ubuntu--lv   28G  1.8G   25G   7% /</span><br><span class="line">tmpfs                              2.0G     0  2.0G   0% /dev/shm</span><br><span class="line">tmpfs                              5.0M     0  5.0M   0% /run/lock</span><br><span class="line">tmpfs                              2.0G     0  2.0G   0% /sys/fs/cgroup</span><br><span class="line">/dev/sda2                          976M   76M  834M   9% /boot</span><br><span class="line">/dev/loop0                          91M   91M     0 100% /snap/core/6350</span><br><span class="line">tmpfs                              393M     0  393M   0% /run/user/1000</span><br></pre></td></tr></table></figure>
+<h4 id="2-卸载不用的软件包"><a href="#2-卸载不用的软件包" class="headerlink" title="2. 卸载不用的软件包"></a>2. 卸载不用的软件包</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 一把梭子过去就完</span></span><br><span class="line">rm /etc/cloud</span><br><span class="line">apt purge usbutils wireless-regdb linux-modules-extra-4.15.0-58-generic vim-tiny vim-common ubuntu-advantage-tools cloud-* linux-firmware snapd lxd* linux-headers-* git-man landscape-common ubuntu-release-upgrader-core</span><br></pre></td></tr></table></figure>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">snapd: snapd 从不使用果断卸载</span><br><span class="line">lxd*: 历史遗留下来得容器虚拟化，我有 docker 要你何用？</span><br><span class="line">vim-tiny: 默认安装得 vim 死难用，卸载重新装个 vim 就行</span><br><span class="line">cloud-*: 公有云用来导入私钥获取 IP 等等部署虚拟机用到得，自己用不到果断卸载</span><br><span class="line">usbutils: USB 驱动，从不使用，果断卸载。如果你使用 USB 设备得话就保留它</span><br><span class="line">wireless-regdb: 一个无线相关的，用不到</span><br><span class="line">linux-firmware: 里面大部分是网卡蓝牙USB之类得固件，虚拟机用不到</span><br><span class="line">linux-headers-*: 内核源码之类的头文件，用到的时候再安装就行</span><br><span class="line">ubuntu-advantage-tools: 用不到果断卸载</span><br><span class="line">linux-modules-extra-4.15.0-58-generic: 内核模块扩展驱动等，虚拟机很少能用到</span><br><span class="line">git-man: git 的 man 手册，一般用不到</span><br><span class="line">landscape-common: landscape 管理，用不到</span><br><span class="line">ubuntu-release-upgrader-core: 用不到</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">The following packages were automatically installed and are no longer required:</span><br><span class="line">  amd64-microcode eatmydata gdisk intel-microcode iucode-tool libdbus-glib-1-2 libeatmydata1 libuv1</span><br><span class="line">  python3-blinker python3-jinja2 python3-json-pointer python3-jsonpatch python3-jsonschema python3-jwt</span><br><span class="line">  python3-markupsafe python3-oauthlib thermald</span><br><span class="line">Use <span class="string">'apt autoremove'</span> to remove them.</span><br><span class="line">The following additional packages will be installed:</span><br><span class="line">  python3-update-manager</span><br><span class="line">Suggested packages:</span><br><span class="line">  python3-launchpadlib</span><br><span class="line">The following packages will be REMOVED:</span><br><span class="line">  cloud-guest-utils* cloud-init* cloud-initramfs-copymods* cloud-initramfs-dyn-netconf* crda* git* git-man*</span><br><span class="line">  landscape-common* linux-firmware* linux-generic* linux-headers-4.15.0-58* linux-headers-4.15.0-58-generic*</span><br><span class="line">  linux-headers-generic* linux-image-generic* linux-modules-extra-4.15.0-58-generic* lxd* lxd-client* snapd*</span><br><span class="line">  ubuntu-advantage-tools* ubuntu-minimal* ubuntu-release-upgrader-core* ubuntu-server* ubuntu-standard*</span><br><span class="line">  update-manager-core* update-notifier-common* usbutils* vim* vim-common* vim-tiny* wireless-regdb*</span><br><span class="line">The following packages will be upgraded:</span><br><span class="line">  python3-update-manager</span><br><span class="line">1 upgraded, 0 newly installed, 30 to remove and 75 not upgraded.</span><br><span class="line">Need to get 35.1 kB of archives.</span><br><span class="line">After this operation, 723 MB disk space will be freed.</span><br><span class="line">Do you want to <span class="built_in">continue</span>? [Y/n] y</span><br></pre></td></tr></table></figure>
+<p><strong>清理卸载后的占用大小</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">root@ubuntu:~<span class="comment"># rm -rf /var/lib/apt/lists/*</span></span><br><span class="line">root@ubuntu:~<span class="comment"># rm -rf /var/cache/apt/*</span></span><br><span class="line">root@ubuntu:~<span class="comment"># df -h</span></span><br><span class="line">Filesystem                         Size  Used Avail Use% Mounted on</span><br><span class="line">udev                               1.9G     0  1.9G   0% /dev</span><br><span class="line">tmpfs                              393M  1.1M  392M   1% /run</span><br><span class="line">/dev/mapper/ubuntu--vg-ubuntu--lv   28G  685M   26G   3% /</span><br><span class="line">tmpfs                              2.0G     0  2.0G   0% /dev/shm</span><br><span class="line">tmpfs                              5.0M     0  5.0M   0% /run/lock</span><br><span class="line">tmpfs                              2.0G     0  2.0G   0% /sys/fs/cgroup</span><br><span class="line">/dev/sda2                          976M   41M  868M   5% /boot</span><br><span class="line">tmpfs                              393M     0  393M   0% /run/user/1000</span><br><span class="line">root@ubuntu:~<span class="comment">#</span></span><br></pre></td></tr></table></figure>
+<h4 id="3-清理日志和缓存"><a href="#3-清理日志和缓存" class="headerlink" title="3. 清理日志和缓存"></a>3. 清理日志和缓存</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">rm -rf /var/lib/apt/lists/*</span><br><span class="line">rm -rf /var/cache/apt/*</span><br><span class="line">rm -rf /var/<span class="built_in">log</span>/journal/*</span><br></pre></td></tr></table></figure>
+<h4 id="4-清理不用的文件"><a href="#4-清理不用的文件" class="headerlink" title="4. 清理不用的文件"></a>4. 清理不用的文件</h4><p>剩下来能精简的只有 <code>/usr/share</code> 里面的 doc 和 locale 文件里，减小大概 40 MB</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">rm -rf /usr/share/doc</span><br><span class="line"></span><br><span class="line"><span class="built_in">cd</span> /usr/share/locale</span><br><span class="line"><span class="comment"># 下面这条命令一定要在 /usr/share/locale 目录下执行</span></span><br><span class="line">ls | grep -v zh | grep -v en | grep -v us | grep -v @ | grep -v <span class="built_in">local</span> | xargs rm -rf</span><br><span class="line"></span><br><span class="line">root@ubuntu:/usr/share/locale<span class="comment"># du -sh</span></span><br><span class="line">1.5M</span><br></pre></td></tr></table></figure>
+<p><strong>最后完毕</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line">root@ubuntu:/usr/share/locale<span class="comment"># df -h</span></span><br><span class="line">Filesystem                         Size  Used Avail Use% Mounted on</span><br><span class="line">udev                               1.9G     0  1.9G   0% /dev</span><br><span class="line">tmpfs                              393M  1.1M  392M   1% /run</span><br><span class="line">/dev/mapper/ubuntu--vg-ubuntu--lv   28G  660M   26G   3% /</span><br><span class="line">tmpfs                              2.0G     0  2.0G   0% /dev/shm</span><br><span class="line">tmpfs                              5.0M     0  5.0M   0% /run/lock</span><br><span class="line">tmpfs                              2.0G     0  2.0G   0% /sys/fs/cgroup</span><br><span class="line">/dev/sda2                          976M   41M  868M   5% /boot</span><br><span class="line">tmpfs                              393M     0  393M   0% /run/user/1000</span><br><span class="line">root@ubuntu:/usr/share/locale<span class="comment"># ncdu /</span></span><br><span class="line">ncdu 1.12 ~ Use the arrow keys to navigate, press ? <span class="keyword">for</span> <span class="built_in">help</span></span><br><span class="line">--- / --------------------------------------------------------------------------------------------------------------</span><br><span class="line">  407.4 MiB [<span class="comment">##########] /usr</span></span><br><span class="line">  109.6 MiB [<span class="comment">##        ] /lib</span></span><br><span class="line">   38.2 MiB [          ] /boot</span><br><span class="line">   27.5 MiB [          ] /var</span><br><span class="line">   14.9 MiB [          ] /bin</span><br><span class="line">   14.4 MiB [          ] /sbin</span><br><span class="line">    5.0 MiB [          ] /etc</span><br><span class="line">    1.1 MiB [          ] /run</span><br><span class="line">   52.0 KiB [          ] /tmp</span><br><span class="line">   32.0 KiB [          ] /home</span><br><span class="line">   20.0 KiB [          ] /root</span><br><span class="line">e  16.0 KiB [          ] /lost+found</span><br><span class="line">    4.0 KiB [          ] /lib64</span><br><span class="line">e   4.0 KiB [          ] /srv</span><br><span class="line">e   4.0 KiB [          ] /opt</span><br><span class="line">e   4.0 KiB [          ] /mnt</span><br><span class="line">e   4.0 KiB [          ] /media</span><br><span class="line">.   0.0   B [          ] /proc</span><br><span class="line">    0.0   B [          ] /sys</span><br><span class="line">    0.0   B [          ] /dev</span><br><span class="line">@   0.0   B [          ]  initrd.img.old</span><br><span class="line">@   0.0   B [          ]  initrd.img</span><br><span class="line">@   0.0   B [          ]  vmlinuz.old</span><br><span class="line">@   0.0   B [          ]  vmlinuz</span><br></pre></td></tr></table></figure>
+<h4 id="5-置零剩余空间"><a href="#5-置零剩余空间" class="headerlink" title="5. 置零剩余空间"></a>5. 置零剩余空间</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">root@ubuntu:/usr/share/locale<span class="comment"># df -h</span></span><br><span class="line">Filesystem                         Size  Used Avail Use% Mounted on</span><br><span class="line">udev                               1.9G     0  1.9G   0% /dev</span><br><span class="line">tmpfs                              393M  1.1M  392M   1% /run</span><br><span class="line">/dev/mapper/ubuntu--vg-ubuntu--lv   28G  660M   26G   3% /</span><br><span class="line">tmpfs                              2.0G     0  2.0G   0% /dev/shm</span><br><span class="line">tmpfs                              5.0M     0  5.0M   0% /run/lock</span><br><span class="line">tmpfs                              2.0G     0  2.0G   0% /sys/fs/cgroup</span><br><span class="line">/dev/sda2                          976M   41M  868M   5% /boot</span><br><span class="line">tmpfs                              393M     0  393M   0% /run/user/1000</span><br></pre></td></tr></table></figure>
+<p>经过上面的精简之后，根分区占用 660MB 加上 boot 分区刚好 700 MB 左右。如果现在直接导出 ova 模板的话，vmdk 的体积是很大的，至少 1GB（ <code>1.3G Aug 28 15:48 Ubuntu1804.ova</code>） ，因此在导出 ova 模板之前需要把磁盘的剩余空间置零，这样导出的 vmdk 文件大小更小，450MB 左右哈。</p>
+<p>直接使用 dd 暴力清零就行啦 <code>dd if=/dev/zero of=/zero bs=4M || rm -rf /zero</code></p>
+<p>这个过程比较长，时间取决于你安装虚拟机的时候给定的根分区大小，以及你的磁盘速度</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">root@ubuntu:~<span class="comment"># dd if=/dev/zero of=/zero bs=4M || rm -rf /zero</span></span><br><span class="line"></span><br><span class="line">dd: error writing <span class="string">'/zero'</span>: No space left on device</span><br><span class="line">6860+0 records <span class="keyword">in</span></span><br><span class="line">6859+0 records out</span><br><span class="line">28771078144 bytes (29 GB, 27 GiB) copied, 445.634 s, 64.6 MB/s</span><br></pre></td></tr></table></figure>
+<h4 id="6-导出-OVA-虚拟机模板"><a href="#6-导出-OVA-虚拟机模板" class="headerlink" title="6. 导出 OVA 虚拟机模板"></a>6. 导出 OVA 虚拟机模板</h4><p>经过置零后我们再导出 OVA 模板</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">464M Aug 28 16:15 Ubuntu1804-2.ova <span class="comment"># 置零后的大小</span></span><br><span class="line">1.3G Aug 28 15:48 Ubuntu1804.ova   <span class="comment"># 置零前的大小</span></span><br></pre></td></tr></table></figure>
+<p>经过置零后，导出的 ova 虚拟机模板体积 460M 左右，骤然减少了接近 2 倍的大小😂</p>
+<h3 id="2-Debian-10"><a href="#2-Debian-10" class="headerlink" title="2. Debian 10"></a>2. Debian 10</h3><h4 id="1-安装镜像-1"><a href="#1-安装镜像-1" class="headerlink" title="1. 安装镜像"></a>1. 安装镜像</h4><p>安装镜像选用 Debian 的网络版安装镜像，<a href="https://mirrors.ustc.edu.cn/debian-cd/10.0.0/amd64/iso-cd/debian-10.0.0-amd64-netinst.iso" target="_blank" rel="noopener">debian-10.0.0-amd64-netinst.iso</a> 其实选择 <a href="https://mirrors.ustc.edu.cn/debian-cd/10.0.0/amd64/iso-cd/debian-10.0.0-amd64-xfce-CD-1.iso" target="_blank" rel="noopener">debian-10.0.0-amd64-netinst.iso  </a>版的也行，在最后不要安装桌面环境就可以。</p>
+<h4 id="2-卸载不用的软件包-1"><a href="#2-卸载不用的软件包-1" class="headerlink" title="2. 卸载不用的软件包"></a>2. 卸载不用的软件包</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 首先修改一下 apt 源</span></span><br><span class="line">sed -i <span class="string">'s/deb.debian.org/mirrors.ustc.edu.cn/g'</span> /etc/apt/sources.list</span><br><span class="line">sed -i <span class="string">'s|security.debian.org/debian-security|mirrors.ustc.edu.cn/debian-security|g'</span> /etc/apt/sources.list</span><br><span class="line">apt update</span><br><span class="line"><span class="comment"># 装上一些比较实用的工具</span></span><br><span class="line">apt install --no-install-recommends --no-install-suggests -y wget  ncdu</span><br><span class="line"></span><br><span class="line"><span class="comment"># 这几个包卸载掉影响不大，应该。。</span></span><br><span class="line">apt purge emacsen-common firmware-linux-free gcc-8-base linux-image-amd64</span><br></pre></td></tr></table></figure>
+<h4 id="3-清理日志和缓存-1"><a href="#3-清理日志和缓存-1" class="headerlink" title="3. 清理日志和缓存"></a>3. 清理日志和缓存</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">rm -rf /var/lib/apt/lists/*</span><br><span class="line">apt autoclean</span><br><span class="line">apt autoremove</span><br></pre></td></tr></table></figure>
+<h4 id="4-清理不用的文件-1"><a href="#4-清理不用的文件-1" class="headerlink" title="4. 清理不用的文件"></a>4. 清理不用的文件</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> /usr/share/<span class="built_in">local</span></span><br><span class="line">du -sh * | grep -v en | grep -v zh | grep -v cn | grep -v us | awk <span class="string">'&#123;print $2&#125;'</span> | xargs rm -rf</span><br><span class="line">rm -rf /usr/share/doc/*</span><br></pre></td></tr></table></figure>
+<h4 id="5-置零剩余空间-1"><a href="#5-置零剩余空间-1" class="headerlink" title="5. 置零剩余空间"></a>5. 置零剩余空间</h4><p>直接使用 dd 暴力清零就行啦 <code>dd if=/dev/zero of=/zero bs=4M || rm -rf /zero</code></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">╭─root@debian ~</span><br><span class="line">╰─<span class="comment"># df -h</span></span><br><span class="line">Filesystem                   Size  Used Avail Use% Mounted on</span><br><span class="line">udev                         2.0G     0  2.0G   0% /dev</span><br><span class="line">tmpfs                        395M   11M  385M   3% /run</span><br><span class="line">/dev/mapper/debian--vg-root   26G  698M   24G   3% /</span><br><span class="line">tmpfs                        2.0G     0  2.0G   0% /dev/shm</span><br><span class="line">tmpfs                        5.0M     0  5.0M   0% /run/lock</span><br><span class="line">tmpfs                        2.0G     0  2.0G   0% /sys/fs/cgroup</span><br><span class="line">/dev/sda1                    236M   48M  176M  22% /boot</span><br><span class="line">tmpfs                        395M     0  395M   0% /run/user/0</span><br></pre></td></tr></table></figure>
+<h4 id="6-导出-OVA-虚拟机模板-1"><a href="#6-导出-OVA-虚拟机模板-1" class="headerlink" title="6. 导出 OVA 虚拟机模板"></a>6. 导出 OVA 虚拟机模板</h4><p>最终导出的 vmdk 模板为 351M ，棒棒哒😂</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">351M Sep  1 16:17 disk-0.vmdk</span><br></pre></td></tr></table></figure>
+<h3 id="3-CentOS-7-6"><a href="#3-CentOS-7-6" class="headerlink" title="3. CentOS 7.6"></a>3. CentOS 7.6</h3><h4 id="1-安装镜像-2"><a href="#1-安装镜像-2" class="headerlink" title="1. 安装镜像"></a>1. 安装镜像</h4><p>安装镜像就选择使用<a href="https://mirrors.ustc.edu.cn/centos/7.6.1810/isos/x86_64/CentOS-7-x86_64-Minimal-1810.iso" target="_blank" rel="noopener">CentOS-7-x86_64-Minimal-1810.iso</a> 版的 iso 就行，安装过程就不再赘述啦。磁盘分区建议为 lvm ，因为这个是虚拟机模板文件，并不清楚以后的用途和所占用的空间。使用 lvm 可以很方便地扩展根分区。</p>
+<h4 id="2-卸载不用的软件包-2"><a href="#2-卸载不用的软件包-2" class="headerlink" title="2. 卸载不用的软件包"></a>2. 卸载不用的软件包</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 修改 yum 源为阿里云</span></span><br><span class="line">wget -O /etc/yum.repos.d/CentOS-Base.repo http://mirrors.aliyun.com/repo/Centos-7.repo</span><br><span class="line">yum install -y wget curl ncdu</span><br><span class="line"></span><br><span class="line">yum remove linux-firmware NetworkManager mariadb-libs NetworkManager  alsa-lib centos-logos.noarch</span><br><span class="line">yum list installed | grep firmware | xargs yum remove -y</span><br></pre></td></tr></table></figure>
+<h4 id="3-清理日志和缓存-2"><a href="#3-清理日志和缓存-2" class="headerlink" title="3. 清理日志和缓存"></a>3. 清理日志和缓存</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">yum clean all</span><br><span class="line"></span><br><span class="line">rm -rf /var/cache</span><br></pre></td></tr></table></figure>
+<h4 id="4-清理不用的文件-2"><a href="#4-清理不用的文件-2" class="headerlink" title="4. 清理不用的文件"></a>4. 清理不用的文件</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 精简一下 local-archive 文件</span></span><br><span class="line">localedef --list-archive  | grep -v zh  | grep -v us | grep -v en | grep -v cn | xargs localedef --delete-from-archive</span><br><span class="line">mv /usr/lib/locale/locale-archive /usr/lib/locale/locale-archive.tmpl</span><br><span class="line">build-locale-archive</span><br><span class="line"></span><br><span class="line">rm -rf /usr/share/doc</span><br><span class="line"><span class="built_in">cd</span> /usr/share/locale</span><br><span class="line"><span class="comment"># 下面这条命令一定要在 /usr/share/locale 目录下执行</span></span><br><span class="line">ls | grep -v zh | grep -v en | grep -v us | grep -v @ | grep -v <span class="built_in">local</span> | xargs rm -rf</span><br><span class="line">rm -rf /usr/share/backgrounds</span><br></pre></td></tr></table></figure>
+<h4 id="5-置零剩余空间-2"><a href="#5-置零剩余空间-2" class="headerlink" title="5. 置零剩余空间"></a>5. 置零剩余空间</h4><p>直接使用 dd 暴力清零就行啦 <code>dd if=/dev/zero of=/zero bs=4M || rm -rf /zero</code></p>
+<p>最后看一下磁盘空间，占用不到 700M ，还是可以的哈</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">╭─root@centos ~</span><br><span class="line">╰─<span class="comment"># df -h</span></span><br><span class="line">Filesystem               Size  Used Avail Use% Mounted on</span><br><span class="line">/dev/mapper/centos-root   29G  594M   27G   3% /</span><br><span class="line">devtmpfs                 1.9G     0  1.9G   0% /dev</span><br><span class="line">tmpfs                    1.9G     0  1.9G   0% /dev/shm</span><br><span class="line">tmpfs                    1.9G  9.3M  1.9G   1% /run</span><br><span class="line">tmpfs                    1.9G     0  1.9G   0% /sys/fs/cgroup</span><br><span class="line">/dev/sda1                488M  113M  340M  25% /boot</span><br><span class="line">tmpfs                    378M     0  378M   0% /run/user/0</span><br></pre></td></tr></table></figure>
+<h4 id="6-导出-OVA-虚拟机模板-2"><a href="#6-导出-OVA-虚拟机模板-2" class="headerlink" title="6. 导出 OVA 虚拟机模板"></a>6. 导出 OVA 虚拟机模板</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">348M Sep  1 09:00 disk-1.vmdk</span><br></pre></td></tr></table></figure>
+<p>最后导出的虚拟机模板大小不到 350M</p>
+<h3 id="4-Alpine-3-10"><a href="#4-Alpine-3-10" class="headerlink" title="4. Alpine 3.10"></a>4. Alpine 3.10</h3><p>Alpine 虚拟机本来就很精简啦，其实不用搓也行</p>
+    </div>
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E8%99%9A%E6%8B%9F%E6%9C%BA/" rel="tag"><i class="fa fa-tag"></i> 虚拟机</a>
+              <a href="/tags/VMware/" rel="tag"><i class="fa fa-tag"></i> VMware</a>
+              <a href="/tags/ESXi/" rel="tag"><i class="fa fa-tag"></i> ESXi</a>
+          </div>
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/How-to-choose-the-right-version-of-kubernetes.html" rel="prev" title="生产环境如何保守地选择 kubernetes 版本">
+      <i class="fa fa-chevron-left"></i> 生产环境如何保守地选择 kubernetes 版本
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/centos7-offline-install-docker.html" rel="next" title="CentOS7 离线安装 Docker-ce">
+      CentOS7 离线安装 Docker-ce <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+  </article>
+  </div>
+          </div>
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+        </div>
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#0-背景"><span class="nav-number">1.</span> <span class="nav-text">0. 背景</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-Ubuntu-1804"><span class="nav-number">2.</span> <span class="nav-text">1. Ubuntu 1804</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-安装镜像"><span class="nav-number">2.1.</span> <span class="nav-text">1. 安装镜像</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-卸载不用的软件包"><span class="nav-number">2.2.</span> <span class="nav-text">2. 卸载不用的软件包</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-清理日志和缓存"><span class="nav-number">2.3.</span> <span class="nav-text">3. 清理日志和缓存</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-清理不用的文件"><span class="nav-number">2.4.</span> <span class="nav-text">4. 清理不用的文件</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#5-置零剩余空间"><span class="nav-number">2.5.</span> <span class="nav-text">5. 置零剩余空间</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#6-导出-OVA-虚拟机模板"><span class="nav-number">2.6.</span> <span class="nav-text">6. 导出 OVA 虚拟机模板</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-Debian-10"><span class="nav-number">3.</span> <span class="nav-text">2. Debian 10</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-安装镜像-1"><span class="nav-number">3.1.</span> <span class="nav-text">1. 安装镜像</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-卸载不用的软件包-1"><span class="nav-number">3.2.</span> <span class="nav-text">2. 卸载不用的软件包</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-清理日志和缓存-1"><span class="nav-number">3.3.</span> <span class="nav-text">3. 清理日志和缓存</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-清理不用的文件-1"><span class="nav-number">3.4.</span> <span class="nav-text">4. 清理不用的文件</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#5-置零剩余空间-1"><span class="nav-number">3.5.</span> <span class="nav-text">5. 置零剩余空间</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#6-导出-OVA-虚拟机模板-1"><span class="nav-number">3.6.</span> <span class="nav-text">6. 导出 OVA 虚拟机模板</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-CentOS-7-6"><span class="nav-number">4.</span> <span class="nav-text">3. CentOS 7.6</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-安装镜像-2"><span class="nav-number">4.1.</span> <span class="nav-text">1. 安装镜像</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-卸载不用的软件包-2"><span class="nav-number">4.2.</span> <span class="nav-text">2. 卸载不用的软件包</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-清理日志和缓存-2"><span class="nav-number">4.3.</span> <span class="nav-text">3. 清理日志和缓存</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-清理不用的文件-2"><span class="nav-number">4.4.</span> <span class="nav-text">4. 清理不用的文件</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#5-置零剩余空间-2"><span class="nav-number">4.5.</span> <span class="nav-text">5. 置零剩余空间</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#6-导出-OVA-虚拟机模板-2"><span class="nav-number">4.6.</span> <span class="nav-text">6. 导出 OVA 虚拟机模板</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-Alpine-3-10"><span class="nav-number">5.</span> <span class="nav-text">4. Alpine 3.10</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木子"
+      src="https://blog.502.li/favicon.ico">
+  <p class="site-author-name" itemprop="name">木子</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">65</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">72</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/muzi502" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;muzi502" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:blog@502.li" title="E-Mail → mailto:blog@502.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://twitter.com/muzi_ii" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;muzi_ii" rel="noopener" target="_blank"><i class="fa fa-fw fa-twitter"></i>Twitter</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://t.me/muzi_ii" title="Telegram → https:&#x2F;&#x2F;t.me&#x2F;muzi_ii" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Telegram</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://kindle.502.li/" title="Kindle → https:&#x2F;&#x2F;kindle.502.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-book"></i>Kindle</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://https//t.me/rss_kubernetes" title="Channel → https:&#x2F;&#x2F;https:&#x2F;&#x2F;t.me&#x2F;rss_kubernetes" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Channel</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-fw fa-rss"></i>RSS</a>
+      </span>
+  </div>
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+      </div>
+    </main>
+    <footer class="footer">
+      <div class="footer-inner">
+<div class="copyright">
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木子</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">793k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">22:02</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">主题 – <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a>
+  </div>
+      </div>
+    </footer>
+  </div>
+  <script src="/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script>
+<script src="/js/schemes/pisces.js"></script>
+<script src="/js/next-boot.js"></script>
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://muzi.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: {page: {
+            url: "https://blog.502.li/esxi-vmbase.html",
+            identifier: "esxi-vmbase.html",
+            title: "手搓虚拟机模板"
+          }
+        }
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://muzi.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+</body>
+</html>

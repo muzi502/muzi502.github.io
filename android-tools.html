@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon.ico">
+  <link rel="mask-icon" href="/favicon.ico" color="#222">
+<link rel="stylesheet" href="/css/main.css">
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Roboto Mono:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://blog.502.li').hostname,
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":true,"scrollpercent":true},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"buttons","active":null,"storage":true,"lazyload":true,"nav":{"disqus":{"text":"Load Disqus","order":-1}}},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":false,"async":true,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+  <meta name="description" content="我青年时代就读过西游戏、马可波罗游记、左丘明、左传😂…..没读过  论Android神器当属Tasker、钛备份、xposed、magisk、superSU、busybox这五个。以下总结自己多年刷机经验，谈谈这几个神器的使用。用好这些神器绝对会让你的Android更加强大！  1.Tasker设置各种自动化任务，例如：自动填写验证码，自动转发短信到另一个手机号，打开chrome时自动开启代理，">
+<meta property="og:type" content="article">
+<meta property="og:title" content="推荐使用过的 Android 神器">
+<meta property="og:url" content="https://blog.502.li/android-tools.html">
+<meta property="og:site_name" content="木子">
+<meta property="og:description" content="我青年时代就读过西游戏、马可波罗游记、左丘明、左传😂…..没读过  论Android神器当属Tasker、钛备份、xposed、magisk、superSU、busybox这五个。以下总结自己多年刷机经验，谈谈这几个神器的使用。用好这些神器绝对会让你的Android更加强大！  1.Tasker设置各种自动化任务，例如：自动填写验证码，自动转发短信到另一个手机号，打开chrome时自动开启代理，">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2019-04-26T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-02-23T02:38:57.264Z">
+<meta property="article:author" content="木子">
+<meta property="article:tag" content="安卓">
+<meta property="article:tag" content="刷机">
+<meta property="article:tag" content="android">
+<meta name="twitter:card" content="summary">
+<link rel="canonical" href="https://blog.502.li/android-tools.html">
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+  <title>推荐使用过的 Android 神器 | 木子</title>
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+<link rel="alternate" href="/atom.xml" title="木子" type="application/atom+xml">
+</head>
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">木子</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+    <a href="/" rel="section"><i class="fa fa-fw fa-desktop"></i>Home</a>
+  </li>
+        <li class="menu-item menu-item-books">
+    <a href="/booklist.html" rel="section"><i class="fa fa-fw fa-book"></i>Books</a>
+  </li>
+        <li class="menu-item menu-item-kindle">
+    <a href="https://kindle.502.li/" rel="noopener" target="_blank"><i class="fa fa-fw fa-book"></i>Kindle</a>
+  </li>
+        <li class="menu-item menu-item-friend">
+    <a href="/link/" rel="section"><i class="fa fa-fw fa-link"></i>Friend</a>
+  </li>
+        <li class="menu-item menu-item-about">
+    <a href="/about.html" rel="section"><i class="fa fa-fw fa-user-circle-o"></i>About</a>
+  </li>
+  </ul>
+</nav>
+</div>
+    </header>
+  <div class="reading-progress-bar"></div>
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div class="content">
+  <div class="posts-expand">
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.502.li/android-tools.html">
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://blog.502.li/favicon.ico">
+      <meta itemprop="name" content="木子">
+      <meta itemprop="description" content="">
+    </span>
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木子">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          推荐使用过的 Android 神器
+        </h1>
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              <time title="创建时间：2019-04-27 2019-04-27T00:00:00+08:00" itemprop="dateCreated datePublished" datetime="2019-04-27T00:00:00+08:00">2019-04-27</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-02-23 2020-02-23T10:38:57+08:00" itemprop="dateModified" datetime="2020-02-23T10:38:57+08:00">2020-02-23</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%90%9E%E6%9C%BA/" itemprop="url" rel="index">
+                    <span itemprop="name">搞机</span>
+                  </a>
+                </span>
+            </span>
+  <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-comment-o"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    <a title="disqus" href="/android-tools.html#comments" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="android-tools.html" itemprop="commentCount"></span>
+    </a>
+  </span>
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>2.3k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>4 分钟</span>
+            </span>
+        </div>
+      </header>
+    <div class="post-body" itemprop="articleBody">
+        <p><del>我青年时代就读过西游戏、马可波罗游记、左丘明、左传</del>😂…..没读过</p>
+<hr>
+<p>论Android神器当属Tasker、钛备份、xposed、magisk、superSU、busybox这五个。以下总结自己多年刷机经验，谈谈这几个神器的使用。用好这些神器绝对会让你的Android更加强大！</p>
+<hr>
+<h2 id="1-Tasker"><a href="#1-Tasker" class="headerlink" title="1.Tasker"></a>1.Tasker</h2><p>设置各种自动化任务，例如：自动填写验证码，自动转发短信到另一个手机号，打开chrome时自动开启代理，夜间静音，锁屏进入打盹模式。</p>
+<hr>
+<h2 id="2-钛备份"><a href="#2-钛备份" class="headerlink" title="2.钛备份"></a>2.钛备份</h2><p>绝对的神器，备份应用数据不用再为每个app设置而烦恼了，虽然最近也出了一夜替代钛备份的工具，但我还是认为钛备份最好用，简单操作，自定义强，稳定使用了四五年，已经很依赖和信任这个工具了。</p>
+<hr>
+<h2 id="3-xposed"><a href="#3-xposed" class="headerlink" title="3.xposed"></a>3.xposed</h2><p>很多xposed模板可用，比如绿色守护的增强模块，存储重定向的模块，应用管理器的模块，全局渲染导航栏的模块.<br>貌似xposed作者已经弃坑了.Android 9.0已经出来一年多了还是没有正式版的xposed可用，就像当初Android 7.0一样，也是等了很久很久，不知道Android9.0要等多久。<br>到Android 9.0后不再想使用xposed了，主要是对xposed性能的考虑，不装xposed也能过得去.绿色守护可以安装到pri-app目录里，就能用到特权模式，相比xposed还更高效。</p>
+<hr>
+<h2 id="4-magisk"><a href="#4-magisk" class="headerlink" title="4.magisk"></a>4.magisk</h2><p>新一代root的工具，相比superSU优点很多。作者时台湾的，Android P还未发布，magisk就已经root了设备😂。</p>
+<hr>
+<h2 id="5-superSU"><a href="#5-superSU" class="headerlink" title="5.superSU"></a>5.superSU</h2><p>su时root必备的工具，至于root的原理和过程以前看过一本ROM编译的书讲到过。你搞机肯定需要root权限啊。</p>
+<hr>
+<h2 id="6-busybox"><a href="#6-busybox" class="headerlink" title="6.busybox"></a>6.busybox</h2><p>很多搞机工具都需要用到busybox，比如钛备份，幸运破解器等，对了，钛备份内置了一个busybox，想必也是使用busybox来备份应用的。</p>
+<hr>
+<h2 id="7-RootExpoloer-RE"><a href="#7-RootExpoloer-RE" class="headerlink" title="7.RootExpoloer(RE)"></a>7.RootExpoloer(RE)</h2><p>RE管理器时很久远的工具了，Z自从Android1.5就开始使用RE管理器，是我们刷机搞基必备的文件管理工具，特点是简洁好用。</p>
+<hr>
+<h2 id="8-绿色守护"><a href="#8-绿色守护" class="headerlink" title="8.绿色守护"></a>8.绿色守护</h2><p>优化电池使用，后台自动化休眠毒瘤app。尤其是使用绿色守护强制进入打盹模式，省电神器。配合hotplug特性的内核简直省电不要不要的。经待机测试绿色守护+hotplug 夜间待机8小时耗电1%。</p>
+<hr>
+<h2 id="9-App-Ops"><a href="#9-App-Ops" class="headerlink" title="9.App Ops"></a>9.App Ops</h2><p>用来权限管理，我对待新应用我直接禁用最大化的权限。最好禁用所有权限，结合应用管理的匿名，给app传递一个伪造的数据😂。<br>国产毒瘤app，你妈死了，不给权限不让运行，如此毒瘤的行为简直想草死你全家😡。</p>
+<hr>
+<h2 id="10-应用管理-github-tornaco-X-APM"><a href="#10-应用管理-github-tornaco-X-APM" class="headerlink" title="10.应用管理 github@tornaco/X-APM"></a>10.应用管理 github@tornaco/X-APM</h2><p>功能很丰富，可对新安装的应用套用自定义模板，很方便，也是神器。喜欢匿名功能，我喜欢伪造一些假数据给app😂。</p>
+<hr>
+<h2 id="11-XInternalSD"><a href="#11-XInternalSD" class="headerlink" title="11.XInternalSD"></a>11.XInternalSD</h2><p>xposed模块，用于重定向那些再内存存储里拉屎的app，真是国产毒瘤app，不遵守规范，乱再内部存储里拉屎，用这个模块重定向那些拉屎的app。个人有强迫症，内部存储目录我整理的很有序，绝对不容许这些app在这里乱拉屎。</p>
+<hr>
+<h2 id="12-MyAndroidTools-IFW"><a href="#12-MyAndroidTools-IFW" class="headerlink" title="12.MyAndroidTools / IFW"></a>12.MyAndroidTools / IFW</h2><p>二者作用效果相同，用来禁用一些毒瘤app的后台服务</p>
+<hr>
+<h2 id="14-BBS-betterbatterystats"><a href="#14-BBS-betterbatterystats" class="headerlink" title="14.BBS betterbatterystats"></a>14.BBS betterbatterystats</h2><p>用来检测电池电量的使用，以及查看系统唤醒锁的情况。配合另一个工具食用绝佳</p>
+<hr>
+<h2 id="15-Poweramp"><a href="#15-Poweramp" class="headerlink" title="15.Poweramp"></a>15.Poweramp</h2><p>离线音乐播放软件，简洁好用。受够了国内的毒瘤音乐播放软件，一个音乐播放软件里弄个商城????尼玛死了。</p>
+<hr>
+<h2 id="16-juiceSSH"><a href="#16-juiceSSH" class="headerlink" title="16.juiceSSH"></a>16.juiceSSH</h2><p>手机端SSH 登录软件，很好用，用来三年了😂，其实</p>
+<hr>
+<h2 id="17-ScanMediaPiz"><a href="#17-ScanMediaPiz" class="headerlink" title="17.ScanMediaPiz"></a>17.ScanMediaPiz</h2><p>媒体扫描，用来解决MTP一堆狗屎毛病。没有启动界面，点击一下就能启动，而且时开源的，GitHub上有源码，代码不到30行。想用tasker实现这个媒体扫描的功能，试了好几次都不行😭。</p>
+<hr>
+<h2 id="18-LongShot"><a href="#18-LongShot" class="headerlink" title="18.LongShot"></a>18.LongShot</h2><p>长截图，用的havos原生ROM，没得长截图的功能，只好用这个代替喽</p>
+<hr>
+<h2 id="19-Bmap3-9"><a href="#19-Bmap3-9" class="headerlink" title="19.Bmap3.9"></a>19.Bmap3.9</h2><p>日用的地图软件，简洁好用，开源免费。功能不强大，但够用。没有杂七杂八的功能。</p>
+<hr>
+<h2 id="20-Lawnchair"><a href="#20-Lawnchair" class="headerlink" title="20.Lawnchair"></a>20.Lawnchair</h2><p>有史以来我用过最简洁好用的桌面启动器，非常简洁还用！！！，没有智障的负一屏，只有桌面，应用抽屉使用。很简单，结合pixelIco的图包，能打造个简洁美观的桌面。</p>
+<hr>
+<h2 id="21-MXplayer"><a href="#21-MXplayer" class="headerlink" title="21.MXplayer"></a>21.MXplayer</h2><p>视频播放器，用了也是很久很久了。貌似是个印度的，公司1亿美元被收购了。</p>
+<hr>
+<h2 id="22-Solid-Explorer"><a href="#22-Solid-Explorer" class="headerlink" title="22.Solid Explorer"></a>22.Solid Explorer</h2><p>是我替代RE管理器的工具，主要是好看，而且也很简洁。和电脑传输文件就用它的SMB共享，尽量原理MTP吧，传输3万张图片24小时是传不完了，MTP巨慢。还是SMB稍稍快点，手机开热点传最高8MB/S，可能是我手机基带的问题。</p>
+<hr>
+<h2 id="23-简洁-日历"><a href="#23-简洁-日历" class="headerlink" title="23.简洁 日历"></a>23.简洁 日历</h2><p>日历app，相当简洁好用，没有杂七杂八的功能</p>
+<hr>
+<h2 id="24-AFWall"><a href="#24-AFWall" class="headerlink" title="24.AFWall+"></a>24.AFWall+</h2><p>防火墙，用于控制app上网权限，以及设置一些iptables规则，用来屏蔽买药的baidu不错。</p>
+<hr>
+<h2 id="25-Termux"><a href="#25-Termux" class="headerlink" title="25.Termux"></a>25.Termux</h2><p>打造最强大的Android终端，还可以安装oh-my-zsh哦😂。</p>
+<hr>
+<h2 id="26-IDM9-3"><a href="#26-IDM9-3" class="headerlink" title="26.IDM9.3"></a>26.IDM9.3</h2><p>下载神器，64线程暴力下载能跑满带宽</p>
+<hr>
+<h2 id="27-Pure天气"><a href="#27-Pure天气" class="headerlink" title="27.Pure天气"></a>27.Pure天气</h2><p>十分轻量简洁的天气软件</p>
+<hr>
+<h2 id="28-Tiny-web-server"><a href="#28-Tiny-web-server" class="headerlink" title="28.Tiny web server"></a>28.Tiny web server</h2><p>安卓端的web服务器，结合FRP使用可用于公网共享Android目录。不过服务器默认开启的是内部存储目录，为了保护好隐私，最好设置好共享的目录。</p>
+<hr>
+<h2 id="29-湾区日报-开源工场"><a href="#29-湾区日报-开源工场" class="headerlink" title="29.湾区日报 / 开源工场"></a>29.湾区日报 / 开源工场</h2><p>个人最主要的英文阅读媒体，学习英语呀😂。</p>
+<hr>
+<h2 id="30-Wakelock-Detecor"><a href="#30-Wakelock-Detecor" class="headerlink" title="30.Wakelock Detecor"></a>30.Wakelock Detecor</h2><p>用来检测统计一些唤醒锁的使用情况。</p>
+    </div>
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%AE%89%E5%8D%93/" rel="tag"><i class="fa fa-tag"></i> 安卓</a>
+              <a href="/tags/%E5%88%B7%E6%9C%BA/" rel="tag"><i class="fa fa-tag"></i> 刷机</a>
+              <a href="/tags/android/" rel="tag"><i class="fa fa-tag"></i> android</a>
+          </div>
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/android-tasker.html" rel="prev" title="tasker 神器">
+      <i class="fa fa-chevron-left"></i> tasker 神器
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/ops36.html" rel="next" title="高效运维社区分享系列.运维三十六计">
+      高效运维社区分享系列.运维三十六计 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+  </article>
+  </div>
+          </div>
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+        </div>
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-Tasker"><span class="nav-number">1.</span> <span class="nav-text">1.Tasker</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-钛备份"><span class="nav-number">2.</span> <span class="nav-text">2.钛备份</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-xposed"><span class="nav-number">3.</span> <span class="nav-text">3.xposed</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-magisk"><span class="nav-number">4.</span> <span class="nav-text">4.magisk</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-superSU"><span class="nav-number">5.</span> <span class="nav-text">5.superSU</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#6-busybox"><span class="nav-number">6.</span> <span class="nav-text">6.busybox</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#7-RootExpoloer-RE"><span class="nav-number">7.</span> <span class="nav-text">7.RootExpoloer(RE)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#8-绿色守护"><span class="nav-number">8.</span> <span class="nav-text">8.绿色守护</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#9-App-Ops"><span class="nav-number">9.</span> <span class="nav-text">9.App Ops</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#10-应用管理-github-tornaco-X-APM"><span class="nav-number">10.</span> <span class="nav-text">10.应用管理 github@tornaco&#x2F;X-APM</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#11-XInternalSD"><span class="nav-number">11.</span> <span class="nav-text">11.XInternalSD</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#12-MyAndroidTools-IFW"><span class="nav-number">12.</span> <span class="nav-text">12.MyAndroidTools &#x2F; IFW</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#14-BBS-betterbatterystats"><span class="nav-number">13.</span> <span class="nav-text">14.BBS betterbatterystats</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#15-Poweramp"><span class="nav-number">14.</span> <span class="nav-text">15.Poweramp</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#16-juiceSSH"><span class="nav-number">15.</span> <span class="nav-text">16.juiceSSH</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#17-ScanMediaPiz"><span class="nav-number">16.</span> <span class="nav-text">17.ScanMediaPiz</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#18-LongShot"><span class="nav-number">17.</span> <span class="nav-text">18.LongShot</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#19-Bmap3-9"><span class="nav-number">18.</span> <span class="nav-text">19.Bmap3.9</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#20-Lawnchair"><span class="nav-number">19.</span> <span class="nav-text">20.Lawnchair</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#21-MXplayer"><span class="nav-number">20.</span> <span class="nav-text">21.MXplayer</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#22-Solid-Explorer"><span class="nav-number">21.</span> <span class="nav-text">22.Solid Explorer</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#23-简洁-日历"><span class="nav-number">22.</span> <span class="nav-text">23.简洁 日历</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#24-AFWall"><span class="nav-number">23.</span> <span class="nav-text">24.AFWall+</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#25-Termux"><span class="nav-number">24.</span> <span class="nav-text">25.Termux</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#26-IDM9-3"><span class="nav-number">25.</span> <span class="nav-text">26.IDM9.3</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#27-Pure天气"><span class="nav-number">26.</span> <span class="nav-text">27.Pure天气</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#28-Tiny-web-server"><span class="nav-number">27.</span> <span class="nav-text">28.Tiny web server</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#29-湾区日报-开源工场"><span class="nav-number">28.</span> <span class="nav-text">29.湾区日报 &#x2F; 开源工场</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#30-Wakelock-Detecor"><span class="nav-number">29.</span> <span class="nav-text">30.Wakelock Detecor</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木子"
+      src="https://blog.502.li/favicon.ico">
+  <p class="site-author-name" itemprop="name">木子</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">65</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">72</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/muzi502" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;muzi502" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:blog@502.li" title="E-Mail → mailto:blog@502.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://twitter.com/muzi_ii" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;muzi_ii" rel="noopener" target="_blank"><i class="fa fa-fw fa-twitter"></i>Twitter</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://t.me/muzi_ii" title="Telegram → https:&#x2F;&#x2F;t.me&#x2F;muzi_ii" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Telegram</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://kindle.502.li/" title="Kindle → https:&#x2F;&#x2F;kindle.502.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-book"></i>Kindle</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://https//t.me/rss_kubernetes" title="Channel → https:&#x2F;&#x2F;https:&#x2F;&#x2F;t.me&#x2F;rss_kubernetes" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Channel</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-fw fa-rss"></i>RSS</a>
+      </span>
+  </div>
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+      </div>
+    </main>
+    <footer class="footer">
+      <div class="footer-inner">
+<div class="copyright">
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木子</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">793k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">22:02</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">主题 – <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a>
+  </div>
+      </div>
+    </footer>
+  </div>
+  <script src="/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script>
+<script src="/js/schemes/pisces.js"></script>
+<script src="/js/next-boot.js"></script>
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://muzi.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: {page: {
+            url: "https://blog.502.li/android-tools.html",
+            identifier: "android-tools.html",
+            title: "推荐使用过的 Android 神器"
+          }
+        }
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://muzi.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+</body>
+</html>

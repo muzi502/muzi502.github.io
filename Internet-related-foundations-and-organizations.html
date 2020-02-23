@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon.ico">
+  <link rel="mask-icon" href="/favicon.ico" color="#222">
+<link rel="stylesheet" href="/css/main.css">
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Roboto Mono:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://blog.502.li').hostname,
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":true,"scrollpercent":true},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"buttons","active":null,"storage":true,"lazyload":true,"nav":{"disqus":{"text":"Load Disqus","order":-1}}},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":false,"async":true,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+  <meta name="description" content="起源自从上了大学之后才开始接触真正意义上的互联网，而不是国内的局域网。也是从大一开始学会自由访问国际互联网之后才开始接触 Linux 以及开源社区。庆幸的是在大一下学期快要结束的时候，在一个偶然的机会认识到了 软件那些事儿 博主 栋哥 。说来话长，那时的栋哥还很惨兮兮的，前几期节目就十几个人在听，而我也正是最早听他电台的那十几个人之一，从第一期听到现在。可以说这个电台讲的都是一堆没人听的东西。有关">
+<meta property="og:type" content="article">
+<meta property="og:title" content="与互联网相关的基金会和组织">
+<meta property="og:url" content="https://blog.502.li/Internet-related-foundations-and-organizations.html">
+<meta property="og:site_name" content="木子">
+<meta property="og:description" content="起源自从上了大学之后才开始接触真正意义上的互联网，而不是国内的局域网。也是从大一开始学会自由访问国际互联网之后才开始接触 Linux 以及开源社区。庆幸的是在大一下学期快要结束的时候，在一个偶然的机会认识到了 软件那些事儿 博主 栋哥 。说来话长，那时的栋哥还很惨兮兮的，前几期节目就十几个人在听，而我也正是最早听他电台的那十几个人之一，从第一期听到现在。可以说这个电台讲的都是一堆没人听的东西。有关">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2019-11-01T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-02-23T02:38:57.276Z">
+<meta property="article:author" content="木子">
+<meta property="article:tag" content="internet">
+<meta property="article:tag" content="开源">
+<meta name="twitter:card" content="summary">
+<link rel="canonical" href="https://blog.502.li/Internet-related-foundations-and-organizations.html">
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+  <title>与互联网相关的基金会和组织 | 木子</title>
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+<link rel="alternate" href="/atom.xml" title="木子" type="application/atom+xml">
+</head>
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">木子</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+    <a href="/" rel="section"><i class="fa fa-fw fa-desktop"></i>Home</a>
+  </li>
+        <li class="menu-item menu-item-books">
+    <a href="/booklist.html" rel="section"><i class="fa fa-fw fa-book"></i>Books</a>
+  </li>
+        <li class="menu-item menu-item-kindle">
+    <a href="https://kindle.502.li/" rel="noopener" target="_blank"><i class="fa fa-fw fa-book"></i>Kindle</a>
+  </li>
+        <li class="menu-item menu-item-friend">
+    <a href="/link/" rel="section"><i class="fa fa-fw fa-link"></i>Friend</a>
+  </li>
+        <li class="menu-item menu-item-about">
+    <a href="/about.html" rel="section"><i class="fa fa-fw fa-user-circle-o"></i>About</a>
+  </li>
+  </ul>
+</nav>
+</div>
+    </header>
+  <div class="reading-progress-bar"></div>
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div class="content">
+  <div class="posts-expand">
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.502.li/Internet-related-foundations-and-organizations.html">
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://blog.502.li/favicon.ico">
+      <meta itemprop="name" content="木子">
+      <meta itemprop="description" content="">
+    </span>
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木子">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          与互联网相关的基金会和组织
+        </h1>
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              <time title="创建时间：2019-11-02 2019-11-02T00:00:00+08:00" itemprop="dateCreated datePublished" datetime="2019-11-02T00:00:00+08:00">2019-11-02</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-02-23 2020-02-23T10:38:57+08:00" itemprop="dateModified" datetime="2020-02-23T10:38:57+08:00">2020-02-23</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E4%BA%92%E8%81%94%E7%BD%91/" itemprop="url" rel="index">
+                    <span itemprop="name">互联网</span>
+                  </a>
+                </span>
+            </span>
+  <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-comment-o"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    <a title="disqus" href="/Internet-related-foundations-and-organizations.html#comments" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="Internet-related-foundations-and-organizations.html" itemprop="commentCount"></span>
+    </a>
+  </span>
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>6.4k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>11 分钟</span>
+            </span>
+        </div>
+      </header>
+    <div class="post-body" itemprop="articleBody">
+        <h2 id="起源"><a href="#起源" class="headerlink" title="起源"></a>起源</h2><p>自从上了大学之后才开始接触真正意义上的互联网，而不是国内的局域网。也是从大一开始学会自由访问国际互联网之后才开始接触 Linux 以及开源社区。庆幸的是在大一下学期快要结束的时候，在一个偶然的机会认识到了 <a href="https://lmzdx.com" target="_blank" rel="noopener">软件那些事儿</a> 博主 <a href="https://liuyandong.com" target="_blank" rel="noopener">栋哥</a> 。说来话长，那时的栋哥还很惨兮兮的，前几期节目就十几个人在听，而我也正是最早听他电台的那十几个人之一，从第一期听到现在。可以说这个电台讲的都是一堆没人听的东西。有关于 Java 语言创始人的故事、有关于 Linux 历史的故事、还有关于自由软件之父 RMS 的故事……很多很多，就像一个互联网名人堂档案馆。</p>
+<p>在接触互联网之后深受自由软件基金会、电子前哨基金会、互联网之子–亚伦斯沃兹、万维网之父–提姆伯纳斯里。</p>
+<p>很早之前去年九月份的时候就一直想写一篇关于非<a href="https://liuyandong.com" target="_blank" rel="noopener">https://liuyandong.com</a> 营利性组织的一些内容。读过 <a href="https://twitter.com/leonson" target="_blank" rel="noopener">@leonson</a> 写的 <a href="https://leonson.me/2019/12/us-501c3" target="_blank" rel="noopener">民间有高手——说说美国的501(c)(3)组织</a> 篇博客</p>
+<p>最近想写一系列的文章，来<code>考古挖掘</code>一些知名的开源软件/自由软件基金会和非营利性组织的发展、以及他们成功运作的方式。所以这篇文章大概是罗列出以后要写的文章，今天顺便统计了一些这些基金会的捐款收入和支出状况，对这些基金会有个大致的了解。</p>
+<p>引用 NASA 的  purposes  致敬这些与互联网息息相关的组织   <strong>For the Benefit of All</strong></p>
+<h2 id="基金会及维护的项目"><a href="#基金会及维护的项目" class="headerlink" title="基金会及维护的项目"></a>基金会及维护的项目</h2><table>
+<thead>
+<tr>
+<th>name</th>
+<th>wikipedia</th>
+<th>hosts project / work / service</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="https://www.linuxfoundation.org/" target="_blank" rel="noopener">Linux 基金会</a></td>
+<td><a href="https://en.wikipedia.org/wiki/Linux_Foundation" target="_blank" rel="noopener">wikipedia</a></td>
+<td><a href="https://kernel.org" target="_blank" rel="noopener">kernel</a>  <a href="[https://nodejs.org">NodeJs</a>  <a href="https://xenproject.org/" target="_blank" rel="noopener">Xen</a>   <a href="https://www.dpdk.org/" target="_blank" rel="noopener">DPDK</a>  <a href="[https://etcd.io">etcd</a>  <a href="[https://jenkins.io">Jenkins</a>  <a href="[https://kubernetes.io">kubernetes</a> <a href="https://ceph.com/foundation/" target="_blank" rel="noopener">Ceph</a>  <a href="https://github.com/containernetworking/cni" target="_blank" rel="noopener">CNI</a>  <a href="https://www.fluentd.org/" target="_blank" rel="noopener">Fluentd</a>  <a href="https://letsencrypt.org/" target="_blank" rel="noopener">Let’s Encrypt</a>  <a href="https://prometheus.io/" target="_blank" rel="noopener">Prometheus</a>  <a href="https://coredns.io/" target="_blank" rel="noopener">CoreDNS</a></td>
+</tr>
+<tr>
+<td><a href="https://www.gnu.org" target="_blank" rel="noopener">FSF 自由软件基金会</a></td>
+<td><a href="https://en.wikipedia.org/wiki/Free_Software_Foundation" target="_blank" rel="noopener">wikipedia</a></td>
+<td><a href="https://www.gnu.org/" target="_blank" rel="noopener">GNU</a> <a href="https://www.gnu.org/software/libc/" target="_blank" rel="noopener">libc</a> <a href="https://www.gnu.org/software/glib/" target="_blank" rel="noopener">glib</a> <a href="https://www.gnu.org/software/bash/" target="_blank" rel="noopener">bash</a> <a href="https://www.gnu.org/software/gzip/" target="_blank" rel="noopener">gzip</a> <a href="https://www.gnu.org/software/wget/" target="_blank" rel="noopener">wget</a>  <a href="https://www.gnu.org/software/gcc/" target="_blank" rel="noopener">gcc</a> <a href="https://www.gnu.org/software/grub/" target="_blank" rel="noopener">grub</a> <a href="https://www.gnu.org/software/sed/" target="_blank" rel="noopener">sed</a>  <a href="https://www.gnu.org/software/tar/" target="_blank" rel="noopener">tar</a>  <a href="https://www.gnu.org/software/grep/" target="_blank" rel="noopener">grep</a></td>
+</tr>
+<tr>
+<td><a href="https://foundation.mozilla.org" target="_blank" rel="noopener">Mozilla 基金会</a></td>
+<td><a href="https://en.wikipedia.org/wiki/Mozilla_Foundation" target="_blank" rel="noopener">wikipedia</a></td>
+<td><a href="[https://www.mozilla.org">Firefox</a>  <a href="[https://www.thunderbird.net">Thunderbird</a></td>
+</tr>
+<tr>
+<td><a href="https://wikimediafoundation.org/" target="_blank" rel="noopener">维基媒体基金会</a></td>
+<td><a href="https://en.wikipedia.org/wiki/Wikimedia_Foundation" target="_blank" rel="noopener">wikipedia</a></td>
+<td><a href="https://www.mediawiki.org/wiki/MediaWiki" target="_blank" rel="noopener">MediaWiki</a></td>
+</tr>
+<tr>
+<td><a href="https://www.openssl.org/" target="_blank" rel="noopener">OpenSSL 基金会</a></td>
+<td><a href="https://en.wikipedia.org/wiki/OpenSSL" target="_blank" rel="noopener">wikipedia</a></td>
+<td><a href="https://www.openssl.org/source/" target="_blank" rel="noopener">OpenSSL</a></td>
+</tr>
+<tr>
+<td><a href="https://www.spi-inc.org/" target="_blank" rel="noopener">SPI 组织</a></td>
+<td><a href="https://en.wikipedia.org/wiki/Software_in_the_Public_Interest" target="_blank" rel="noopener">wikipedia</a></td>
+<td><a href="https://www.debian.org/distrib/" target="_blank" rel="noopener">Debian</a>  <a href="https://ffmpeg.org/" target="_blank" rel="noopener">FFmpeg</a>  <a href="https://openwrt.org/" target="_blank" rel="noopener">OpenWrt</a>  <a href="[https://www.postgresql.org">PostgreSQL</a>  <a href="https://www.libreoffice.org/" target="_blank" rel="noopener">LibreOffice</a> <a href="[https://jenkins.io">Jenkins</a>  <a href="https://www.archlinux.org/" target="_blank" rel="noopener">Arch Linux</a> <a href="https://www.spi-inc.org/projects/mingw" target="_blank" rel="noopener">MinGW</a> <a href="https://www.spi-inc.org/projects/x.org" target="_blank" rel="noopener">X.Org</a> <a href="https://www.spi-inc.org/projects/haskell" target="_blank" rel="noopener">haskell.org</a> <a href="https://www.spi-inc.org/projects/gallery" target="_blank" rel="noopener">Gallery</a> <a href="https://www.spi-inc.org/projects/openzfs" target="_blank" rel="noopener">OpenZFS</a></td>
+</tr>
+<tr>
+<td><a href="https://www.eff.org/" target="_blank" rel="noopener">EFF 电子前哨基金会</a></td>
+<td><a href="https://en.wikipedia.org/wiki/Electronic_Frontier_Foundation" target="_blank" rel="noopener">wikipedia</a></td>
+<td><a href="https://www.eff.org/https-everywhere" target="_blank" rel="noopener">HTTPS Everywhere</a>  <a href="https://www.eff.org/privacybadger" target="_blank" rel="noopener">Privacy Badger</a>  <a href="https://letsencrypt.org/about/" target="_blank" rel="noopener">Let’s Encrypt</a></td>
+</tr>
+<tr>
+<td><a href="https://www.openstack.org/foundation/" target="_blank" rel="noopener">OpenStack 基金会</a></td>
+<td><a href="https://en.wikipedia.org/wiki/OpenStack" target="_blank" rel="noopener">wikipedia</a></td>
+<td><a href="https://www.openstack.org/software/releases/stein/components/nova" target="_blank" rel="noopener">nova</a>  <a href="https://www.openstack.org/software/project-navigator/openstack-components/#openstack-services" target="_blank" rel="noopener">OpenStack </a></td>
+</tr>
+<tr>
+<td><a href="https://www.cncf.io/" target="_blank" rel="noopener">CNCF 基金会</a></td>
+<td><a href="https://en.wikipedia.org/wiki/CNCF" target="_blank" rel="noopener">wikipedia</a></td>
+<td><a href="http://kubernetes.io/" target="_blank" rel="noopener">Kubernetes</a></td>
+</tr>
+<tr>
+<td><a href="https://www.cloudfoundry.org" target="_blank" rel="noopener">Cloud Foundry 基金会</a></td>
+<td><a href="https://en.wikipedia.org/wiki/Cloud_Foundry" target="_blank" rel="noopener">wikipedia</a></td>
+<td></td>
+</tr>
+<tr>
+<td><a href="https://www.apache.org/" target="_blank" rel="noopener">Apache 软件基金会</a></td>
+<td><a href="https://en.wikipedia.org/wiki/The_Apache_Software_Foundation" target="_blank" rel="noopener">wikipedia</a></td>
+<td><a href="https://www.apache.org/" target="_blank" rel="noopener">Apache</a>  <a href="https://hadoop.apache.org/" target="_blank" rel="noopener">Hadoop</a>  <a href="http://kafka.apache.org/" target="_blank" rel="noopener">Kafka</a>  <a href="http://zookeeper.apache.org/" target="_blank" rel="noopener">Zookeeper</a>  <a href="http://hbase.apache.org/" target="_blank" rel="noopener">HBase</a>  <a href="http://maven.apache.org/" target="_blank" rel="noopener">Maven</a></td>
+</tr>
+<tr>
+<td><a href="https://www.python.org/psf/" target="_blank" rel="noopener">Python 基金会</a></td>
+<td><a href="https://en.wikipedia.org/wiki/Python_Software_Foundation" target="_blank" rel="noopener">wikipedia</a></td>
+<td><a href="[https://www.python.org">Python</a></td>
+</tr>
+<tr>
+<td><a href="https://www.gnome.org/foundation/" target="_blank" rel="noopener">GNOME 基金会</a></td>
+<td><a href="https://en.wikipedia.org/wiki/GNOME_Foundation" target="_blank" rel="noopener">wikipedia</a></td>
+<td><a href="[https://www.gnome.org">GNOME</a>  <a href="http://www.freedesktop.org/wiki/Software/systemd/" target="_blank" rel="noopener">systemd</a>  <a href="https://developer.gnome.org/glib/" target="_blank" rel="noopener">GLib</a>  <a href="http://www.gtk.org/" target="_blank" rel="noopener">GTK+</a>  <a href="http://www.freedesktop.org/wiki/Software/dbus/" target="_blank" rel="noopener">D-Bus</a>  <a href="https://www.kernel.org/" target="_blank" rel="noopener">Linux Kernel</a>  <a href="https://wiki.gnome.org/Projects/GDM" target="_blank" rel="noopener">GDM</a></td>
+</tr>
+<tr>
+<td><a href="http://openwebfoundation.org/" target="_blank" rel="noopener">OWF 开放 web 基金会</a></td>
+<td><a href="https://en.wikipedia.org/wiki/Open_Web_Foundation" target="_blank" rel="noopener">wikipedia</a></td>
+<td></td>
+</tr>
+<tr>
+<td><a href="https://www.opennetworking.org/" target="_blank" rel="noopener">ONF 开放网络基金会</a></td>
+<td><a href="https://en.wikipedia.org/wiki/Open_Networking_Foundation" target="_blank" rel="noopener">wikipedia</a></td>
+<td><a href="https://www.opennetworking.org/onos/" target="_blank" rel="noopener">onos</a> <a href="https://www.opennetworking.org/omec/" target="_blank" rel="noopener">OMEC</a>  <a href=""></a></td>
+</tr>
+<tr>
+<td><a href="https://www.freebsdfoundation.org/" target="_blank" rel="noopener">FreeBSD 基金会</a></td>
+<td><a href="https://en.wikipedia.org/wiki/FreeBSD_Foundation" target="_blank" rel="noopener">wikipedia</a></td>
+<td><a href="https://www.freebsd.org" target="_blank" rel="noopener">FreeBSD</a></td>
+</tr>
+<tr>
+<td><a href="http://www.openbsdfoundation.org/" target="_blank" rel="noopener">OpenBSD 基金会</a></td>
+<td><a href="https://en.wikipedia.org/wiki/OpenBSD_Foundation" target="_blank" rel="noopener">wikipedia</a></td>
+<td><a href="http://www.openssh.com/" target="_blank" rel="noopener"> OpenSSH</a>  <a href="http://www.libressl.org/" target="_blank" rel="noopener">LibreSSL</a>  <a href="http://www.openbsd.org/" target="_blank" rel="noopener">OpenBSD</a></td>
+</tr>
+<tr>
+<td><a href="http://golangfoundation.org/about/" target="_blank" rel="noopener">Golang 基金会</a></td>
+<td><a href="">wikipedia</a></td>
+<td></td>
+</tr>
+<tr>
+<td><a href="https://opensource.org/" target="_blank" rel="noopener">OSI 开放源代码组织</a></td>
+<td><a href="https://en.wikipedia.org/wiki/Open_Source_Initiative" target="_blank" rel="noopener">wikipedia</a></td>
+<td></td>
+</tr>
+<tr>
+<td><a href="https://www.linaro.org/" target="_blank" rel="noopener">Linaro 非营利性组织</a></td>
+<td><a href="https://en.wikipedia.org/wiki/Linaro" target="_blank" rel="noopener">wikipedia</a></td>
+<td><a href="https://www.linaro.org/downloads/" target="_blank" rel="noopener">Linaro Toolchain</a></td>
+</tr>
+<tr>
+<td><a href="https://www.torproject.org/" target="_blank" rel="noopener">Tor 项目</a></td>
+<td><a href="https://en.wikipedia.org/wiki/Tor_(anonymity_network)" target="_blank" rel="noopener">wikipedia</a></td>
+<td><a href="https://www.torproject.org/download/" target="_blank" rel="noopener">Tor </a></td>
+</tr>
+<tr>
+<td><a href="https://freedom.press/" target="_blank" rel="noopener">FPF 新闻自由基金会</a></td>
+<td><a href="https://en.wikipedia.org/wiki/Freedom_of_the_Press_Foundation" target="_blank" rel="noopener">wikipedia</a></td>
+<td><a href="https://securedrop.org/" target="_blank" rel="noopener">SecureDrop</a>  <a href="https://securethe.news/" target="_blank" rel="noopener">Secure the News</a>  <a href="https://freedom.press/news/archiving-alternative-press-threatened-wealthy-buyers/" target="_blank" rel="noopener">Archive the News</a> <a href="https://twitter.com/foiafeed" target="_blank" rel="noopener">FOIAFeed</a></td>
+</tr>
+<tr>
+<td><a href="https://cpj.org" target="_blank" rel="noopener">OPJ 保护记者委员会</a></td>
+<td><a href="https://en.wikipedia.org/wiki/Committee_to_Protect_Journalists" target="_blank" rel="noopener">wikipedia</a></td>
+<td><a href="https://cpj.org/safety-kit/" target="_blank" rel="noopener">Safety Kit</a>  <a href="https://cpj.org/safety-advisories/" target="_blank" rel="noopener">Safety Advisories</a></td>
+</tr>
+<tr>
+<td><a href="https://webfoundation.org/" target="_blank" rel="noopener">Web Foundation 万维网基金会</a></td>
+<td><a href="https://en.wikipedia.org/wiki/World_Wide_Web_Foundation" target="_blank" rel="noopener">wikipedia</a></td>
+<td><a href="https://webfoundation.org/our-work/projects/alliance-for-affordable-internet/" target="_blank" rel="noopener">Alliance for Affordable Internet</a>  <a href="https://webfoundation.org/our-work/projects/open-data-barometer/" target="_blank" rel="noopener">Open Data Barometer</a>  <a href="https://webfoundation.org/our-work/projects/womens-rights-online/" target="_blank" rel="noopener">Women’s Rights Online</a> <a href="https://webfoundation.org/our-work/projects/the-web-index/" target="_blank" rel="noopener">The Web Index</a></td>
+</tr>
+<tr>
+<td><a href="https://epic.org/" target="_blank" rel="noopener">EPIC 电子隐私信息中心</a></td>
+<td><a href="https://en.wikipedia.org/wiki/Electronic_Privacy_Information_Center" target="_blank" rel="noopener">wikipedia</a></td>
+<td><a href="https://epic.org/privacy/litigation/" target="_blank" rel="noopener">Litigation Docket</a> <a href="https://epic.org/campaigns/" target="_blank" rel="noopener">Privacy Campaigns</a> <a href="https://epic.org/privacy/surveillance/spotlight/" target="_blank" rel="noopener">Spotlight on Surveillance</a></td>
+</tr>
+<tr>
+<td><a href="https://sfconservancy.org/" target="_blank" rel="noopener">SFC 软件自由保护组织</a></td>
+<td><a href="https://en.wikipedia.org/wiki/Software_Freedom_Conservancy" target="_blank" rel="noopener">wikipedia</a></td>
+<td><a href="https://busybox.net/" target="_blank" rel="noopener">BusyBox</a>  <a href="https://git-scm.com/" target="_blank" rel="noopener">Git</a>  <a href="https://phpmyadmin.net/" target="_blank" rel="noopener">phpMyAdmin</a>  <a href="http://qemu.org/" target="_blank" rel="noopener">QEMU</a>  <a href="https://www.samba.org/samba/" target="_blank" rel="noopener">Samba</a>  <a href="http://www.winehq.org/" target="_blank" rel="noopener">Wine</a> <a href=""></a></td>
+</tr>
+<tr>
+<td><a href="https://www.softwarefreedom.org/" target="_blank" rel="noopener">SFLC 软件自由法律中心</a></td>
+<td><a href="https://en.wikipedia.org/wiki/Software_Freedom_Law_Center" target="_blank" rel="noopener">wikipedia</a></td>
+<td><a href="https://www.softwarefreedom.org/services/" target="_blank" rel="noopener">services</a></td>
+</tr>
+<tr>
+<td><a href="https://archive.org/" target="_blank" rel="noopener">Internet Archive 互联网档案馆</a></td>
+<td><a href="https://en.wikipedia.org/wiki/Internet_Archive" target="_blank" rel="noopener">wikipedia</a></td>
+<td><a href="https://archive.org/projects/" target="_blank" rel="noopener">Building Libraries Together</a>  <a href="https://openlibrary.org/" target="_blank" rel="noopener">Open Library</a>  <a href="https://archive.org/details/301works" target="_blank" rel="noopener">301Works.org</a>  <a href="https://archive.org/web/sflan.php" target="_blank" rel="noopener">Open Community Networks</a></td>
+</tr>
+<tr>
+<td><a href="https://www.x.org/wiki/" target="_blank" rel="noopener">X.Org 基金会</a></td>
+<td><a href="https://en.wikipedia.org/wiki/X.Org_Foundation" target="_blank" rel="noopener">wikipedia</a></td>
+<td><a href="https://www.x.org" target="_blank" rel="noopener">X.Org project</a></td>
+</tr>
+<tr>
+<td><a href="https://riscv.org/" target="_blank" rel="noopener">RISC-V 基金会</a></td>
+<td><a href="https://en.wikipedia.org/wiki/RISC-V" target="_blank" rel="noopener">wikipedia</a></td>
+<td><a href="https://riscv.org/" target="_blank" rel="noopener">RISC-V</a></td>
+</tr>
+<tr>
+<td><a href="https://creativecommons.org/" target="_blank" rel="noopener">Creative Commons</a></td>
+<td><a href="https://en.wikipedia.org/wiki/Creative_Commons" target="_blank" rel="noopener">wikipedia</a></td>
+<td><a href="https://creativecommons.org/about/" target="_blank" rel="noopener">about</a></td>
+</tr>
+<tr>
+<td><a href="https://www.eclipse.org/org/foundation/" target="_blank" rel="noopener">Eclipse 基金会</a></td>
+<td><a href="https://en.wikipedia.org/wiki/Eclipse_Foundation" target="_blank" rel="noopener">wikipedia</a></td>
+<td><a href="https://projects.eclipse.org/" target="_blank" rel="noopener">Eclipse</a></td>
+</tr>
+<tr>
+<td><a href="https://www.documentfoundation.org/" target="_blank" rel="noopener">TDF 文档基金会</a></td>
+<td><a href="https://en.wikipedia.org/wiki/The_Document_Foundation" target="_blank" rel="noopener">wikipedia</a></td>
+<td><a href="http://www.libreoffice.org/" target="_blank" rel="noopener">LibreOffice</a></td>
+</tr>
+<tr>
+<td><a href="https://www.abetterinternet.org/" target="_blank" rel="noopener">ISRG 互联网安全研究小组</a></td>
+<td><a href="https://en.wikipedia.org/wiki/Internet_Security_Research_Group" target="_blank" rel="noopener">wikipedia</a></td>
+<td><a href="https://letsencrypt.org/" target="_blank" rel="noopener">Let’s Encrypt</a></td>
+</tr>
+</tbody></table>
+<h2 id="基金会-2017-年收入支出报告"><a href="#基金会-2017-年收入支出报告" class="headerlink" title="基金会 2017 年收入支出报告"></a>基金会 2017 年收入支出报告</h2><h3 id="按总收入排名"><a href="#按总收入排名" class="headerlink" title="按总收入排名"></a>按总收入排名</h3><table>
+<thead>
+<tr>
+<th>基金会名称</th>
+<th align="center">年总收入 $</th>
+<th align="center">年总支出 $</th>
+<th align="center">年净收入 $</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="https://wikimediafoundation.org/" target="_blank" rel="noopener">维基媒体基金会</a></td>
+<td align="center">$89,973,967</td>
+<td align="center">$69,076,192</td>
+<td align="center">$20,897,775</td>
+</tr>
+<tr>
+<td><a href="https://www.linuxfoundation.org/" target="_blank" rel="noopener">Linux   基金会</a></td>
+<td align="center">$81,616,265</td>
+<td align="center">$68,997,604</td>
+<td align="center">$12,618,661</td>
+</tr>
+<tr>
+<td><a href="https://www.openstack.org/foundation/" target="_blank" rel="noopener">OpenStack   基金会</a></td>
+<td align="center">$22,829,442</td>
+<td align="center">$29,047,402</td>
+<td align="center">-$6,217,960)</td>
+</tr>
+<tr>
+<td><a href="https://foundation.mozilla.org/" target="_blank" rel="noopener">Mozilla   基金会</a></td>
+<td align="center">$20,586,446</td>
+<td align="center">$24,206,401</td>
+<td align="center">-$3,619,955)</td>
+</tr>
+<tr>
+<td><a href="https://archive.org/" target="_blank" rel="noopener">Internet   Archive 互联网档案馆</a></td>
+<td align="center">$17,811,981</td>
+<td align="center">$18,468,621</td>
+<td align="center">-$656,640)</td>
+</tr>
+<tr>
+<td><a href="https://www.eff.org/" target="_blank" rel="noopener">EFF   电子前哨基金会</a></td>
+<td align="center">$17,392,426</td>
+<td align="center">$11,398,529</td>
+<td align="center">$5,993,897</td>
+</tr>
+<tr>
+<td><a href="https://cpj.org/" target="_blank" rel="noopener">CPJ   保护记者委员会</a></td>
+<td align="center">$9,625,276</td>
+<td align="center">$7,345,573</td>
+<td align="center">$2,279,703</td>
+</tr>
+<tr>
+<td><a href="https://www.opennetworking.org/" target="_blank" rel="noopener">ONF   开放网络基金会</a></td>
+<td align="center">$7,722,940</td>
+<td align="center">$6,525,599</td>
+<td align="center">$1,197,341</td>
+</tr>
+<tr>
+<td><a href="https://freedom.press/" target="_blank" rel="noopener">FPF   新闻自由基金会</a></td>
+<td align="center">$5,949,008</td>
+<td align="center">$2,960,503</td>
+<td align="center">$2,988,505</td>
+</tr>
+<tr>
+<td><a href="https://www.torproject.org/" target="_blank" rel="noopener">Tor   项目</a></td>
+<td align="center">$4,130,882</td>
+<td align="center">$4,078,419</td>
+<td align="center">$52,463</td>
+</tr>
+<tr>
+<td><a href="https://webfoundation.org/" target="_blank" rel="noopener">Web   Foundation 万维网基金会</a></td>
+<td align="center">$3,579,820</td>
+<td align="center">$3,966,177</td>
+<td align="center">-$386,357</td>
+</tr>
+<tr>
+<td><a href="https://www.python.org/psf/" target="_blank" rel="noopener">Python   基金会</a></td>
+<td align="center">$2,870,521</td>
+<td align="center">$2,475,335</td>
+<td align="center">$395,186</td>
+</tr>
+<tr>
+<td><a href="https://www.abetterinternet.org/" target="_blank" rel="noopener">ISRG   互联网安全研究小组</a></td>
+<td align="center">$2,732,486</td>
+<td align="center">$2,599,681</td>
+<td align="center">$132,805</td>
+</tr>
+<tr>
+<td><a href="https://sfconservancy.org/" target="_blank" rel="noopener">SFC   软件自由保护组织</a></td>
+<td align="center">$2,125,670</td>
+<td align="center">$1,500,209</td>
+<td align="center">$625,461</td>
+</tr>
+<tr>
+<td><a href="https://epic.org/" target="_blank" rel="noopener">EPIC   电子隐私信息中心</a></td>
+<td align="center">$1,715,419</td>
+<td align="center">$1,523,199</td>
+<td align="center">$192,220</td>
+</tr>
+<tr>
+<td><a href="https://creativecommons.org/" target="_blank" rel="noopener">Creative   Commons</a></td>
+<td align="center">$1,639,408</td>
+<td align="center">$3,600,414</td>
+<td align="center">-$1,961,006</td>
+</tr>
+<tr>
+<td><a href="https://www.gnu.org/" target="_blank" rel="noopener">FSF   自由软件基金会</a></td>
+<td align="center">$1,373,574</td>
+<td align="center">$1,233,394</td>
+<td align="center">$140,180</td>
+</tr>
+<tr>
+<td><a href="https://www.softwarefreedom.org/" target="_blank" rel="noopener">SFLC   软件自由法律中心</a></td>
+<td align="center">$1,237,816</td>
+<td align="center">$1,359,324</td>
+<td align="center">-$121,508</td>
+</tr>
+<tr>
+<td><a href="https://www.freebsdfoundation.org/" target="_blank" rel="noopener">FreeBSD   基金会</a></td>
+<td align="center">$1,101,562</td>
+<td align="center">$993,701</td>
+<td align="center">$107,861</td>
+</tr>
+<tr>
+<td><a href="https://www.apache.org/" target="_blank" rel="noopener">Apache   软件基金会</a></td>
+<td align="center">$917,715</td>
+<td align="center">$1,205,831</td>
+<td align="center">-$288,116</td>
+</tr>
+<tr>
+<td><a href="https://riscv.org/" target="_blank" rel="noopener">RISC-V   基金会</a></td>
+<td align="center">$636,438</td>
+<td align="center">$456,755</td>
+<td align="center">$179,683</td>
+</tr>
+<tr>
+<td><a href="https://www.spi-inc.org/" target="_blank" rel="noopener">SPI   组织</a></td>
+<td align="center">$635,312</td>
+<td align="center">$612,941</td>
+<td align="center">$22,371</td>
+</tr>
+<tr>
+<td><a href="https://www.gnome.org/foundation/" target="_blank" rel="noopener">GNOME   基金会</a></td>
+<td align="center">$291,955</td>
+<td align="center">$329,955</td>
+<td align="center">-$38,000</td>
+</tr>
+<tr>
+<td><a href="https://opensource.org/" target="_blank" rel="noopener">OSI   开放源代码组织</a></td>
+<td align="center">$209,500</td>
+<td align="center">$187,884</td>
+<td align="center">$21,616</td>
+</tr>
+</tbody></table>
+<h3 id="按净收入排名"><a href="#按净收入排名" class="headerlink" title="按净收入排名"></a>按净收入排名</h3><table>
+<thead>
+<tr>
+<th>基金会名称</th>
+<th align="center">年总收入 $</th>
+<th align="center">年总支出 $</th>
+<th align="center">年净收入 $</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="https://wikimediafoundation.org/" target="_blank" rel="noopener">维基媒体基金会</a></td>
+<td align="center">$89,973,967</td>
+<td align="center">$69,076,192</td>
+<td align="center">$20,897,775</td>
+</tr>
+<tr>
+<td><a href="https://www.linuxfoundation.org/" target="_blank" rel="noopener">Linux   基金会</a></td>
+<td align="center">$81,616,265</td>
+<td align="center">$68,997,604</td>
+<td align="center">$12,618,661</td>
+</tr>
+<tr>
+<td><a href="https://www.eff.org/" target="_blank" rel="noopener">EFF   电子前哨基金会</a></td>
+<td align="center">$17,392,426</td>
+<td align="center">$11,398,529</td>
+<td align="center">$5,993,897</td>
+</tr>
+<tr>
+<td><a href="https://freedom.press/" target="_blank" rel="noopener">FPF   新闻自由基金会</a></td>
+<td align="center">$5,949,008</td>
+<td align="center">$2,960,503</td>
+<td align="center">$2,988,505</td>
+</tr>
+<tr>
+<td><a href="https://cpj.org/" target="_blank" rel="noopener">CPJ   保护记者委员会</a></td>
+<td align="center">$9,625,276</td>
+<td align="center">$7,345,573</td>
+<td align="center">$2,279,703</td>
+</tr>
+<tr>
+<td><a href="https://www.opennetworking.org/" target="_blank" rel="noopener">ONF   开放网络基金会</a></td>
+<td align="center">$7,722,940</td>
+<td align="center">$6,525,599</td>
+<td align="center">$1,197,341</td>
+</tr>
+<tr>
+<td><a href="https://sfconservancy.org/" target="_blank" rel="noopener">SFC   软件自由保护组织</a></td>
+<td align="center">$2,125,670</td>
+<td align="center">$1,500,209</td>
+<td align="center">$625,461</td>
+</tr>
+<tr>
+<td><a href="https://www.python.org/psf/" target="_blank" rel="noopener">Python   基金会</a></td>
+<td align="center">$2,870,521</td>
+<td align="center">$2,475,335</td>
+<td align="center">$395,186</td>
+</tr>
+<tr>
+<td><a href="https://epic.org/" target="_blank" rel="noopener">EPIC   电子隐私信息中心</a></td>
+<td align="center">$1,715,419</td>
+<td align="center">$1,523,199</td>
+<td align="center">$192,220</td>
+</tr>
+<tr>
+<td><a href="https://riscv.org/" target="_blank" rel="noopener">RISC-V   基金会</a></td>
+<td align="center">$636,438</td>
+<td align="center">$456,755</td>
+<td align="center">$179,683</td>
+</tr>
+<tr>
+<td><a href="https://www.gnu.org/" target="_blank" rel="noopener">FSF   自由软件基金会</a></td>
+<td align="center">$1,373,574</td>
+<td align="center">$1,233,394</td>
+<td align="center">$140,180</td>
+</tr>
+<tr>
+<td><a href="https://www.abetterinternet.org/" target="_blank" rel="noopener">ISRG   互联网安全研究小组</a></td>
+<td align="center">$2,732,486</td>
+<td align="center">$2,599,681</td>
+<td align="center">$132,805</td>
+</tr>
+<tr>
+<td><a href="https://www.freebsdfoundation.org/" target="_blank" rel="noopener">FreeBSD   基金会</a></td>
+<td align="center">$1,101,562</td>
+<td align="center">$993,701</td>
+<td align="center">$107,861</td>
+</tr>
+<tr>
+<td><a href="https://www.torproject.org/" target="_blank" rel="noopener">Tor   项目</a></td>
+<td align="center">$4,130,882</td>
+<td align="center">$4,078,419</td>
+<td align="center">$52,463</td>
+</tr>
+<tr>
+<td><a href="https://www.spi-inc.org/" target="_blank" rel="noopener">SPI   组织</a></td>
+<td align="center">$635,312</td>
+<td align="center">$612,941</td>
+<td align="center">$22,371</td>
+</tr>
+<tr>
+<td><a href="https://opensource.org/" target="_blank" rel="noopener">OSI   开放源代码组织</a></td>
+<td align="center">$209,500</td>
+<td align="center">$187,884</td>
+<td align="center">$21,616</td>
+</tr>
+<tr>
+<td><a href="https://www.gnome.org/foundation/" target="_blank" rel="noopener">GNOME   基金会</a></td>
+<td align="center">$291,955</td>
+<td align="center">$329,955</td>
+<td align="center">-$38,000</td>
+</tr>
+<tr>
+<td><a href="https://www.softwarefreedom.org/" target="_blank" rel="noopener">SFLC   软件自由法律中心</a></td>
+<td align="center">$1,237,816</td>
+<td align="center">$1,359,324</td>
+<td align="center">-$121,508</td>
+</tr>
+<tr>
+<td><a href="https://www.apache.org/" target="_blank" rel="noopener">Apache   软件基金会</a></td>
+<td align="center">$917,715</td>
+<td align="center">$1,205,831</td>
+<td align="center">-$288,116</td>
+</tr>
+<tr>
+<td><a href="https://webfoundation.org/" target="_blank" rel="noopener">Web   Foundation 万维网基金会</a></td>
+<td align="center">$3,579,820</td>
+<td align="center">$3,966,177</td>
+<td align="center">-$386,357</td>
+</tr>
+<tr>
+<td><a href="https://archive.org/" target="_blank" rel="noopener">Internet   Archive 互联网档案馆</a></td>
+<td align="center">$17,811,981</td>
+<td align="center">$18,468,621</td>
+<td align="center">-$656,640</td>
+</tr>
+<tr>
+<td><a href="https://creativecommons.org/" target="_blank" rel="noopener">Creative   Commons</a></td>
+<td align="center">$1,639,408</td>
+<td align="center">$3,600,414</td>
+<td align="center">-$1,961,006</td>
+</tr>
+<tr>
+<td><a href="https://foundation.mozilla.org/" target="_blank" rel="noopener">Mozilla   基金会</a></td>
+<td align="center">$20,586,446</td>
+<td align="center">$24,206,401</td>
+<td align="center">-$3,619,955</td>
+</tr>
+<tr>
+<td><a href="https://www.openstack.org/foundation/" target="_blank" rel="noopener">OpenStack   基金会</a></td>
+<td align="center">$22,829,442</td>
+<td align="center">$29,047,402</td>
+<td align="center">-$6,217,960</td>
+</tr>
+</tbody></table>
+<h3 id="无序"><a href="#无序" class="headerlink" title="无序"></a>无序</h3><table>
+<thead>
+<tr>
+<th>name</th>
+<th align="center">2017 年总收入 $</th>
+<th align="center">2017 年总支出 $</th>
+<th align="center">2017 年净收入 $</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="https://www.linuxfoundation.org/" target="_blank" rel="noopener">Linux 基金会</a></td>
+<td align="center">$81,616,265</td>
+<td align="center">$68,997,604</td>
+<td align="center">$12,618,661</td>
+</tr>
+<tr>
+<td><a href="https://www.gnu.org" target="_blank" rel="noopener">FSF 自由软件基金会</a></td>
+<td align="center">$1,373,574</td>
+<td align="center">$1,233,394</td>
+<td align="center">$140,180</td>
+</tr>
+<tr>
+<td><a href="https://foundation.mozilla.org" target="_blank" rel="noopener">Mozilla 基金会</a></td>
+<td align="center">$20,586,446</td>
+<td align="center">$24,206,401</td>
+<td align="center">-$3,619,955</td>
+</tr>
+<tr>
+<td><a href="https://wikimediafoundation.org/" target="_blank" rel="noopener">维基媒体基金会</a></td>
+<td align="center">$89,973,967</td>
+<td align="center">$69,076,192</td>
+<td align="center">$20,897,775</td>
+</tr>
+<tr>
+<td><a href="https://www.openssl.org/" target="_blank" rel="noopener">OpenSSL 基金会</a></td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+</tr>
+<tr>
+<td><a href="https://www.spi-inc.org/" target="_blank" rel="noopener">SPI 组织</a></td>
+<td align="center">$635,312</td>
+<td align="center">$612,941</td>
+<td align="center">$22,371</td>
+</tr>
+<tr>
+<td><a href="https://www.eff.org/" target="_blank" rel="noopener">EFF 电子前哨基金会</a></td>
+<td align="center">$17,392,426</td>
+<td align="center">$11,398,529</td>
+<td align="center">$5,993,897</td>
+</tr>
+<tr>
+<td><a href="https://www.openstack.org/foundation/" target="_blank" rel="noopener">OpenStack 基金会</a></td>
+<td align="center">$22,829,442</td>
+<td align="center">$29,047,402</td>
+<td align="center">-$6,217,960 (2016)</td>
+</tr>
+<tr>
+<td><a href="https://www.cncf.io/" target="_blank" rel="noopener">CNCF 基金会</a></td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+</tr>
+<tr>
+<td><a href="https://www.cloudfoundry.org" target="_blank" rel="noopener">Cloud Foundry 基金会</a></td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+</tr>
+<tr>
+<td><a href="https://www.apache.org/" target="_blank" rel="noopener">Apache 软件基金会</a></td>
+<td align="center">$917,715</td>
+<td align="center">$1,205,831</td>
+<td align="center">-$288,116</td>
+</tr>
+<tr>
+<td><a href="https://www.python.org/psf/" target="_blank" rel="noopener">Python 基金会</a></td>
+<td align="center">$2,870,521</td>
+<td align="center">$2,475,335</td>
+<td align="center">$395,186</td>
+</tr>
+<tr>
+<td><a href="https://www.gnome.org/foundation/" target="_blank" rel="noopener">GNOME 基金会</a></td>
+<td align="center">$291,955</td>
+<td align="center">$329,955</td>
+<td align="center">-$38,000</td>
+</tr>
+<tr>
+<td><a href="http://openwebfoundation.org/" target="_blank" rel="noopener">OWF 开放 web 基金会</a></td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+</tr>
+<tr>
+<td><a href="https://www.opennetworking.org/" target="_blank" rel="noopener">ONF 开放网络基金会</a></td>
+<td align="center">$7,722,940</td>
+<td align="center">$6,525,599</td>
+<td align="center">$1,197,341</td>
+</tr>
+<tr>
+<td><a href="https://www.freebsdfoundation.org/" target="_blank" rel="noopener">FreeBSD 基金会</a></td>
+<td align="center">$1,101,562</td>
+<td align="center">$993,701</td>
+<td align="center">$107,861</td>
+</tr>
+<tr>
+<td><a href="http://www.openbsdfoundation.org/" target="_blank" rel="noopener">OpenBSD 基金会</a></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+</tr>
+<tr>
+<td><a href="http://golangfoundation.org/about/" target="_blank" rel="noopener">Golang 基金会</a></td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+</tr>
+<tr>
+<td><a href="https://opensource.org/" target="_blank" rel="noopener">OSI 开放源代码组织</a></td>
+<td align="center">$209,500</td>
+<td align="center">$187,884</td>
+<td align="center">$21,616</td>
+</tr>
+<tr>
+<td><a href="https://www.linaro.org/" target="_blank" rel="noopener">Linaro 非营利性组织</a></td>
+<td align="center">UK</td>
+<td align="center">UK</td>
+<td align="center">UK</td>
+</tr>
+<tr>
+<td><a href="https://www.torproject.org/" target="_blank" rel="noopener">Tor 项目</a></td>
+<td align="center">$4,130,882</td>
+<td align="center">$4,078,419</td>
+<td align="center">$52,463</td>
+</tr>
+<tr>
+<td><a href="https://freedom.press/" target="_blank" rel="noopener">FPF 新闻自由基金会</a></td>
+<td align="center">$5,949,008</td>
+<td align="center">$2,960,503</td>
+<td align="center">$2,988,505</td>
+</tr>
+<tr>
+<td><a href="https://cpj.org" target="_blank" rel="noopener">CPJ 保护记者委员会</a></td>
+<td align="center">$9,625,276</td>
+<td align="center">$7,345,573</td>
+<td align="center">$2,279,703</td>
+</tr>
+<tr>
+<td><a href="https://webfoundation.org/" target="_blank" rel="noopener">Web Foundation 万维网基金会</a></td>
+<td align="center">$3,579,820</td>
+<td align="center">$3,966,177</td>
+<td align="center">-$386,357</td>
+</tr>
+<tr>
+<td><a href="https://epic.org/" target="_blank" rel="noopener">EPIC 电子隐私信息中心</a></td>
+<td align="center">$1,715,419</td>
+<td align="center">$1,523,199</td>
+<td align="center">$192,220</td>
+</tr>
+<tr>
+<td><a href="https://sfconservancy.org/" target="_blank" rel="noopener">SFC 软件自由保护组织</a></td>
+<td align="center">$2,125,670</td>
+<td align="center">$1,500,209</td>
+<td align="center">$625,461</td>
+</tr>
+<tr>
+<td><a href="https://www.softwarefreedom.org/" target="_blank" rel="noopener">SFLC 软件自由法律中心</a></td>
+<td align="center">$1,237,816</td>
+<td align="center">$1,359,324</td>
+<td align="center">-$121,508</td>
+</tr>
+<tr>
+<td><a href="https://archive.org/" target="_blank" rel="noopener">Internet Archive 互联网档案馆</a></td>
+<td align="center">$17,811,981</td>
+<td align="center">$18,468,621</td>
+<td align="center">-$656,640</td>
+</tr>
+<tr>
+<td><a href="https://www.x.org/wiki/" target="_blank" rel="noopener">X.Org 基金会</a></td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+</tr>
+<tr>
+<td><a href="https://riscv.org/" target="_blank" rel="noopener">RISC-V 基金会</a></td>
+<td align="center">$636,438</td>
+<td align="center">$456,755</td>
+<td align="center">$179,683</td>
+</tr>
+<tr>
+<td><a href="https://creativecommons.org/" target="_blank" rel="noopener">Creative Commons</a></td>
+<td align="center">$1,639,408</td>
+<td align="center">$3,600,414</td>
+<td align="center">-$1,961,006</td>
+</tr>
+<tr>
+<td><a href="https://www.eclipse.org/org/foundation/" target="_blank" rel="noopener">Eclipse 基金会</a></td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+</tr>
+<tr>
+<td><a href="https://www.documentfoundation.org/" target="_blank" rel="noopener">TDF 文档基金会</a></td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+</tr>
+<tr>
+<td><a href="https://www.abetterinternet.org/" target="_blank" rel="noopener">ISRG 互联网安全研究小组</a></td>
+<td align="center">$2,732,486</td>
+<td align="center">$2,599,681</td>
+<td align="center">$132,805</td>
+</tr>
+</tbody></table>
+<h2 id="数据来源"><a href="#数据来源" class="headerlink" title="数据来源"></a>数据来源</h2><ul>
+<li><p><a href="https://projects.propublica.org/nonprofits/organizations/460503801" target="_blank" rel="noopener">The Linux Foundation - Nonprofit Explorer - ProPublica</a></p>
+</li>
+<li><p><a href="https://projects.propublica.org/nonprofits/organizations/42888848" target="_blank" rel="noopener">Free Software Foundation Inc - Nonprofit Explorer - ProPublica</a></p>
+</li>
+<li><p><a href="https://projects.propublica.org/nonprofits/organizations/200097189" target="_blank" rel="noopener">Mozilla Foundation - Nonprofit Explorer - ProPublica</a></p>
+</li>
+<li><p><a href="https://projects.propublica.org/nonprofits/organizations/200049703" target="_blank" rel="noopener">Wikimedia Foundation Inc - Nonprofit Explorer - ProPublica</a></p>
+</li>
+<li><p><a href="https://projects.propublica.org/nonprofits/organizations/113390208" target="_blank" rel="noopener">Software In The Public Interest Inc - Nonprofit Explorer - ProPublica</a></p>
+</li>
+<li><p><a href="https://projects.propublica.org/nonprofits/organizations/460618689" target="_blank" rel="noopener">Openstack Foundation - Nonprofit Explorer - ProPublica</a></p>
+</li>
+<li><p><a href="https://projects.propublica.org/nonprofits/organizations/470825376" target="_blank" rel="noopener">Apache Software Foundation - Nonprofit Explorer - ProPublica</a></p>
+</li>
+<li><p><a href="https://projects.propublica.org/nonprofits/organizations/43594598" target="_blank" rel="noopener">Python Software Foundation - Nonprofit Explorer - ProPublica</a></p>
+</li>
+<li><p><a href="https://projects.propublica.org/nonprofits/organizations/43572618" target="_blank" rel="noopener">Gnome Foundation Inc - Nonprofit Explorer - ProPublica</a></p>
+</li>
+<li><p><a href="https://projects.propublica.org/nonprofits/organizations/273327530" target="_blank" rel="noopener">Open Networking Foundation - Nonprofit Explorer - ProPublica</a></p>
+</li>
+<li><p><a href="https://projects.propublica.org/nonprofits/organizations/841545163" target="_blank" rel="noopener">The Freebsd Foundation - Nonprofit Explorer - ProPublica</a></p>
+</li>
+<li><p><a href="https://projects.propublica.org/nonprofits/organizations/912037395" target="_blank" rel="noopener">Open Source Initiative - Nonprofit Explorer - ProPublica</a></p>
+</li>
+<li><p><a href="https://projects.propublica.org/nonprofits/organizations/208096820" target="_blank" rel="noopener">Tor Project Inc - Nonprofit Explorer - ProPublica</a></p>
+</li>
+<li><p><a href="https://projects.propublica.org/nonprofits/organizations/460967274" target="_blank" rel="noopener">Freedom Of The Press Foundation - Nonprofit Explorer - ProPublica</a></p>
+</li>
+<li><p><a href="https://projects.propublica.org/nonprofits/organizations/133081500" target="_blank" rel="noopener">Committee To Protect Journalists Inc - Nonprofit Explorer - ProPublica</a></p>
+</li>
+<li><p><a href="https://projects.propublica.org/nonprofits/organizations/262852431" target="_blank" rel="noopener">World Wide Web Foundation - Nonprofit Explorer - ProPublica</a></p>
+</li>
+<li><p><a href="https://projects.propublica.org/nonprofits/organizations/370794792" target="_blank" rel="noopener">Epic - Nonprofit Explorer - ProPublica</a></p>
+</li>
+<li><p><a href="https://projects.propublica.org/nonprofits/organizations/522225921" target="_blank" rel="noopener">Electronic Privacy Information Center - Nonprofit Explorer - ProPublica</a></p>
+</li>
+<li><p><a href="https://projects.propublica.org/nonprofits/organizations/260707261" target="_blank" rel="noopener">Epic Foundation Inc - Nonprofit Explorer - ProPublica</a></p>
+</li>
+<li><p><a href="https://projects.propublica.org/nonprofits/organizations/412203632" target="_blank" rel="noopener">Software Freedom Conservancy Inc - Nonprofit Explorer - ProPublica</a></p>
+</li>
+<li><p><a href="https://projects.propublica.org/nonprofits/organizations/412165986" target="_blank" rel="noopener">Software Freedom Law Center Inc - Nonprofit Explorer - ProPublica</a></p>
+</li>
+<li><p><a href="https://projects.propublica.org/nonprofits/organizations/943242767" target="_blank" rel="noopener">Internet Archive - Nonprofit Explorer - ProPublica</a></p>
+</li>
+<li><p><a href="https://projects.propublica.org/nonprofits/organizations/474893089" target="_blank" rel="noopener">Risc V Foundation - Nonprofit Explorer - ProPublica</a></p>
+</li>
+<li><p><a href="https://projects.propublica.org/nonprofits/organizations/43585301" target="_blank" rel="noopener">Creative Commons Corporation - Nonprofit Explorer - ProPublica</a></p>
+</li>
+<li><p><a href="https://projects.propublica.org/nonprofits/organizations/463344200" target="_blank" rel="noopener">Internet Security Research Group - Nonprofit Explorer - ProPublica</a></p>
+</li>
+</ul>
+    </div>
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/internet/" rel="tag"><i class="fa fa-tag"></i> internet</a>
+              <a href="/tags/%E5%BC%80%E6%BA%90/" rel="tag"><i class="fa fa-tag"></i> 开源</a>
+          </div>
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/kernel-note-book.html" rel="prev" title="深入理解 Linux 内核读书笔记">
+      <i class="fa fa-chevron-left"></i> 深入理解 Linux 内核读书笔记
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/amusing-ourselves-to-death-reading-notes.html" rel="next" title="娱乐至死 | 如何远离手机 | 阅读">
+      娱乐至死 | 如何远离手机 | 阅读 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+  </article>
+  </div>
+          </div>
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+        </div>
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#起源"><span class="nav-number">1.</span> <span class="nav-text">起源</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#基金会及维护的项目"><span class="nav-number">2.</span> <span class="nav-text">基金会及维护的项目</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#基金会-2017-年收入支出报告"><span class="nav-number">3.</span> <span class="nav-text">基金会 2017 年收入支出报告</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#按总收入排名"><span class="nav-number">3.1.</span> <span class="nav-text">按总收入排名</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#按净收入排名"><span class="nav-number">3.2.</span> <span class="nav-text">按净收入排名</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#无序"><span class="nav-number">3.3.</span> <span class="nav-text">无序</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#数据来源"><span class="nav-number">4.</span> <span class="nav-text">数据来源</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木子"
+      src="https://blog.502.li/favicon.ico">
+  <p class="site-author-name" itemprop="name">木子</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">65</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">72</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/muzi502" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;muzi502" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:blog@502.li" title="E-Mail → mailto:blog@502.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://twitter.com/muzi_ii" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;muzi_ii" rel="noopener" target="_blank"><i class="fa fa-fw fa-twitter"></i>Twitter</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://t.me/muzi_ii" title="Telegram → https:&#x2F;&#x2F;t.me&#x2F;muzi_ii" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Telegram</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://kindle.502.li/" title="Kindle → https:&#x2F;&#x2F;kindle.502.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-book"></i>Kindle</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://https//t.me/rss_kubernetes" title="Channel → https:&#x2F;&#x2F;https:&#x2F;&#x2F;t.me&#x2F;rss_kubernetes" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Channel</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-fw fa-rss"></i>RSS</a>
+      </span>
+  </div>
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+      </div>
+    </main>
+    <footer class="footer">
+      <div class="footer-inner">
+<div class="copyright">
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木子</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">793k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">22:02</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">主题 – <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a>
+  </div>
+      </div>
+    </footer>
+  </div>
+  <script src="/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script>
+<script src="/js/schemes/pisces.js"></script>
+<script src="/js/next-boot.js"></script>
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://muzi.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: {page: {
+            url: "https://blog.502.li/Internet-related-foundations-and-organizations.html",
+            identifier: "Internet-related-foundations-and-organizations.html",
+            title: "与互联网相关的基金会和组织"
+          }
+        }
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://muzi.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+</body>
+</html>
