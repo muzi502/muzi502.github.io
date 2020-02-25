@@ -268,7 +268,7 @@
 <li><a href="https://cn.nytimes.com/china/20200127/coronavirus-crisis-china-response/" target="_blank" rel="noopener">病毒危机暴露中国政治体制深层缺陷</a></li>
 <li>切尔诺贝利</li>
 </ul>
-<video src="https://blog.502.li/img/twitter-ch.mp4" style="max-height :100%; max-width: 100%; display: block; margin-left: auto; margin-right: auto;" controls="controls" loop="loop" preload="meta">Your browser does not support the video tag.</video>
+<video src="../imgtwitter-ch.mp4" style="max-height :100%; max-width: 100%; display: block; margin-left: auto; margin-right: auto;" controls="controls" loop="loop" preload="meta">Your browser does not support the video tag.</video>
 <blockquote>
 <p>特别需要强调的是，公众有权质疑、批驳任何报道乃至政府公告的真实性，公民发短信或者转发相关帖子，即使有不实之处，也应被视作自保或者行使监督权，政府部门只能用更加公开透明的信息来平息大家的忧虑，消除不实之言。一场灾难过后，人们尚未获知政府部门关于预警系统、抗灾能力和救援措施的检讨，却先发现普通市民因为参与灾难后果的讨论而被警方拘留，这不能不使网络民意的焦点集中在权力是否滥用、言论是否自由等问题上。</p>
 </blockquote>
@@ -292,7 +292,7 @@
 <h4 id="esp8266-开关"><a href="#esp8266-开关" class="headerlink" title="esp8266 开关"></a>esp8266 开关</h4><p>自己动手做的开关，外壳使用的衣服标牌，黑色的电路板就是 ESP8266 开发板本体，蓝色的电路板是个继电器。也就是说通过控制 ESP8266 的 GPIO 引脚的高低电平来控制继电器的开关来实现继电器的闭合。</p>
 <p><img src="../imgimage-20200130161500965.png" alt="image-20200130161500965"></p>
 <h4 id="ESP8266-开关-demo"><a href="#ESP8266-开关-demo" class="headerlink" title="ESP8266 开关 demo"></a>ESP8266 开关 demo</h4>
-<video src="https://blog.502.li/img/esp8266.mp4" style="max-height :100%; max-width: 100%; display: block; margin-left: auto; margin-right: auto;" controls="controls" loop="loop" preload="meta">Your browser does not support the video tag.</video>
+<video src="../imgesp8266.mp4" style="max-height :100%; max-width: 100%; display: block; margin-left: auto; margin-right: auto;" controls="controls" loop="loop" preload="meta">Your browser does not support the video tag.</video>
 <h4 id="rtsp-监控，单身租房必备"><a href="#rtsp-监控，单身租房必备" class="headerlink" title="rtsp 监控，单身租房必备"></a>rtsp 监控，单身租房必备</h4><p>由于是合租的房子，曾经住的地方丢失过一个笔记本电脑，自那之后自己也就在桌子上方装上了监控，使用 rtsp 监控视频流协议的网络摄像头，将 rtsp 的端口通过 frp 穿透到服务器上，在服务器端使用 ffmpeg 读取 rtsp 监控视频流，将监控视频保存在自己的服务器上还是放心，比起那些所谓的智能摄像头安全很多。次方案也已经稳妥妥地运行了三个多月。感兴趣的可以参考我之前写的博客《<a href="https://blog.502.li/archives/ffmepg-rtsp.html">使用 FFmpeg 远程读取 rtsp 监控视频流</a>》。测试起来也很方便，ssh 到服务器，使用 ffmpeg 测试一下 rtsp 的监控视频流是否正常，一切顺利就绪😋。</p>
 <p><img src="../imgimage-20200130161702552.png" alt="image-20200130161702552"></p>
 <h3 id="重写一篇博客"><a href="#重写一篇博客" class="headerlink" title="重写一篇博客"></a>重写一篇博客</h3><p>最后花了一个小时的时间把之前的文章<a href="https://blog.502.li/archives/thinking-2019.html">《毕业后的一些思考》</a>重新修改了一下，因为之前就把要修改的内容都记录到了 telegram 私有频道里，所以花了一个小时就重写完了。push 到 GitHub 之后在服务器上 hexo 构建一下。发现 hexo 构建的静态博客也就是 public 目录下的文件并非持久化，即便丢失了也没关系重新构建一下就好。那就把 hexo 构建的文件都放在内存文件系统不可？说干就干，直接<code>mount -t tmpfs tmpfs /var/www/hexo/public -o size=256MB</code>，感觉没啥提升，最主要瓶颈还是在于网络。忙完之后定好明早上 6 点半的闹钟就钻被窝睡大觉喽。</p>
