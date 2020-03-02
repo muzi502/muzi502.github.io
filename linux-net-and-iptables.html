@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon.ico">
+  <link rel="mask-icon" href="/favicon.ico" color="#222">
+<link rel="stylesheet" href="/css/main.css">
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Roboto Mono:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://blog.502.li').hostname,
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":true,"scrollpercent":true},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"buttons","active":null,"storage":true,"lazyload":true,"nav":{"disqus":{"text":"Load Disqus","order":-1}}},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":false,"async":true,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+  <meta name="description" content="最近参加了一场视频会议面试，虽然结果可能不太理想，但还是发现自己对技术细节钻研的不够深，一些很基础性的知识点并没有形成一个系统性的知识架构。比如 TCP 和 UDP 的区别，这是再简单不过的问题。虽然平时都知道 TCP 应用于哪些场景，UDP 应用与哪些场景，但二者之间的细节，还是没能仔细地深入研究。所以从现在开始从新学习一下一些基础性的东西，补足一下欠下的知识😥。不过这次面试也让我意识到，我是">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux 网络和 iptables 运行原理">
+<meta property="og:url" content="https://blog.502.li/linux-net-and-iptables.html">
+<meta property="og:site_name" content="木子">
+<meta property="og:description" content="最近参加了一场视频会议面试，虽然结果可能不太理想，但还是发现自己对技术细节钻研的不够深，一些很基础性的知识点并没有形成一个系统性的知识架构。比如 TCP 和 UDP 的区别，这是再简单不过的问题。虽然平时都知道 TCP 应用于哪些场景，UDP 应用与哪些场景，但二者之间的细节，还是没能仔细地深入研究。所以从现在开始从新学习一下一些基础性的东西，补足一下欠下的知识😥。不过这次面试也让我意识到，我是">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/muzi502/blog/source/img/iptables.png">
+<meta property="og:image" content="https://www.frozentux.net/iptables-tutorial/chunkyhtml/images/tables_traverse.jpg">
+<meta property="article:published_time" content="2020-02-29T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-02-29T16:00:00.000Z">
+<meta property="article:author" content="木子">
+<meta property="article:tag" content="Linux 网络">
+<meta property="article:tag" content="防火墙">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://cdn.jsdelivr.net/gh/muzi502/blog/source/img/iptables.png">
+<link rel="canonical" href="https://blog.502.li/linux-net-and-iptables.html">
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+  <title>Linux 网络和 iptables 运行原理 | 木子</title>
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+<link rel="alternate" href="/atom.xml" title="木子" type="application/atom+xml">
+</head>
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">木子</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+    <a href="/" rel="section"><i class="fa fa-fw fa-desktop"></i>Home</a>
+  </li>
+        <li class="menu-item menu-item-books">
+    <a href="/booklist.html" rel="section"><i class="fa fa-fw fa-book"></i>Books</a>
+  </li>
+        <li class="menu-item menu-item-kindle">
+    <a href="https://kindle.502.li/" rel="noopener" target="_blank"><i class="fa fa-fw fa-book"></i>Kindle</a>
+  </li>
+        <li class="menu-item menu-item-friend">
+    <a href="/link/" rel="section"><i class="fa fa-fw fa-link"></i>Friend</a>
+  </li>
+        <li class="menu-item menu-item-about">
+    <a href="/about.html" rel="section"><i class="fa fa-fw fa-user-circle-o"></i>About</a>
+  </li>
+  </ul>
+</nav>
+</div>
+    </header>
+  <div class="reading-progress-bar"></div>
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div class="content">
+  <div class="posts-expand">
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.502.li/linux-net-and-iptables.html">
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://blog.502.li/favicon.ico">
+      <meta itemprop="name" content="木子">
+      <meta itemprop="description" content="">
+    </span>
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木子">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux 网络和 iptables 运行原理
+        </h1>
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              <time title="创建时间：2020-03-01 2020-03-01T00:00:00+08:00" itemprop="dateCreated datePublished" datetime="2020-03-01T00:00:00+08:00">2020-03-01</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%8A%80%E6%9C%AF/" itemprop="url" rel="index">
+                    <span itemprop="name">技术</span>
+                  </a>
+                </span>
+            </span>
+  <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-comment-o"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    <a title="disqus" href="/linux-net-and-iptables.html#comments" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="linux-net-and-iptables.html" itemprop="commentCount"></span>
+    </a>
+  </span>
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>22k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>36 分钟</span>
+            </span>
+        </div>
+      </header>
+    <div class="post-body" itemprop="articleBody">
+        <p>最近参加了一场视频会议面试，虽然结果可能不太理想，但还是发现自己对技术细节钻研的不够深，一些很基础性的知识点并没有形成一个系统性的知识架构。比如 TCP 和 UDP 的区别，这是再简单不过的问题。虽然平时都知道 TCP 应用于哪些场景，UDP 应用与哪些场景，但二者之间的细节，还是没能仔细地深入研究。所以从现在开始从新学习一下一些基础性的东西，补足一下欠下的知识😥。不过这次面试也让我意识到，我是该离开这个安逸的环境了，再过几年就要三十而立了，而这几年也正是技术积累沉淀的黄金时代，希望珍惜这段时光踏踏实实研究技术。</p>
+<h2 id="Linux-协议栈"><a href="#Linux-协议栈" class="headerlink" title="Linux 协议栈"></a>Linux 协议栈</h2><p>在讲解 iptables 之前要回顾一下 Linux 接收数据包和发送数据包的流程，才能理解 iptables 在 Linux 网络协议栈中的位置和作用。去年的时候听了 Go 夜读的  <a href="https://github.com/developer-learning/night-reading-go/issues/506" target="_blank" rel="noopener">【Go 夜读】 网络知识十全大补丸</a> ，推荐去看一下<a href="https://www.youtube.com/watch?v=30wCahZEjNg" target="_blank" rel="noopener">YouTube【Go 夜读】#68 网络知识十全大补丸</a>。</p>
+<blockquote>
+<p>后端工程师在工作中经常会遇到计算机网络方面的问题，网络对多数人来说还是一个黑盒子，本次技术分享从常见的网络硬件、企业和数据中心的网络拓扑、Linux协议栈和防火墙等基础网络知识开始介绍，一直讲到TCP和HTTP这些年的技术演进路线和未来趋势。</p>
+</blockquote>
+<h3 id="收包流程"><a href="#收包流程" class="headerlink" title="收包流程"></a>收包流程</h3><h4 id="1-数据包到达网卡-NIC-Network-Interface-Card"><a href="#1-数据包到达网卡-NIC-Network-Interface-Card" class="headerlink" title="1. 数据包到达网卡 NIC(Network Interface Card)"></a>1. 数据包到达网卡 NIC(Network Interface Card)</h4><h4 id="2-NIC-检验-MAC-网卡-网卡非混杂模式-和帧的校验字段-FCS"><a href="#2-NIC-检验-MAC-网卡-网卡非混杂模式-和帧的校验字段-FCS" class="headerlink" title="2. NIC 检验 MAC 网卡(网卡非混杂模式)和帧的校验字段 FCS"></a>2. NIC 检验 MAC 网卡(网卡非混杂模式)和帧的校验字段 FCS</h4><p>NIC 会校验收到数据包的目的 MAC 地址是不是自己的 MAC 地址，在网卡非混杂模式下，MAC 地址不是自己的数据包通常就会丢弃。在开启混杂模式之后所有数据包都会是接收处理。</p>
+<p>使用非混杂模式的场景：</p>
+<ul>
+<li>抓包</li>
+<li>虚拟机</li>
+<li>抓包程序会把网卡设置为非混杂模式，因此抓包程序需要  root 权限，没有 root 权限无法修改硬件设备的配置。</li>
+</ul>
+<p>校验完 MAC 地址之后 NIC 还会校验帧的校验字段 FCS，一次来确保接收到的数据包是正确的，如果校验失败就直接丢弃数据包</p>
+<h4 id="3-NIC-通过-DMA-将数据包放入提前映射好的内存区域"><a href="#3-NIC-通过-DMA-将数据包放入提前映射好的内存区域" class="headerlink" title="3. NIC 通过 DMA 将数据包放入提前映射好的内存区域"></a>3. NIC 通过 DMA 将数据包放入提前映射好的内存区域</h4><p>DMA：英文拼写是 “Direct Memory Access” ，翻译成中文就是直接内存访问。DMA 允许网络设备将数据包数据直接移动到系统内存中, 从而降低 CPU 利用率。</p>
+<p>正常情况下，一个网络数据包从网卡到应用程序需要经过如下的过程：数据从网卡通过 DMA 等方式传到内核开辟的缓冲区，然后从内核空间拷贝到用户态空间，在 Linux 内核协议栈中，这个耗时操作甚至占到了数据包整个处理流程的 57.1%。</p>
+<h4 id="4-NIC-将数据包的引用放入接收的-ring-buffer-（环形缓冲区）队列-rx-中"><a href="#4-NIC-将数据包的引用放入接收的-ring-buffer-（环形缓冲区）队列-rx-中" class="headerlink" title="4. NIC 将数据包的引用放入接收的 ring buffer （环形缓冲区）队列 rx 中"></a>4. NIC 将数据包的引用放入接收的 ring buffer （环形缓冲区）队列 rx 中</h4><h4 id="5-NIC-等待-rx-usecs-的超时时间或者-rx-队列长度达到-rx-frames-后触发硬件中断-IRQ，表示数据包收到了"><a href="#5-NIC-等待-rx-usecs-的超时时间或者-rx-队列长度达到-rx-frames-后触发硬件中断-IRQ，表示数据包收到了" class="headerlink" title="5. NIC 等待 rx-usecs 的超时时间或者 rx 队列长度达到 rx-frames 后触发硬件中断 IRQ，表示数据包收到了"></a>5. NIC 等待 rx-usecs 的超时时间或者 rx 队列长度达到 rx-frames 后触发硬件中断 IRQ，表示数据包收到了</h4><ul>
+<li><p>rx-usecs: 系统内核参数设置的若干微妙的超时时间。</p>
+</li>
+<li><p>rx-frames: 对应的 rx 队列长度。</p>
+</li>
+</ul>
+<p>调整二者参数大一点，中断不频繁，吞吐量会高一些，但实时性会差一些。二者参数调小一些，NIC 中断频繁一些，实时性会高一些，但吞吐量会小一些。</p>
+<h4 id="6-CPU-执行硬件中断和网卡的驱动程序"><a href="#6-CPU-执行硬件中断和网卡的驱动程序" class="headerlink" title="6. CPU 执行硬件中断和网卡的驱动程序"></a>6. CPU 执行硬件中断和网卡的驱动程序</h4><p>CPU 接收硬件中断信号后就停止手里的活，保存上下文，接着去执行网卡的中断程序，网卡的中断程序是网卡的驱动程序提前注册好的，所以接下来会调用网卡的驱动程序。</p>
+<h4 id="7-驱动程序清理硬中断并触发软中断-NET-RX-SOFTIRQ"><a href="#7-驱动程序清理硬中断并触发软中断-NET-RX-SOFTIRQ" class="headerlink" title="7. 驱动程序清理硬中断并触发软中断 NET_RX_SOFTIRQ"></a>7. 驱动程序清理硬中断并触发软中断 NET_RX_SOFTIRQ</h4><p>在此硬件中断就处理完了。在此梳理一些整个中断处理的过程：NIC 引起硬件中断 –&gt; 硬件中断的 handler 将引起软件中断 –&gt; 驱动将处理这个中断，它将报文从环形缓冲区溢出，在内存中分配一个 skb –&gt; 调用 netif_rx(skb) –&gt; 此 skb 将放入 cpu 处理报文的队列中。如果队列满了此包将丢掉。到这为止中断就处理结束。</p>
+<ul>
+<li><strong>linux kernel 在报文处理上的不足</strong></li>
+</ul>
+<blockquote>
+<p>1.<strong>中断处理：</strong>当网络中大量数据包到来时，会产生频繁的硬件中断请求，这些硬件中断可以打断之前较低优先级的软中断或者系统调用的执行过程，如果这种打断频繁的话，将会产生较高的性能开销。<br>2.<strong>内存拷贝</strong>：正常情况下，一个网络数据包从网卡到应用程序需要经过如下的过程：数据从网卡通过 DMA 等方式传到内核开辟的缓冲区，然后从内核空间拷贝到用户态空间，在 Linux 内核协议栈中，这个耗时操作甚至占到了数据包整个处理流程的 57.1%。<br>3.<strong>上下文切换：</strong>频繁到达的硬件中断和软中断都可能随时抢占系统调用的运行，这会产生大量的上下文切换开销。另外，在基于多线程的服务器设计框架中，线程间的调度也会产生频繁的上下文切换开销，同样，锁竞争的耗能也是一个非常严重的问题。<br>4.<strong>局部性失效：</strong>如今主流的处理器都是多个核心的，这意味着一个数据包的处理可能跨多个 CPU 核心，比如一个数据包可能中断在 cpu0，内核态处理在 cpu1，用户态处理在 cpu2，这样跨多个核心，容易造成 CPU 缓存失效，造成局部性失效。如果是 NUMA 架构，更会造成跨 NUMA 访问内存，性能受到很大影响。<br>5.<strong>内存管理：</strong>传统服务器内存页为 4K，为了提高内存的访问速度，避免 cache miss，可以增加 cache 中映射表的条目，但这又会影响 CPU 的检索效率。</p>
+</blockquote>
+<p><code>此处引用</code> <a href="https://github.com/OSH-2019/x-xdp-on-android/blob/master/docs/research.md" target="_blank" rel="noopener">1</a></p>
+<h4 id="8-软中断对网卡进行轮训收包"><a href="#8-软中断对网卡进行轮训收包" class="headerlink" title="8. 软中断对网卡进行轮训收包"></a>8. 软中断对网卡进行轮训收包</h4><ul>
+<li><strong>补充</strong></li>
+</ul>
+<p>因为硬件中断不能被嵌套即不能被打断，所以 NIC 会将硬中断信号清理掉去触发一个软中断，而软中断只需要指令即可触发。</p>
+<ul>
+<li><p>硬中断：硬件信号触发的，比如键盘按键。</p>
+</li>
+<li><p>软中断：CPU 自身指令触发的中断，可以被硬件中断打断。比如系统调用。</p>
+</li>
+</ul>
+<p>中断数量太多的时候，CPU 不断地上下文切换，整个系统的性能将会有所损耗。</p>
+<p>半中断半轮询模式：在软中断里轮询收包。</p>
+<h4 id="9-数据包被放入-qdisc-队列"><a href="#9-数据包被放入-qdisc-队列" class="headerlink" title="9. 数据包被放入 qdisc 队列"></a>9. 数据包被放入 qdisc 队列</h4><p>以前每一个 NIC 一个队列，所有的中断都被一个 CPU 处理，直到后来改进设计出网卡多队列的模型。</p>
+<p>网卡多队列：一个网卡对应多个接收队列，在收到数据包后会对源地址和目的地址做一个 HASH 分配到对各个队列当中去，每一个队列都会有个子中断号，这个子中断号可以分配到不同的 CPU 中去处理。这样可以让 NIC 收到的数据包让多个 CPU 来处理。</p>
+<p>CPU 绑定：一个 NIC 产生多个中断，让多个 CPU 去分担中断的负载。</p>
+<h4 id="10-将数据包送入协议栈，调用-ip-recv"><a href="#10-将数据包送入协议栈，调用-ip-recv" class="headerlink" title="10. 将数据包送入协议栈，调用 ip_recv"></a>10. 将数据包送入协议栈，调用 ip_recv</h4><p>在此数据包就进入了协议栈，调用 ip_recv 进入三层协议栈。</p>
+<p>ip_recv函数 <a href="http://abcdxyzk.github.io/blog/2015/03/04/kernel-net-ip/" target="_blank" rel="noopener">linux TCP/IP协议栈-IP层</a></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 主要功能：对IP头部合法性进行严格检查，然后把具体功能交给ip_rcv_finish。*/</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">ip_rcv</span><span class="params">(struct sk_buff *skb, struct net_device *dev, struct packet_type *pt, struct net_device *orig_dev)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">iphdr</span> *<span class="title">iph</span>;</span></span><br><span class="line">	u32 len;</span><br><span class="line">	<span class="comment">/* 网络名字空间，忽略 */</span></span><br><span class="line">	<span class="keyword">if</span> (dev-&gt;nd_net != &amp;init_net)</span><br><span class="line">		<span class="keyword">goto</span> drop;</span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 *当网卡处于混杂模式时，收到不是发往该主机的数据包，由net_rx_action()设置。</span></span><br><span class="line"><span class="comment">	 *在调用ip_rcv之前，内核会将该数据包交给嗅探器，所以该函数仅丢弃该包。</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="keyword">if</span> (skb-&gt;pkt_type == PACKET_OTHERHOST)</span><br><span class="line">		<span class="keyword">goto</span> drop;</span><br><span class="line">	<span class="comment">/* SNMP所需要的统计数据，忽略 */</span></span><br><span class="line">	IP_INC_STATS_BH(IPSTATS_MIB_INRECEIVES);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 *ip_rcv是由netif_receive_skb函数调用，如果嗅探器或者其他的用户对数据包需要进</span></span><br><span class="line"><span class="comment">	 *进行处理，则在调用ip_rcv之前，netif_receive_skb会增加skb的引用计数，既该引</span></span><br><span class="line"><span class="comment">	 *用计数会大于1。若如此次，则skb_share_check会创建sk_buff的一份拷贝。</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="keyword">if</span> ((skb = skb_share_check(skb, GFP_ATOMIC)) == <span class="literal">NULL</span>) &#123;</span><br><span class="line">		IP_INC_STATS_BH(IPSTATS_MIB_INDISCARDS);</span><br><span class="line">		<span class="keyword">goto</span> out;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 *pskb_may_pull确保skb-&gt;data指向的内存包含的数据至少为IP头部大小，由于每个</span></span><br><span class="line"><span class="comment">	 *IP数据包包括IP分片必须包含一个完整的IP头部。如果小于IP头部大小，则缺失</span></span><br><span class="line"><span class="comment">	 *的部分将从数据分片中拷贝。这些分片保存在skb_shinfo(skb)-&gt;frags[]中。</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="keyword">if</span> (!pskb_may_pull(skb, <span class="keyword">sizeof</span>(struct iphdr)))</span><br><span class="line">		<span class="keyword">goto</span> inhdr_error;</span><br><span class="line">	<span class="comment">/* pskb_may_pull可能会调整skb中的指针，所以需要重新定义IP头部*/</span></span><br><span class="line">	iph = ip_hdr(skb);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 *    RFC1122: 3.1.2.2 MUST silently discard any IP frame that fails the checksum.</span></span><br><span class="line"><span class="comment">	 *</span></span><br><span class="line"><span class="comment">	 *    Is the datagram acceptable?</span></span><br><span class="line"><span class="comment">	 *</span></span><br><span class="line"><span class="comment">	 *    1.    Length at least the size of an ip header</span></span><br><span class="line"><span class="comment">	 *    2.    Version of 4</span></span><br><span class="line"><span class="comment">	 *    3.    Checksums correctly. [Speed optimisation for later, skip loopback checksums]</span></span><br><span class="line"><span class="comment">	 *    4.    Doesn't have a bogus length</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="comment">/* 上面说的很清楚了 */</span></span><br><span class="line">	<span class="keyword">if</span> (iph-&gt;ihl &lt; <span class="number">5</span> || iph-&gt;version != <span class="number">4</span>)</span><br><span class="line">		<span class="keyword">goto</span> inhdr_error;</span><br><span class="line">	<span class="comment">/* 确保IP完整的头部包括选项在内存中 */</span></span><br><span class="line">	<span class="keyword">if</span> (!pskb_may_pull(skb, iph-&gt;ihl*<span class="number">4</span>))</span><br><span class="line">		<span class="keyword">goto</span> inhdr_error;</span><br><span class="line">	</span><br><span class="line">	iph = ip_hdr(skb);</span><br><span class="line">	<span class="comment">/* 验证IP头部的校验和 */</span></span><br><span class="line">	<span class="keyword">if</span> (unlikely(ip_fast_csum((u8 *)iph, iph-&gt;ihl)))</span><br><span class="line">		<span class="keyword">goto</span> inhdr_error;</span><br><span class="line">	<span class="comment">/* IP头部中指示的IP数据包总长度 */</span></span><br><span class="line">	len = ntohs(iph-&gt;tot_len);</span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 *确保skb的数据长度大于等于IP头部中指示的IP数据包总长度及数据包总长度必须</span></span><br><span class="line"><span class="comment">	 *大于等于IP头部长度。</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="keyword">if</span> (skb-&gt;len &lt; len) &#123;</span><br><span class="line">		IP_INC_STATS_BH(IPSTATS_MIB_INTRUNCATEDPKTS);</span><br><span class="line">		<span class="keyword">goto</span> drop;</span><br><span class="line">	&#125; <span class="keyword">else</span> <span class="keyword">if</span> (len &lt; (iph-&gt;ihl*<span class="number">4</span>))</span><br><span class="line">		<span class="keyword">goto</span> inhdr_error;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Our transport medium may have padded the buffer out. Now we know it</span></span><br><span class="line"><span class="comment">	 * is IP we can trim to the true length of the frame.</span></span><br><span class="line"><span class="comment">	 * Note this now means skb-&gt;len holds ntohs(iph-&gt;tot_len).</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="comment">/* 注释说明的很清楚，该函数成功执行完之后，skb-&gt;len = ntohs(iph-&gt;tot_len). */</span></span><br><span class="line">	<span class="keyword">if</span> (pskb_trim_rcsum(skb, len)) &#123;</span><br><span class="line">		IP_INC_STATS_BH(IPSTATS_MIB_INDISCARDS);</span><br><span class="line">		<span class="keyword">goto</span> drop;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Remove any debris in the socket control block */</span></span><br><span class="line">	<span class="built_in">memset</span>(IPCB(skb), <span class="number">0</span>, <span class="keyword">sizeof</span>(struct inet_skb_parm));</span><br><span class="line">	<span class="comment">/* 忽略与netfilter子系统的交互，调用为ip_rcv_finish(skb) */</span></span><br><span class="line">	<span class="keyword">return</span> NF_HOOK(PF_INET, NF_IP_PRE_ROUTING, skb, dev, <span class="literal">NULL</span>,</span><br><span class="line">		 ip_rcv_finish);</span><br><span class="line"></span><br><span class="line">inhdr_error:</span><br><span class="line">	IP_INC_STATS_BH(IPSTATS_MIB_INHDRERRORS);</span><br><span class="line">drop:</span><br><span class="line">	kfree_skb(skb);</span><br><span class="line">out:</span><br><span class="line">	<span class="keyword">return</span> NET_RX_DROP;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="11-调用-netfilter-的-PREROUTING-链"><a href="#11-调用-netfilter-的-PREROUTING-链" class="headerlink" title="11. 调用 netfilter 的 PREROUTING 链"></a>11. 调用 netfilter 的 PREROUTING 链</h4><blockquote>
+<p>netfilter： 是 Linux 内核中进行数据包过滤，连接跟踪（Connect Track），网络地址转换（NAT）等功能的主要实现框架；该框架在网络协议栈处理数据包的关键流程中定义了一系列钩子点（Hook 点），并在这些钩子点中注册一系列函数对数据包进行处理。这些注册在钩子点的函数即为设置在网络协议栈内的数据包通行策略，也就意味着，这些函数可以决定内核是接受还是丢弃某个数据包，换句话说，这些函数的处理结果决定了这些网络数据包的“命运”。</p>
+</blockquote>
+<p>在这里就到了内核防火墙<em>ip_rcv</em>函数为网络层向下层开放的入口，数据包通过该函数进入网络层进行处理，该函数主要对上传到网络层的数据包进行前期合法性检查，通过后交由 Netfilter 的钩子节点（IP_PRE_ROUTING）； IP_PRE_ROUTING 会根据预设的规则对数据包进行判决并根据判决结果做相关的处理，比如执行 NAT 转换；</p>
+<h4 id="12-查找路由表，进行转发或者投递到-local"><a href="#12-查找路由表，进行转发或者投递到-local" class="headerlink" title="12. 查找路由表，进行转发或者投递到 local"></a>12. 查找路由表，进行转发或者投递到 local</h4><p>IP_PRE_ROUTING 节点处理完成后，数据包将交由 <code>ip_rcv_finish</code> 处理，该函数根据路由判决结果，决定数据包是交由本机上层应用处理，还是需要进行转发；如果是交由本机处理，则会交由 <code>p_local_deliver</code> 本地上交流程；如果需要转发，则交由 <code>ip_forward</code> 函数走转发流程，IP_FORWARD 节点会对转发数据包进行检查过滤；</p>
+<h4 id="13-对投递到-local-的数据包调用-netfilter-的-LOCAL-IN-链"><a href="#13-对投递到-local-的数据包调用-netfilter-的-LOCAL-IN-链" class="headerlink" title="13. 对投递到 local 的数据包调用 netfilter 的 LOCAL_IN 链"></a>13. 对投递到 local 的数据包调用 netfilter 的 LOCAL_IN 链</h4><h4 id="14-调用四层协议栈，如-tcp-v4-rcv"><a href="#14-调用四层协议栈，如-tcp-v4-rcv" class="headerlink" title="14. 调用四层协议栈，如 tcp_v4_rcv"></a>14. 调用四层协议栈，如 tcp_v4_rcv</h4><h4 id="15-查找到对应的-socket，运行-TCP-的状态机"><a href="#15-查找到对应的-socket，运行-TCP-的状态机" class="headerlink" title="15. 查找到对应的 socket，运行 TCP 的状态机"></a>15. 查找到对应的 socket，运行 TCP 的状态机</h4><p>内核中的五元组：<code>| 协议类型 | 源地址 | 源端口 | 目标地址 | 目的端口 |</code></p>
+<p>将五元组进行 HASH ，根据哈希值找到对应的 socket –&gt; 去运行该 socket 的 TCP 状态机。</p>
+<h4 id="16-将数据放入-TCP-的接收缓冲区中"><a href="#16-将数据放入-TCP-的接收缓冲区中" class="headerlink" title="16. 将数据放入 TCP 的接收缓冲区中"></a>16. 将数据放入 TCP 的接收缓冲区中</h4><h4 id="17-通过-epoll-或者其他轮训方式通知应用程序"><a href="#17-通过-epoll-或者其他轮训方式通知应用程序" class="headerlink" title="17. 通过 epoll 或者其他轮训方式通知应用程序"></a>17. 通过 epoll 或者其他轮训方式通知应用程序</h4><p>epoll：通过 epoll 监听可读事件，数据包丢到接收缓冲区的时候就有一个可读的事件，epoll 就会挂一个钩子，可读事件就会调用 epoll 这个钩子，然后将可读事件放入到可读队列中，接着通知到应用程序。</p>
+<p>select：</p>
+<h4 id="18-应用程序读取程序"><a href="#18-应用程序读取程序" class="headerlink" title="18. 应用程序读取程序"></a>18. 应用程序读取程序</h4><p>通过 read()函数读取数据？</p>
+<h3 id="发包流程"><a href="#发包流程" class="headerlink" title="发包流程"></a>发包流程</h3><h4 id="1-应用数据发送程序"><a href="#1-应用数据发送程序" class="headerlink" title="1. 应用数据发送程序"></a>1. 应用数据发送程序</h4><p>调用 send() 函数，将数据从应用层拷贝到内核中。</p>
+<h4 id="2-TCP-为发送的数据申请-skb"><a href="#2-TCP-为发送的数据申请-skb" class="headerlink" title="2. TCP 为发送的数据申请 skb"></a>2. TCP 为发送的数据申请 skb</h4><p>在 Linux 内核中，系统使用 <code>sk_buff</code> 数据结构对数据包进行存储和管理。在数据包接收过程中，该数据结构从网卡驱动收包开始，一直贯穿到内核网络协议栈的顶层，直到用户态程序从内核获取数据。</p>
+<h4 id="3-构建-TCP-头部，如-src-和-dst-的-port，checksum"><a href="#3-构建-TCP-头部，如-src-和-dst-的-port，checksum" class="headerlink" title="3. 构建 TCP 头部，如 src 和 dst 的 port，checksum"></a>3. 构建 TCP 头部，如 src 和 dst 的 port，checksum</h4><h4 id="4-调用第三层协议，构建-IP-头部，调用-netfilter-的-LOCAL-OUT-链"><a href="#4-调用第三层协议，构建-IP-头部，调用-netfilter-的-LOCAL-OUT-链" class="headerlink" title="4. 调用第三层协议，构建 IP 头部，调用 netfilter 的 LOCAL_OUT 链"></a>4. 调用第三层协议，构建 IP 头部，调用 netfilter 的 LOCAL_OUT 链</h4><p>此处防火墙，从本机出去的包都要跑一下 LOCAL_OUT 链，网络层通过注册到上层的 <code>ip_local_out</code> 函数接收数据处理，处理 OK 进一步交由 <code>IP_LOCAL_OUT</code> 节点检测。</p>
+<h4 id="5-查找路由表，确定下一跳"><a href="#5-查找路由表，确定下一跳" class="headerlink" title="5. 查找路由表，确定下一跳"></a>5. 查找路由表，确定下一跳</h4><h4 id="6-调用-netfilter-的-POST-ROUTING-链"><a href="#6-调用-netfilter-的-POST-ROUTING-链" class="headerlink" title="6. 调用 netfilter 的 POST_ROUTING 链"></a>6. 调用 netfilter 的 POST_ROUTING 链</h4><p>对于即将发往下层的数据包，需要经过 <code>IP_POST_ROUTING</code> 节点处理；网络层处理结束，通过 <code>dev_queue_xmit</code> 函数将数据包交由 Linux 内核中虚拟网络设备做进一步处理，从这里数据包即离开网络层进入到下一层。</p>
+<h4 id="7-对超时-MTU-的报文进行分片-fragment"><a href="#7-对超时-MTU-的报文进行分片-fragment" class="headerlink" title="7. 对超时 MTU 的报文进行分片(fragment)"></a>7. 对超时 MTU 的报文进行分片(fragment)</h4><h4 id="8-调用二成的发包函数-dev-queue-xmit"><a href="#8-调用二成的发包函数-dev-queue-xmit" class="headerlink" title="8. 调用二成的发包函数 dev_queue_xmit"></a>8. 调用二成的发包函数 dev_queue_xmit</h4><h4 id="9-将待发数据包放入输出的-QDisc-队列"><a href="#9-将待发数据包放入输出的-QDisc-队列" class="headerlink" title="9. 将待发数据包放入输出的 QDisc 队列"></a>9. 将待发数据包放入输出的 QDisc 队列</h4><h4 id="10-调用网卡驱动程序，将数据包放入循环缓冲队列-tx"><a href="#10-调用网卡驱动程序，将数据包放入循环缓冲队列-tx" class="headerlink" title="10. 调用网卡驱动程序，将数据包放入循环缓冲队列 tx"></a>10. 调用网卡驱动程序，将数据包放入循环缓冲队列 tx</h4><h4 id="11-驱动程序在-tx-usecs-的超时时间后，或者积累-tx-frames-个待发数据包后触发软中断"><a href="#11-驱动程序在-tx-usecs-的超时时间后，或者积累-tx-frames-个待发数据包后触发软中断" class="headerlink" title="11. 驱动程序在 tx-usecs 的超时时间后，或者积累 tx-frames 个待发数据包后触发软中断"></a>11. 驱动程序在 tx-usecs 的超时时间后，或者积累 tx-frames 个待发数据包后触发软中断</h4><ul>
+<li><p>tx-usecs</p>
+</li>
+<li><p>tx-frames</p>
+</li>
+</ul>
+<h4 id="12-驱动程序启用网卡的硬件中断"><a href="#12-驱动程序启用网卡的硬件中断" class="headerlink" title="12. 驱动程序启用网卡的硬件中断"></a>12. 驱动程序启用网卡的硬件中断</h4><h4 id="13-驱动程序将数据包映射到-DMA-内存"><a href="#13-驱动程序将数据包映射到-DMA-内存" class="headerlink" title="13. 驱动程序将数据包映射到 DMA 内存"></a>13. 驱动程序将数据包映射到 DMA 内存</h4><h4 id="14-网卡从-DMA-中取数据并发送"><a href="#14-网卡从-DMA-中取数据并发送" class="headerlink" title="14. 网卡从 DMA 中取数据并发送"></a>14. 网卡从 DMA 中取数据并发送</h4><h4 id="15-网卡发送完毕后触发硬件中断"><a href="#15-网卡发送完毕后触发硬件中断" class="headerlink" title="15. 网卡发送完毕后触发硬件中断"></a>15. 网卡发送完毕后触发硬件中断</h4><h4 id="16-硬中断清理中断信号后触发软中断"><a href="#16-硬中断清理中断信号后触发软中断" class="headerlink" title="16. 硬中断清理中断信号后触发软中断"></a>16. 硬中断清理中断信号后触发软中断</h4><h4 id="17-软中断释放已经发送完的数据包的内存"><a href="#17-软中断释放已经发送完的数据包的内存" class="headerlink" title="17. 软中断释放已经发送完的数据包的内存"></a>17. 软中断释放已经发送完的数据包的内存</h4><h2 id="防火墙"><a href="#防火墙" class="headerlink" title="防火墙"></a>防火墙</h2><p>提到防火墙，想必各位都知道大名鼎鼎的方教授哈😂，不过咱今天不谈这，感兴趣的可以去读一哈 <a href="https://gfw.report/blog/gfw_shadowsocks/zh.html" target="_blank" rel="noopener">Shadowsocks是如何被检测和封锁的</a> 和 <a href="http://www.oneyearago.me/2019/06/14/learn_gwf/" target="_blank" rel="noopener">G.F.W的原理</a></p>
+<p>讲完了 Linux 发包和收包的整个流程我们就清楚了防火墙在网络中所工作的地方，下面就将一下 Linux 上的防火墙 iptables。</p>
+<h3 id="iptales"><a href="#iptales" class="headerlink" title="iptales"></a>iptales</h3><p>自从 Linux 内核 2.4 之后 iptables 就集成进主线内核，不过 iptables 只是一个命令行工具，用于配置管理数据包的过滤规则，而真正起到信息包过滤作用的是 netfilter 框架。准确来讲 iptables 是一个通过控制 Linux 内核的 netfilter 模块来<strong>管理网络数据包的流动与转送</strong>的应用软件，其功能包括不仅仅包括防火墙的控制出入流量，还有端口转发等等。</p>
+<h3 id="netfilter"><a href="#netfilter" class="headerlink" title="netfilter"></a>netfilter</h3><p>netfilter 是内核的一个子系统，其工作在内核空间，核心是一个报文过滤架构，它包含了一组分布在报文处理各个阶段的钩子函数，报文经过网络协议栈时进入 netfilter 处理架构，会调用其他模块在各个阶段注册的钩子函数，并返回处理结果，netfilter 根据返回结果进行不同的处理。</p>
+<h4 id="表-链-规则"><a href="#表-链-规则" class="headerlink" title="表/链/规则"></a>表/链/规则</h4><p>iptables 内部有表 tables、链 chains、规则 rules 这三种概念。其中每一个 <code>表</code> 都和不同的数据包处理有关，而决定数据包是否可以穿越的是 <code>链</code>、而链上的一条条 <code>规则</code> 决定了是否送往下一条链（或其它的动作）。 netfilter/iptables 可以理解成是 <code>表</code> 的容器；表则是 <code>链</code> 的容器，即所有的<code>链</code>都属于其对应的<code>表</code>；<code>链</code>是 <code>规则</code> 的容器，其集合从属关系可以表述为（表（链（规则）））。</p>
+<p>广为流传的说法是 iptables 有四表五链，其中四表（ raw、filter, nat, mangle,）五链（INPUT、OUTPUT、FORWARD、 PREROUTING、 POSTROUTING），不过也有说法为五表（ raw、filter、nat、mangle、security）五链，不过 security 表大多数情况下不会用到，常用的是  filter 和 nat 表，mangle 表次之。</p>
+<h4 id="五表"><a href="#五表" class="headerlink" title="五表"></a>五表</h4><ul>
+<li><p>raw 表： 优先级最高，通常与<code>NOTRACK</code>一起使用，用于跳过<code>连接跟踪（conntrack）</code>和 nat 表的处理用于配置数据包，raw 中的数据包不会被系统跟踪。设置 raw 时一般是为了不再让 iptables 做数据包的链接跟踪处理，提高性能。</p>
+</li>
+<li><p>filter 表： 为 iptables 默认的表，用于过滤数据包，比如 ACCEPT（允许），DROP（丢弃）、REJECT（拒绝）、LOG（记录日志）；在操作时如果没有指定使用哪个表，iptables 默认使用 filter 表来执行所有的命令。filter 表根据预定义的一组规则过滤符合条件的数据包。在 filter 表中只允许对数据包进行接收、丢弃的操作，而无法对数据包进行更改。</p>
+</li>
+<li><p>nat 表： 即 Network Address Translation，主要是用于网络地址转换（例如：端口转发），该表可以实现一对一、一对多、多对多等 NAT 工作，如 SNAT（修改源地址）、DNAT（修改目的地址）、REDIRECT 重定向等；。</p>
+</li>
+<li><p>mangle 表： 修改包头部的某些特殊条目，主要用于对指定包的传输特性进行修改。某些特殊应用可能需要改写数据包的一些传输特性，如 TOS、TTL、打上特殊标记 MARK 等，以影响后面的路由决策。</p>
+</li>
+<li><p>security 表： 用于强制访问控制网络规则（例如： SELinux）。</p>
+</li>
+</ul>
+<p>表的处理优先级: raw &gt; mangle &gt; nat &gt; filter。</p>
+<blockquote>
+<p>raw 表除了 <code>-j NOTRACK</code> 外，还有一个常用的动作，那就是 <code>-j TRACE</code>，用于跟踪数据包，进行规则的调试，使用 dmesg 查看。</p>
+<p><code>连接跟踪</code>，顾名思义，就是跟踪并记录网络连接的状态（你可能认为只有 TCP 才有“连接”这个概念，但是在 netfilter 中，TCP、UDP、ICMP 一视同仁）。netfilter 会为每个经过网络堆栈的连接生成一个<strong>连接记录项（Connection Entry）</strong>；此后所有属于此连接的数据包都被唯一地分配给这个连接并标识连接的状态；由所有连接记录项组成的表其实就是所谓的<strong>连接跟踪表</strong>。</p>
+<p>为什么需要连接跟踪？因为它是<strong>状态防火墙和 NAT 的实现基础</strong>！</p>
+<ul>
+<li><code>状态防火墙</code>：iptables 的 conntrack/state 模块允许我们根据连接的状态进行规则配置，如果没有连接跟踪，那是做不到的。</li>
+<li><code>NAT</code>，NAT 其实就是修改数据包的源地址/端口、目的地址/端口，如果没有连接跟踪，那么也不可能再找回修改前的地址信息。</li>
+</ul>
+</blockquote>
+<h4 id="五链"><a href="#五链" class="headerlink" title="五链"></a>五链</h4><p>链(chains)是数据包传输的路径，对应着报文处理的五个不同阶段：</p>
+<ul>
+<li>INPUT： 处理入站数据包，当接收到访问本机地址的数据包(入站)时，应用此链中的规则。</li>
+<li>OUTPUT： 处理出站数据包，当本机向外发送数据包(出站)时，应用此链中的规则。</li>
+<li>FORWARD： 处理转发数据包，当接收到需要通过本机发送给其他地址的数据包(转发)时，应用此链中的规则。（ip_forward 和路由器会用到）</li>
+<li>PREROUTING： 在对数据包作路由选择之前，应用此链中的规则。</li>
+<li>POSTROUTING： 在对数据包作路由选择之后，应用此链中的规则。</li>
+</ul>
+<p>其中 INPUT 和 OUTPUT 链主要应用在本机的网络控制中，而 FORWARD、PREROUTING、 POSTROUTING 链更多地应用在对外的网络控制中，特别是机器作为网关使用时的情况。</p>
+<h4 id="规则"><a href="#规则" class="headerlink" title="规则"></a>规则</h4><p>数据包的过滤基于 <strong>规则</strong>，而规则是由匹配条件和处理动作组成。规则分别指定了源地址、目的地址、传输协议（如TCP、UDP、ICMP）和服务类型（如HTTP、FTP和SMTP）等。当数据包与规则匹配时，iptables 就根据规则所定义的方法来处理这些数据包，如放行（accept）、拒绝（reject）和丢弃（drop）等。配置防火墙的主要工作就是添加、修改和删除这些规则。</p>
+<p><strong>常见的处理动作：</strong></p>
+<ul>
+<li>ACCEPT： 允许数据包通过。</li>
+<li>DROP： 直接丢弃数据包，不给任何回应信息。</li>
+<li>QUEUE： 将数据包移交到用户空间。</li>
+<li>RETURN： 停止执行当前链中的后续规则，并返回到调用链(The Calling Chain)中。</li>
+<li>REJECT： 拒绝数据包通过，必要时会给数据发送端一个响应的信息。</li>
+<li>DNAT： 目标地址转换（docker 网络会用到）。</li>
+<li>SNAT： 源地址转换，解决内网用户用同一个公网地址上网的问题 （docker 网络会用到）。</li>
+<li>MASQUERADE： 是 SNAT 的一种特殊形式，适用于动态的、临时会变的 ip 上。</li>
+<li>REDIRECT： 在本机做端口映射（透明代理的时候会用到）。</li>
+<li>LOG： 记录日志信息，除记录外不对数据包做任何其他操作，仍然匹配下一条规则。</li>
+</ul>
+<p><strong>总体顺序如下：</strong></p>
+<p>1.当一个数据包进入某个链时，首先按照表的优先级依次处理；<br>2.每个表中的规则都有序号（从 1 开始），数据包会根据规则序号依次进行匹配；<br>3.如果命中一条规则，则执行相应的动作；如果所有表的规则都未命中，则执行默认策略。</p>
+<h3 id="关系"><a href="#关系" class="headerlink" title="关系"></a>关系</h3><p>链是规则的容器，一条链中可能包含着众多的规则，当一个数据包到达一个链时，iptables 就会从链中第一条规则开始匹配，如果满足该规则的条件，系统就会根据该条规则所定义的方法处理该数据包，否则将继续匹配下一条规则，如果该数据包不符合链中任一条规则，iptables 就会根据该链预先定义的默认策略来处理数据包。可以看到 iptables 遍历链中的规则算法复杂度为 O(n)，即随着链中的规则数量增大而增大。而且，链的匹配是有顺序的，这一点非常重要，在添加规则的时候也要主要顺序，搞错了就可能导致系统所有流量都无法进入。</p>
+<h4 id="Filter-表"><a href="#Filter-表" class="headerlink" title="Filter 表"></a>Filter 表</h4><p>Filter 表是 iptables 的默认表，因此如果没有指定表，那么默认操作的是 filter 表，其包含以下三种内建链：</p>
+<ul>
+<li>INPUT 链：处理来自外部的数据</li>
+<li>OUTPUT 链：处理向外发送的数据</li>
+<li>FORWARD 链：将数据转发到本机的其他网卡设备上</li>
+</ul>
+<h4 id="NAT-表"><a href="#NAT-表" class="headerlink" title="NAT 表"></a>NAT 表</h4><ul>
+<li><p>PREROUTING 链：处理刚到达本机并在路由转发前的数据包。它会转换数据包中的目标 IP 地址（destination ip address），通常用于 DNAT(destination NAT)</p>
+</li>
+<li><p>POSTROUTING 链：处理即将离开本机的数据包。它会转换数据包中的源 IP 地址（source ip address），通常用于 SNAT（source NAT）</p>
+</li>
+<li><p>OUTPUT 链：处理本机发出的数据包</p>
+</li>
+</ul>
+<h4 id="Mangle-表"><a href="#Mangle-表" class="headerlink" title="Mangle 表"></a>Mangle 表</h4><p>Mangle 表包含五种内建链：PREROUTING、OUTPUT、FORWARD、INPUT、POSTROUTING。</p>
+<h4 id="Raw-表"><a href="#Raw-表" class="headerlink" title="Raw 表"></a>Raw 表</h4><p>含两个内建链：PREROUTING, OUTPUT.</p>
+<h3 id="数据包流程"><a href="#数据包流程" class="headerlink" title="数据包流程"></a>数据包流程</h3><p><img src="https://cdn.jsdelivr.net/gh/muzi502/blog/source/img/iptables.png" alt="img"></p>
+<p>在 Linux 下，从任何网络端口进来的每一个 IP 数据包都要从上到下的穿过这张图，iptabales 对从任何端口进入的数据包都会采取相同的处理方式。</p>
+<p>此图摘自 <a href="https://wiki.archlinux.org/index.php/Iptables" target="_blank" rel="noopener">Archlinux 文档</a></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">                               XXXXXXXXXXXXXXXXXX</span><br><span class="line">                             XXX     Network    XXX</span><br><span class="line">                               XXXXXXXXXXXXXXXXXX</span><br><span class="line">                                       +</span><br><span class="line">                                       |</span><br><span class="line">                                       v</span><br><span class="line"> +-------------+              +------------------+</span><br><span class="line"> |table: filter| &lt;---+        | table: nat       |</span><br><span class="line"> |chain: INPUT |     |        | chain: PREROUTING|</span><br><span class="line"> +-----+-------+     |        +--------+---------+</span><br><span class="line">       |             |                 |</span><br><span class="line">       v             |                 v</span><br><span class="line"> [local process]     |           ****************          +--------------+</span><br><span class="line">       |             +---------+ Routing decision +------&gt; |table: filter |</span><br><span class="line">       v                         ****************          |chain: FORWARD|</span><br><span class="line">****************                                           +------+-------+</span><br><span class="line">Routing decision                                                  |</span><br><span class="line">****************                                                  |</span><br><span class="line">       |                                                          |</span><br><span class="line">       v                        ****************                  |</span><br><span class="line">+-------------+       +------&gt;  Routing decision  &lt;---------------+</span><br><span class="line">|table: nat   |       |         ****************</span><br><span class="line">|chain: OUTPUT|       |               +</span><br><span class="line">+-----+-------+       |               |</span><br><span class="line">      |               |               v</span><br><span class="line">      v               |      +-------------------+</span><br><span class="line">+--------------+      |      | table: nat        |</span><br><span class="line">|table: filter | +----+      | chain: POSTROUTING|</span><br><span class="line">|chain: OUTPUT |             +--------+----------+</span><br><span class="line">+--------------+                      |</span><br><span class="line">                                      v</span><br><span class="line">                               XXXXXXXXXXXXXXXXXX</span><br><span class="line">                             XXX    Network     XXX</span><br><span class="line">                               XXXXXXXXXXXXXXXXXX</span><br></pre></td></tr></table></figure>
+<h3 id="遍历链流程图"><a href="#遍历链流程图" class="headerlink" title="遍历链流程图"></a>遍历链流程图</h3><p>该流程图描述链了在任何接口上收到的网络数据包是按照怎样的顺序穿过表的交通管制链。</p>
+<p><img src="https://www.frozentux.net/iptables-tutorial/chunkyhtml/images/tables_traverse.jpg" alt="tables_traverse"></p>
+<ul>
+<li><p>第一个路由策略包括决定数据包的目的地是本地主机（这种情况下，数据包穿过 INPUT 链），还是其他主机（数据包穿过 FORWARD 链）；</p>
+</li>
+<li><p>中间的路由策略包括决定给传出的数据包使用那个源地址、分配哪个接口；</p>
+</li>
+<li><p>最后一个路由策略存在是因为先前的 mangle 与 nat 链可能会改变数据包的路由信息。</p>
+</li>
+</ul>
+<p>数据包通过路径上的每一条链时，链中的每一条规则按顺序匹配；无论何时匹配了一条规则，相应的 target/jump 动作将会执行。最常用的3个 target 是 ACCEPT, DROP ,或者 jump 到用户自定义的链。内置的链有默认的策略，但是用户自定义的链没有默认的策略。在 jump 到的链中，若每一条规则都不能提供完全匹配，那么数据包像这张图片描述的一样返回到调用链。在任何时候，若 DROP target 的规则实现完全匹配，那么被匹配的数据包会被丢弃，不会进行进一步处理。如果一个数据包在链中被 ACCEPT，那么它也会被所有的父链 ACCEPT，并且不再遍历其他父链。然而，要注意的是，数据包还会以正常的方式继续遍历其他表中的其他链。</p>
+<h4 id="本机发出的包"><a href="#本机发出的包" class="headerlink" title="本机发出的包"></a>本机发出的包</h4><p>本机进程 -&gt; OUTPUT 链 -&gt; 路由选择 -&gt; POSTROUTING 链 -&gt; 出口网卡</p>
+<h4 id="本机收到的包"><a href="#本机收到的包" class="headerlink" title="本机收到的包"></a>本机收到的包</h4><p>入口网卡 -&gt; PREROUTING 链 -&gt; 路由选择 -&gt; 此时有两种可能的情况：</p>
+<ul>
+<li>目的地址为本机：INPUT 链 -&gt; 本机进程</li>
+<li>目的地址不为本机：FORWARD 链 -&gt; POSTROUTING 链 -&gt; 网卡出口（内核允许网卡转发的情况下）</li>
+</ul>
+<h2 id="iptables-实战"><a href="#iptables-实战" class="headerlink" title="iptables 实战"></a>iptables 实战</h2><p>iptables [-t 表] 命令选项 [链] [匹配选项] [操作选项]</p>
+<h3 id="命令选项"><a href="#命令选项" class="headerlink" title="命令选项"></a>命令选项</h3><table>
+<thead>
+<tr>
+<th align="left">选项名</th>
+<th align="left">功能及特点</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">-A –append</td>
+<td align="left">在指定链的末尾添加一条新的规则</td>
+</tr>
+<tr>
+<td align="left">-D –delete</td>
+<td align="left">删除指定链中的某一条规则，按规则序号或内容确定要删除的规则</td>
+</tr>
+<tr>
+<td align="left">-I –insert</td>
+<td align="left">在指定链中插入一条新的规则，默认在链的开头插入</td>
+</tr>
+<tr>
+<td align="left">-R –replace</td>
+<td align="left">修改、替换指定链中的一条规则，按规则序号或内容确定</td>
+</tr>
+<tr>
+<td align="left">-F –flush</td>
+<td align="left">清空指定链中的所有规则，默认清空表中所有链的内容</td>
+</tr>
+<tr>
+<td align="left">-N –new</td>
+<td align="left">新建一条用户自己定义的规则链</td>
+</tr>
+<tr>
+<td align="left">-X –delete-chain</td>
+<td align="left">删除指定表中用户自定义的规则链</td>
+</tr>
+<tr>
+<td align="left">-P –policy</td>
+<td align="left">设置指定链的默认策略</td>
+</tr>
+<tr>
+<td align="left">-F, –flush</td>
+<td align="left">清空指定链上面的所有规则，如果没有指定链，清空表上所有链的所有规则</td>
+</tr>
+<tr>
+<td align="left">-Z, –zero</td>
+<td align="left">把指定链或表中的所有链上的所有计数器清零</td>
+</tr>
+<tr>
+<td align="left">-L –list</td>
+<td align="left">列出指定链中的所有的规则进行查看，默认列出表中所有链的内容</td>
+</tr>
+<tr>
+<td align="left">-S –list-rules</td>
+<td align="left">以原始格式列出链中所有规则</td>
+</tr>
+<tr>
+<td align="left">-v –verbose</td>
+<td align="left">查看规则列表时显示详细的信息</td>
+</tr>
+<tr>
+<td align="left">-n –numeric</td>
+<td align="left">用数字形式显示输出结果，如显示主机的 IP 地址而不是主机名</td>
+</tr>
+<tr>
+<td align="left">–line-number</td>
+<td align="left">查看规则列表时，同时显示规则在链中的顺序号</td>
+</tr>
+</tbody></table>
+<h3 id="匹配选项"><a href="#匹配选项" class="headerlink" title="匹配选项"></a>匹配选项</h3><table>
+<thead>
+<tr>
+<th align="left">选项名</th>
+<th align="left">功能及特点</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">-i –in-interface</td>
+<td align="left">匹配输入接口，如 eth0，eth1</td>
+</tr>
+<tr>
+<td align="left">-o –out-interface</td>
+<td align="left">匹配输出接口</td>
+</tr>
+<tr>
+<td align="left">-p –proto</td>
+<td align="left">匹配协议类型，如 TCP、UDP 和 ICMP等</td>
+</tr>
+<tr>
+<td align="left">-s –source</td>
+<td align="left">匹配的源地址</td>
+</tr>
+<tr>
+<td align="left">–sport</td>
+<td align="left">匹配的源端口号</td>
+</tr>
+<tr>
+<td align="left">-d –destination</td>
+<td align="left">匹配的目的地址</td>
+</tr>
+<tr>
+<td align="left">–dport</td>
+<td align="left">匹配的目的端口号</td>
+</tr>
+<tr>
+<td align="left">-m –match</td>
+<td align="left">匹配规则所使用的过滤模块</td>
+</tr>
+</tbody></table>
+<h3 id="操作选项"><a href="#操作选项" class="headerlink" title="操作选项"></a>操作选项</h3><p> 一般为 <code>-j 处理动作</code> 的形式，处理动作包括 ACCEPT、DROP、RETURN、REJECT、DNAT、SNAT 等。不同的处理动作可能还有额外的选项参数，如指定 DNAT、SNAT 动作则还需指定 <code>--to</code> 参数用以说明要装换的地址，指定 REDIRECT 动作则需指定 –to-ports 参数用于说明要跳转的端口。</p>
+<table>
+<thead>
+<tr>
+<th>操作名</th>
+<th>功能</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ACCEPT</td>
+<td>允许数据包通过</td>
+</tr>
+<tr>
+<td>DROP</td>
+<td>直接丢弃数据包，不给任何回应信息</td>
+</tr>
+<tr>
+<td>QUEUE</td>
+<td>将数据包移交到用户空间</td>
+</tr>
+<tr>
+<td>RETURN</td>
+<td>停止执行当前链中的后续规则，并返回到调用链(The Calling Chain)中</td>
+</tr>
+<tr>
+<td>REJECT</td>
+<td>拒绝数据包通过，必要时会给数据发送端一个响应的信息</td>
+</tr>
+<tr>
+<td>DNAT</td>
+<td>进行目标地址转换</td>
+</tr>
+<tr>
+<td>SNAT</td>
+<td>源地址转换，解决内网用户用同一个公网地址上网的问题</td>
+</tr>
+<tr>
+<td>MASQUERADE</td>
+<td>是 SNAT 的一种特殊形式，适用于动态的、临时会变的 ip 上</td>
+</tr>
+<tr>
+<td>REDIRECT</td>
+<td>在本机做端口映射</td>
+</tr>
+<tr>
+<td>LOG</td>
+<td>记录日志信息，除记录外不对数据包做任何其他操作，仍然匹配下一条规则</td>
+</tr>
+</tbody></table>
+<h3 id="命令详解"><a href="#命令详解" class="headerlink" title="命令详解"></a>命令详解</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br><span class="line">208</span><br><span class="line">209</span><br><span class="line">210</span><br><span class="line">211</span><br><span class="line">212</span><br><span class="line">213</span><br><span class="line">214</span><br><span class="line">215</span><br><span class="line">216</span><br><span class="line">217</span><br><span class="line">218</span><br><span class="line">219</span><br><span class="line">220</span><br><span class="line">221</span><br><span class="line">222</span><br><span class="line">223</span><br><span class="line">224</span><br><span class="line">225</span><br><span class="line">226</span><br><span class="line">227</span><br><span class="line">228</span><br><span class="line">229</span><br><span class="line">230</span><br><span class="line">231</span><br><span class="line">232</span><br><span class="line">233</span><br><span class="line">234</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">### 命令用法 (man 文档)</span></span><br><span class="line">iptables [-t table] &#123;-A|-C|-D&#125; chain rule-specification         <span class="comment"># (ipv4) 追加|检查|删除 规则</span></span><br><span class="line">ip6tables [-t table] &#123;-A|-C|-D&#125; chain rule-specification        <span class="comment"># (ipv6) 追加|检查|删除 规则</span></span><br><span class="line">iptables [-t table] -I chain [rulenum] rule-specification       <span class="comment"># 在 rulenum 处插入规则 (默认为 1)</span></span><br><span class="line">iptables [-t table] -R chain rulenum rule-specification         <span class="comment"># 替换第 rulenum 条规则</span></span><br><span class="line">iptables [-t table] -D chain rulenum                            <span class="comment"># 删除第 rulenum 条规则</span></span><br><span class="line">iptables [-t table] -S [chain [rulenum]]                        <span class="comment"># 打印指定 table 的规则</span></span><br><span class="line">iptables [-t table] &#123;-F|-L|-Z&#125; [chain [rulenum]] [options...]   <span class="comment"># 清空|列出|置零 链/规则</span></span><br><span class="line">iptables [-t table] -P chain target                             <span class="comment"># 设置默认策略</span></span><br><span class="line">iptables [-t table] -N chain                                    <span class="comment"># 新建自定义链</span></span><br><span class="line">iptables [-t table] -X [chain]                                  <span class="comment"># 删除自定义链</span></span><br><span class="line">iptables [-t table] -E old-chain-name new-chain-name            <span class="comment"># 重命名自定义链</span></span><br><span class="line"></span><br><span class="line"><span class="comment">### 一般形式</span></span><br><span class="line">iptables [-t 表名] &#123;-A|I|D|R&#125; 链名 [规则号] 匹配规则 -j 动作</span><br><span class="line"></span><br><span class="line"><span class="comment">### 查看帮助</span></span><br><span class="line">iptables --<span class="built_in">help</span>             <span class="comment"># 查看 iptables 的帮助</span></span><br><span class="line">iptables -m 模块名 --<span class="built_in">help</span>   <span class="comment"># 查看指定模块的可用参数</span></span><br><span class="line">iptables -j 动作名 --<span class="built_in">help</span>   <span class="comment"># 查看指定动作的可用参数</span></span><br><span class="line"></span><br><span class="line"><span class="comment">### 持久化规则</span></span><br><span class="line"><span class="comment"># 在 RHEL/CentOS 中，默认规则文件为 /etc/sysconfig/iptables</span></span><br><span class="line"><span class="comment"># 在 iptables 服务启动时，默认会加载该配置文件中定义的规则</span></span><br><span class="line"><span class="comment"># 如果想要设置的规则在重启后有效，就需要保存规则到这个文件</span></span><br><span class="line"><span class="comment"># 使用这两个工具：iptables-save、iptables-restore 重定向即可</span></span><br><span class="line"><span class="comment">## 保存当前规则</span></span><br><span class="line">iptables-save &gt;/etc/sysconfig/iptables</span><br><span class="line">iptables-save &gt;/etc/sysconfig/iptables.20171125</span><br><span class="line"><span class="comment">## 恢复当前规则</span></span><br><span class="line">iptables-restore &lt;/etc/sysconfig/iptables</span><br><span class="line">iptables-restore &lt;/etc/sysconfig/iptables.20171125</span><br><span class="line"></span><br><span class="line"><span class="comment">### 命令和选项</span></span><br><span class="line">-t              <span class="comment"># 指定要操作的表，如果省略则默认为 filter 表</span></span><br><span class="line">-A              <span class="comment"># "追加" 一条规则，只能追加到末尾</span></span><br><span class="line">-I              <span class="comment"># "插入" 一条规则，如果省略序号则默认为 1</span></span><br><span class="line">-R              <span class="comment"># "替换" 一条规则，必须指定序号</span></span><br><span class="line">-D              <span class="comment"># "删除" 一条规则，必须指定序号</span></span><br><span class="line">-C              <span class="comment"># "检查" 规则是否存在，如果存在则返回 0</span></span><br><span class="line">-P              <span class="comment"># 设置链的 "默认策略"，nat 表不允许修改默认策略</span></span><br><span class="line">-S              <span class="comment"># "查看" 规则（原始格式）</span></span><br><span class="line">-L              <span class="comment"># "打印" 规则（友好格式）</span></span><br><span class="line">-F              <span class="comment"># 清空表中的规则并将包计数器、字节计数器置零</span></span><br><span class="line">-Z              <span class="comment"># 将某个链或某条规则的包计数器、字节计数器置零</span></span><br><span class="line">-N              <span class="comment"># 新建自定义链</span></span><br><span class="line">-X              <span class="comment"># 删除自定义链</span></span><br><span class="line">-E              <span class="comment"># 重命名自定义链</span></span><br><span class="line">-n              <span class="comment"># 以数字形式显示地址和端口</span></span><br><span class="line">-v              <span class="comment"># 在打印规则时显示详细信息</span></span><br><span class="line">--line-numbers  <span class="comment"># 在打印规则时显示规则序号</span></span><br><span class="line"></span><br><span class="line"><span class="comment">### 反向匹配</span></span><br><span class="line"><span class="comment"># 只需在选项前面使用 ! 即可，如: ! -s 192.168.0.0/16 表示除 192.168/16 外的源 IP</span></span><br><span class="line"></span><br><span class="line"><span class="comment">### 通用匹配</span></span><br><span class="line">-s addr[/mask][...] <span class="comment"># 源 IP，可以有多个，使用逗号隔开，有多少个地址就有多少条规则</span></span><br><span class="line">-d addr[/mask][...] <span class="comment"># 目的 IP，可以有多个，使用逗号隔开，有多少个地址就有多少条规则</span></span><br><span class="line">-i input-nic[+]     <span class="comment"># 数据包来自哪个网卡，+ 表示通配符</span></span><br><span class="line">-o output-nic[+]    <span class="comment"># 数据包送往哪个网卡，+ 表示通配符</span></span><br><span class="line">-p &#123;tcp|udp|udplite|icmp|icmpv6|esp|ah|sctp|mh|all&#125;</span><br><span class="line">                    <span class="comment"># 指定匹配的协议，all 表示所有</span></span><br><span class="line"></span><br><span class="line"><span class="comment">### 隐式扩展匹配 (tcp/udp/icmp)</span></span><br><span class="line"><span class="comment">## tcp 扩展</span></span><br><span class="line">--sport port[:port]     <span class="comment"># 源端口号，100:200 表示端口范围</span></span><br><span class="line">--dport port[:port]     <span class="comment"># 目的端口号，100:200 表示端口范围</span></span><br><span class="line">--tcp-flags mask comp   <span class="comment"># TCP 标志位，flags=&#123;SYN|ACK|FIN|RST|URG|PSH|ALL|NONE&#125;</span></span><br><span class="line">--syn                   <span class="comment"># SYN 标志位，等同于 --tcp-flags SYN,RST,ACK,FIN SYN</span></span><br><span class="line">--tcp-option number     <span class="comment"># TCP 选项</span></span><br><span class="line"></span><br><span class="line"><span class="comment">## udp 扩展</span></span><br><span class="line">--sport port[:port]     <span class="comment"># 源端口号</span></span><br><span class="line">--dport port[:port]     <span class="comment"># 目的端口号</span></span><br><span class="line"></span><br><span class="line"><span class="comment">## icmp 扩展</span></span><br><span class="line">--icmp-type name[/code] <span class="comment"># icmp 类型，常用的两个: ping、pong，请求和应答</span></span><br><span class="line"></span><br><span class="line"><span class="comment">### 显式扩展匹配 (-m module-name)</span></span><br><span class="line"><span class="comment">## multiport 多端口</span></span><br><span class="line">--sports port[,port:port,port...]   <span class="comment"># 匹配多个源端口[范围]</span></span><br><span class="line">--dports port[,port:port,port...]   <span class="comment"># 匹配多个目的端口[范围]</span></span><br><span class="line">--ports port[,port:port,port...]    <span class="comment"># 匹配多个源和目的端口[范围]</span></span><br><span class="line"></span><br><span class="line"><span class="comment">## owner 所属用户(组)</span></span><br><span class="line">--uid-owner userid[-userid]     <span class="comment"># 匹配 UID[范围]/username</span></span><br><span class="line">--gid-owner groupid[-groupid]   <span class="comment"># 匹配 GID[范围]/groupname</span></span><br><span class="line">--socket-exists                 <span class="comment"># 匹配与套接字相关联的数据包</span></span><br><span class="line"></span><br><span class="line"><span class="comment">## state 连接状态(基本)</span></span><br><span class="line">--state [INVALID|ESTABLISHED|NEW|RELATED|UNTRACKED][,...]</span><br><span class="line"><span class="comment"># NEW           新连接</span></span><br><span class="line"><span class="comment"># ESTABLISHED   已建立的连接</span></span><br><span class="line"><span class="comment"># RELATED       关联的连接，如 ftp</span></span><br><span class="line"><span class="comment"># INVALID       无效/非法的连接</span></span><br><span class="line"><span class="comment"># UNTRACKED     未启用连接跟踪的连接</span></span><br><span class="line"></span><br><span class="line"><span class="comment">## conntrack 连接状态</span></span><br><span class="line">--ctstate &#123;INVALID|ESTABLISHED|NEW|RELATED|UNTRACKED|SNAT|DNAT&#125;[,...]</span><br><span class="line"></span><br><span class="line"><span class="comment">## iprange IP范围</span></span><br><span class="line">--src-range ip[-ip]     <span class="comment"># 匹配指定的源 IP 范围</span></span><br><span class="line">--dst-range ip[-ip]     <span class="comment"># 匹配指定的目的 IP 范围</span></span><br><span class="line"></span><br><span class="line"><span class="comment">## mac 源MAC地址</span></span><br><span class="line">--mac-source XX:XX:XX:XX:XX:XX  <span class="comment"># 匹配源 MAC 地址</span></span><br><span class="line"></span><br><span class="line"><span class="comment">## addrtype 地址类型</span></span><br><span class="line">--src-type <span class="built_in">type</span>[,...]   <span class="comment"># 匹配 source ip 地址的类型</span></span><br><span class="line">--dst-type <span class="built_in">type</span>[,...]   <span class="comment"># 匹配 destination ip 地址的类型</span></span><br><span class="line"><span class="comment"># UNSPEC       未指定的地址，如 0.0.0.0</span></span><br><span class="line"><span class="comment"># UNICAST      单播地址</span></span><br><span class="line"><span class="comment"># LOCAL        本机地址</span></span><br><span class="line"><span class="comment"># BROADCAST    广播地址</span></span><br><span class="line"><span class="comment"># ANYCAST      任播地址</span></span><br><span class="line"><span class="comment"># MULTICAST    多播地址</span></span><br><span class="line"><span class="comment"># BLACKHOLE    黑洞地址</span></span><br><span class="line"><span class="comment"># UNREACHABLE  不可达地址</span></span><br><span class="line"><span class="comment"># PROHIBIT     禁止访问的地址</span></span><br><span class="line"></span><br><span class="line"><span class="comment">## time 时间</span></span><br><span class="line">--datestart time     <span class="comment"># 起始日期 YYYY[-MM[-DD[Thh[:mm[:ss]]]]]</span></span><br><span class="line">--datestop time      <span class="comment"># 结束日期 YYYY[-MM[-DD[Thh[:mm[:ss]]]]]</span></span><br><span class="line">--timestart time     <span class="comment"># 起始时间 hh:mm[:ss]</span></span><br><span class="line">--timestop time      <span class="comment"># 结束时间 hh:mm[:ss]</span></span><br><span class="line">--monthdays value    <span class="comment"># 几号，1 至 31，默认为 all</span></span><br><span class="line">--weekdays value     <span class="comment"># 星期几，1 至 7，默认为 all</span></span><br><span class="line">--kerneltz           <span class="comment"># 使用内核时区而非 UTC</span></span><br><span class="line"></span><br><span class="line"><span class="comment">## string 关键字匹配</span></span><br><span class="line">--from offset       <span class="comment"># 设置起始偏移量</span></span><br><span class="line">--to offset         <span class="comment"># 设置结束偏移量</span></span><br><span class="line">--algo &#123;bm|kmp&#125;     <span class="comment"># 指定使用的算法</span></span><br><span class="line">--icase             <span class="comment"># 忽略大小写匹配</span></span><br><span class="line">--string string     <span class="comment"># 要匹配的字符串</span></span><br><span class="line">--hex-string string <span class="comment"># 要匹配的字符串，十六进制</span></span><br><span class="line"></span><br><span class="line"><span class="comment">## length 数据包大小</span></span><br><span class="line">--length length[:length]    <span class="comment"># 匹配数据包大小[范围]</span></span><br><span class="line"></span><br><span class="line"><span class="comment">## mark 防火墙标记</span></span><br><span class="line">--mark value[/mask]     <span class="comment"># 匹配有指定防火墙标记的数据包</span></span><br><span class="line"></span><br><span class="line"><span class="comment">## connmark "连接"标记</span></span><br><span class="line">--mark value[/mask]     <span class="comment"># 如果当前数据包所属的"连接"打了给定的标记，则匹配成功</span></span><br><span class="line"></span><br><span class="line"><span class="comment">## limit 速率限制</span></span><br><span class="line">--<span class="built_in">limit</span> avg             <span class="comment"># 平均速率限制，如 3/hour，单位: sec|minute|hour|day</span></span><br><span class="line">--<span class="built_in">limit</span>-burst number    <span class="comment"># 封顶速率限制，默认为 5</span></span><br><span class="line"></span><br><span class="line"><span class="comment">## connlimit 并发连接数</span></span><br><span class="line">--connlimit-upto n      <span class="comment"># 0..n</span></span><br><span class="line">--connlimit-above n     <span class="comment"># &gt; n</span></span><br><span class="line"></span><br><span class="line"><span class="comment">### -j target 动作</span></span><br><span class="line"><span class="comment">## 无参数系列</span></span><br><span class="line">ACCEPT      <span class="comment"># 接收数据包</span></span><br><span class="line">DROP        <span class="comment"># 丢弃数据包</span></span><br><span class="line">CUST-CHAIN  <span class="comment"># 进入自定义链</span></span><br><span class="line">RETURN      <span class="comment"># 退出当前链，分两种情况：</span></span><br><span class="line">            <span class="comment"># 如果当前链是自定义链，则返回调用链，继续匹配调用点的下一条规则</span></span><br><span class="line">            <span class="comment"># 如果当前链不是自定义链，则执行当前链的默认策略，如 ACCEPT、DROP</span></span><br><span class="line"></span><br><span class="line"><span class="comment">## 带参数系列</span></span><br><span class="line"><span class="comment"># REJECT 拒绝（带原因）</span></span><br><span class="line">--reject-with <span class="built_in">type</span>              <span class="comment"># 丢弃数据包，并回复源主机，可用的 type 如下：</span></span><br><span class="line">    icmp-net-unreachable        <span class="comment"># ICMP 网络不可达</span></span><br><span class="line">    net-unreach                 <span class="comment"># 同上，别名</span></span><br><span class="line">    icmp-host-unreachable       <span class="comment"># ICMP 主机不可达</span></span><br><span class="line">    host-unreach                <span class="comment"># 同上，别名</span></span><br><span class="line">    icmp-proto-unreachable      <span class="comment"># ICMP 协议不可达</span></span><br><span class="line">    proto-unreach               <span class="comment"># 同上，别名</span></span><br><span class="line">    icmp-port-unreachable       <span class="comment"># ICMP 端口不可达（默认）</span></span><br><span class="line">    port-unreach                <span class="comment"># 同上，别名</span></span><br><span class="line">    icmp-net-prohibited         <span class="comment"># ICMP 网络限制</span></span><br><span class="line">    net-prohib                  <span class="comment"># 同上，别名</span></span><br><span class="line">    icmp-host-prohibited        <span class="comment"># ICMP 主机限制</span></span><br><span class="line">    host-prohib                 <span class="comment"># 同上，别名</span></span><br><span class="line">    icmp-admin-prohibited       <span class="comment"># ICMP 管理员限制</span></span><br><span class="line">    admin-prohib                <span class="comment"># 同上，别名</span></span><br><span class="line">    tcp-reset                   <span class="comment"># TCP RST 连接重置</span></span><br><span class="line">    tcp-rst                     <span class="comment"># 同上，别名</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># MARK 打防火墙标记</span></span><br><span class="line">--<span class="built_in">set</span>-mark value[/mask]   <span class="comment"># 设置标记，mask OR value（推荐）</span></span><br><span class="line">--<span class="built_in">set</span>-xmark value[/mask]  <span class="comment"># 设置标记，mask XOR value</span></span><br><span class="line">--and-mark bits           <span class="comment"># 设置二进制标记，AND</span></span><br><span class="line">--or-mark bits            <span class="comment"># 设置二进制标记，OR</span></span><br><span class="line">--xor-mask bits           <span class="comment"># 设置二进制标记，XOR</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># CONNMARK 打"连接"标记</span></span><br><span class="line">--<span class="built_in">set</span>-mark value[/mask]       <span class="comment"># 设置当前数据包所属连接的连接标记</span></span><br><span class="line">--save-mark [--mask mask]     <span class="comment"># 将当前数据包的标记作为其所属连接的标记</span></span><br><span class="line">--restore-mark [--mask mask]  <span class="comment"># 将当前数据包所属连接的标记作为该数据包的标记</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># LOG 防火墙日志，dmesg 可查看</span></span><br><span class="line">--<span class="built_in">log</span>-level level       <span class="comment"># 日志级别（syslog.conf）</span></span><br><span class="line">--<span class="built_in">log</span>-prefix prefix     <span class="comment"># 日志前缀字符串</span></span><br><span class="line">--<span class="built_in">log</span>-tcp-sequence      <span class="comment"># 记录 TCP seq 序列号</span></span><br><span class="line">--<span class="built_in">log</span>-tcp-options       <span class="comment"># 记录 TCP options 选项</span></span><br><span class="line">--<span class="built_in">log</span>-ip-options        <span class="comment"># 记录 IP options 选项</span></span><br><span class="line">--<span class="built_in">log</span>-uid               <span class="comment"># 记录套接字相关联的 UID</span></span><br><span class="line">--<span class="built_in">log</span>-macdecode         <span class="comment"># 解析 MAC 地址和协议</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># ULOG 防火墙日志，kernel 2.4+</span></span><br><span class="line">--ulog-nlgroup nlgroup  <span class="comment"># 记录的 NETLINK 组</span></span><br><span class="line">--ulog-cprange size     <span class="comment"># 要复制的字节数</span></span><br><span class="line">--ulog-qthreshold       <span class="comment"># 内核队列的消息阈值</span></span><br><span class="line">--ulog-prefix prefix    <span class="comment"># 日志前缀字符串</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># NFLOG 防火墙日志，kernel 2.6+</span></span><br><span class="line">--nflog-group NUM       <span class="comment"># 记录的 NETLINK 组</span></span><br><span class="line">--nflog-size NUM        <span class="comment"># 要复制的字节数</span></span><br><span class="line">--nflog-threshold NUM   <span class="comment"># 内核队列的消息阈值</span></span><br><span class="line">--nflog-prefix STRING   <span class="comment"># 日志前缀字符串</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># SNAT 源地址转换，用在 POSTROUTING、INPUT 链</span></span><br><span class="line">--to-source [&lt;ipaddr&gt;[-&lt;ipaddr&gt;]][:port[-port]]</span><br><span class="line">--random        <span class="comment"># 映射到随机端口号</span></span><br><span class="line">--random-fully  <span class="comment"># 映射到随机端口号（PRNG 完全随机化）</span></span><br><span class="line">--persistent    <span class="comment"># 映射到固定地址</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># DNAT 目的地址转换，用在 PREROUTING、OUTPUT 链</span></span><br><span class="line">--to-destination [&lt;ipaddr&gt;[-&lt;ipaddr&gt;]][:port[-port]]</span><br><span class="line">--random        <span class="comment"># 映射到随机端口号</span></span><br><span class="line">--persistent    <span class="comment"># 映射到固定地址</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># MASQUERADE 源地址转换（适用于 DHCP 动态 IP），用在 POSTROUTING 链</span></span><br><span class="line">--to-ports &lt;port&gt;[-&lt;port&gt;]  <span class="comment"># 映射到指定端口号[范围]</span></span><br><span class="line">--random                    <span class="comment"># 映射到随机端口号</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># REDIRECT 目的地址转换（重定向至 localhost:端口号），用在 PREROUTING、OUTPUT 链</span></span><br><span class="line">--to-ports &lt;port&gt;[-&lt;port&gt;]  <span class="comment"># 重定向到指定端口号[范围]</span></span><br><span class="line">--random                    <span class="comment"># 重定向到随机端口号</span></span><br></pre></td></tr></table></figure>
+<h3 id="常用命令"><a href="#常用命令" class="headerlink" title="常用命令"></a>常用命令</h3><h4 id="查看帮助"><a href="#查看帮助" class="headerlink" title="查看帮助"></a>查看帮助</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">iptables --<span class="built_in">help</span>             <span class="comment"># 查看 iptables 的帮助</span></span><br><span class="line">iptables -m 模块名 --<span class="built_in">help</span>    <span class="comment"># 查看指定模块的可用参数</span></span><br><span class="line">iptables -j 动作名 --<span class="built_in">help</span>    <span class="comment"># 查看指定动作的可用参数</span></span><br></pre></td></tr></table></figure>
+<h4 id="查看规则"><a href="#查看规则" class="headerlink" title="查看规则"></a>查看规则</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">iptables -nvL</span><br><span class="line">iptables -t nat -nvL</span><br><span class="line"></span><br><span class="line"><span class="comment"># 显示规则序号</span></span><br><span class="line">iptables -nvL INPUT --line-numbers</span><br><span class="line">iptables -t nat -nvL --line-numbers</span><br><span class="line">iptables -t nat -nvL PREROUTING --line-numbers</span><br><span class="line"></span><br><span class="line"><span class="comment"># 查看规则的原始格式</span></span><br><span class="line">iptables -t filter -S</span><br><span class="line">iptables -t nat -S</span><br><span class="line">iptables -t mangle -S</span><br><span class="line">iptables -t raw -S</span><br></pre></td></tr></table></figure>
+<h4 id="设置默认规则"><a href="#设置默认规则" class="headerlink" title="设置默认规则"></a>设置默认规则</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">iptables -P INPUT DROP     <span class="comment"># 配置默认丢弃访问的数据表</span></span><br><span class="line">iptables -P FORWARD DROP   <span class="comment"># 配置默认禁止转发</span></span><br><span class="line">iptables -P OUTPUT ACCEPT  <span class="comment"># 配置默认允许向外的请求</span></span><br></pre></td></tr></table></figure>
+<h4 id="清除所有规则"><a href="#清除所有规则" class="headerlink" title="清除所有规则"></a>清除所有规则</h4><p>注意，在使用的时候</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">iptables -F  <span class="comment"># 清空表中所有的规则</span></span><br><span class="line">iptables -X  <span class="comment"># 删除表中用户自定义的链</span></span><br><span class="line">iptables -Z  <span class="comment"># 清空计数</span></span><br><span class="line"></span><br><span class="line">iptables -t nat -F</span><br><span class="line">iptables -t nat -X</span><br><span class="line">iptables -t mangle -F</span><br><span class="line">iptables -t mangle -X</span><br><span class="line">iptables -t raw -F</span><br><span class="line">iptables -t raw -X</span><br><span class="line">iptables -t security -F</span><br><span class="line">iptables -t security -X</span><br></pre></td></tr></table></figure>
+<h4 id="增加规则"><a href="#增加规则" class="headerlink" title="增加规则"></a>增加规则</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 增加一条规则到最后</span></span><br><span class="line">iptables -A INPUT -i eth0 -p tcp --dport 80 -m state --state NEW,ESTABLISHED -j ACCEPT</span><br><span class="line"></span><br><span class="line"><span class="comment"># 注：以下几条操作都需要使用规则的序号，需要使用 -L --line-numbers 参数先查看规则的顺序号</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 添加一条规则到指定位置</span></span><br><span class="line">iptables -I INPUT 2 -i eth0 -p tcp --dport 80 -m state --state NEW,ESTABLISHED -j ACCEPT</span><br></pre></td></tr></table></figure>
+<h4 id="删除规则"><a href="#删除规则" class="headerlink" title="删除规则"></a>删除规则</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 将所有 iptables 以序号标记显示</span></span><br><span class="line">iptables -L -n --line-numbers</span><br><span class="line"></span><br><span class="line"><span class="comment"># 根据规则的序号来删除</span></span><br><span class="line">iptabels -D INPUT <span class="variable">$&#123;line-numbers&#125;</span></span><br></pre></td></tr></table></figure>
+<h4 id="修改规则"><a href="#修改规则" class="headerlink" title="修改规则"></a>修改规则</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">iptables -R INPUT 3 -i eth0 -p tcp --dport 80 -m state --state NEW,ESTABLISHED -j ACCEPT</span><br></pre></td></tr></table></figure>
+<h4 id="开放指定端口"><a href="#开放指定端口" class="headerlink" title="开放指定端口"></a>开放指定端口</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 允许本地回环接口(即运行本机访问本机)</span></span><br><span class="line">iptables -A INPUT -i lo -j ACCEPT</span><br><span class="line"></span><br><span class="line"><span class="comment"># 允许已建立的或相关连接的通行</span></span><br><span class="line">iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT</span><br><span class="line"></span><br><span class="line"><span class="comment"># 允许所有本机向外的访问</span></span><br><span class="line">iptables -A OUTPUT -j ACCEPT</span><br><span class="line"></span><br><span class="line"><span class="comment"># 允许 22,80,443 端口的访问</span></span><br><span class="line">iptables -A INPUT -p tcp --dport 22 -j ACCEPT</span><br><span class="line">iptables -A INPUT -p tcp --dports 80,443 -j ACCEPT</span><br><span class="line"></span><br><span class="line"><span class="comment"># 允许 ping</span></span><br><span class="line">iptables -A INPUT -p icmp -m icmp --icmp-type 8 -j ACCEPT</span><br><span class="line"></span><br><span class="line"><span class="comment"># 禁止 ping</span></span><br><span class="line">iptables -A INPUT -p icmp -m icmp --icmp-type 8 -j DROP</span><br><span class="line"></span><br><span class="line"><span class="comment"># 禁止其他未允许的规则访问</span></span><br><span class="line">iptables -A INPUT -j REJECT</span><br><span class="line">iptables -A FORWARD -j REJECT</span><br></pre></td></tr></table></figure>
+<h4 id="设置白名单"><a href="#设置白名单" class="headerlink" title="设置白名单"></a>设置白名单</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 允许机房内网机器可以访问</span></span><br><span class="line">iptables -A INPUT -p all -s 10.10.10.0/24 -j ACCEPT  </span><br><span class="line"><span class="comment"># 允许 10.10.10.22 访问本机的 22 端口</span></span><br><span class="line">iptables -A INPUT -p tcp -s 10.10.10.22 --dport 22 -j ACCEPT</span><br></pre></td></tr></table></figure>
+<h4 id="屏蔽某-IP"><a href="#屏蔽某-IP" class="headerlink" title="屏蔽某 IP"></a>屏蔽某 IP</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"> <span class="comment"># 屏蔽恶意主机（比如，114.114.114.114)</span></span><br><span class="line">iptables -A INPUT -p tcp -m tcp -s 114.114.114.114 -j DROP </span><br><span class="line"></span><br><span class="line"><span class="comment"># 屏蔽单个IP的命令</span></span><br><span class="line">iptables -I INPUT -s 123.45.6.7 -j DROP</span><br><span class="line"></span><br><span class="line"><span class="comment">#封整个段即从 10.10.10.1 到 10.10.10.254的命令</span></span><br><span class="line">iptables -I INPUT -s 10.10.10.0/24 -j DROP</span><br></pre></td></tr></table></figure>
+<h4 id="指定数据包出去的网络接口"><a href="#指定数据包出去的网络接口" class="headerlink" title="指定数据包出去的网络接口"></a>指定数据包出去的网络接口</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 只对 OUTPUT，FORWARD，POSTROUTING 三个链起作用</span></span><br><span class="line">iptables -A FORWARD -o eth0</span><br></pre></td></tr></table></figure>
+<h4 id="防止SYN洪水攻击"><a href="#防止SYN洪水攻击" class="headerlink" title="防止SYN洪水攻击"></a>防止SYN洪水攻击</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">iptables -A INPUT -p tcp --syn -m <span class="built_in">limit</span> --<span class="built_in">limit</span> 5/second -j ACCEPT</span><br></pre></td></tr></table></figure>
+<h4 id="端口映射"><a href="#端口映射" class="headerlink" title="端口映射"></a>端口映射</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 本机的 2222 端口映射到内网虚拟机的22 端口</span></span><br><span class="line">iptables -t nat -A PREROUTING -d 223.6.6.6 -p tcp --dport 2222  -j DNAT --to-dest 10.10.10.22:22</span><br></pre></td></tr></table></figure>
+<h4 id="持久化规则："><a href="#持久化规则：" class="headerlink" title="持久化规则："></a>持久化规则：</h4><p><strong>RHEL/CentOS</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 运维千万条，备份第一条，操作不规范，数据全完蛋(大雾</span></span><br><span class="line">cp /etc/sysconfig/iptables&#123;，.bak&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 保存当前规则</span></span><br><span class="line">iptables-save &gt; /etc/sysconfig/iptables</span><br><span class="line">cat /etc/sysconfig/iptables</span><br><span class="line"></span><br><span class="line"><span class="comment"># 恢复备份规则</span></span><br><span class="line">iptables-restore &lt; iptables</span><br></pre></td></tr></table></figure>
+<p><strong>Debian/Ubuntu</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 备份当前规则</span></span><br><span class="line">cp /etc/iptables/rules.v4&#123;,.bak&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 持久化当前规则</span></span><br><span class="line">iptables-save &gt; /etc/iptables/rules.v4</span><br></pre></td></tr></table></figure>
+<h4 id="切记"><a href="#切记" class="headerlink" title="切记"></a>切记</h4><p>在操作 iptables 规则时一定要主要先后顺序，因为链上的规则是一条条规则遍历下来的，所以顺序出错的话，iptables 作用的效果也有可能不一样的哦。</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ul>
+<li><a href="http://cxd2014.github.io/2017/08/15/connection-tracking-system/" target="_blank" rel="noopener">Linux协议栈–连接跟踪源码分析</a></li>
+<li><a href="https://github.com/OSH-2019/x-xdp-on-android/blob/master/docs/research.md" target="_blank" rel="noopener">x-xdp-on-android</a></li>
+<li><a href="http://abcdxyzk.github.io/blog/2015/03/04/kernel-net-ip/" target="_blank" rel="noopener">linux TCP/IP协议栈-IP层</a></li>
+<li><a href="https://nieyong.github.io/wiki_cpu/CPU%E4%BD%93%E7%B3%BB%E6%9E%B6%E6%9E%84-DMA.html" target="_blank" rel="noopener">CPU体系架构 DMA</a></li>
+<li><a href="http://blog.konghy.cn/2019/07/21/iptables/" target="_blank" rel="noopener">iptables 使用方式整理</a></li>
+<li><a href="https://wiki.archlinux.org/index.php/Iptables_(%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87)" target="_blank" rel="noopener">Archlinux：Iptables</a></li>
+<li><a href="https://windard.com/opinion/2016/10/15/About-Iptables" target="_blank" rel="noopener">iptables 防火墙基本配置和使用</a></li>
+<li><a href="http://www.ha97.com/3928.html" target="_blank" rel="noopener">Linux的 iptables 常用配置范例（1）</a></li>
+<li><a href="https://www.bennythink.com/ufw-iptables.html" target="_blank" rel="noopener">开启 ufw 导致断网不能 ping? ufw 和 iptables 的那些坑</a></li>
+<li><a href="https://zhuanlan.zhihu.com/p/93630586" target="_blank" rel="noopener">Linux 网络层收发包流程及 Netfilter 框架浅析</a></li>
+<li><a href="http://www.mikewootc.com/wiki/linux/usage/linux_firewall_iptables_intro.html" target="_blank" rel="noopener">Linux防火墙与iptables介绍</a></li>
+<li><a href="https://www.zfl9.com/iptables.html" target="_blank" rel="noopener">iptables 详解</a></li>
+</ul>
+    </div>
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Linux-%E7%BD%91%E7%BB%9C/" rel="tag"><i class="fa fa-tag"></i> Linux 网络</a>
+              <a href="/tags/%E9%98%B2%E7%81%AB%E5%A2%99/" rel="tag"><i class="fa fa-tag"></i> 防火墙</a>
+          </div>
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/nonprofit-foundation-overview.html" rel="prev" title="知名软件基金会概览">
+      <i class="fa fa-chevron-left"></i> 知名软件基金会概览
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/k8s-01.html" rel="next" title="kubernets 相关技术调研">
+      kubernets 相关技术调研 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+  </article>
+  </div>
+          </div>
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+        </div>
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Linux-协议栈"><span class="nav-number">1.</span> <span class="nav-text">Linux 协议栈</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#收包流程"><span class="nav-number">1.1.</span> <span class="nav-text">收包流程</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-数据包到达网卡-NIC-Network-Interface-Card"><span class="nav-number">1.1.1.</span> <span class="nav-text">1. 数据包到达网卡 NIC(Network Interface Card)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-NIC-检验-MAC-网卡-网卡非混杂模式-和帧的校验字段-FCS"><span class="nav-number">1.1.2.</span> <span class="nav-text">2. NIC 检验 MAC 网卡(网卡非混杂模式)和帧的校验字段 FCS</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-NIC-通过-DMA-将数据包放入提前映射好的内存区域"><span class="nav-number">1.1.3.</span> <span class="nav-text">3. NIC 通过 DMA 将数据包放入提前映射好的内存区域</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-NIC-将数据包的引用放入接收的-ring-buffer-（环形缓冲区）队列-rx-中"><span class="nav-number">1.1.4.</span> <span class="nav-text">4. NIC 将数据包的引用放入接收的 ring buffer （环形缓冲区）队列 rx 中</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#5-NIC-等待-rx-usecs-的超时时间或者-rx-队列长度达到-rx-frames-后触发硬件中断-IRQ，表示数据包收到了"><span class="nav-number">1.1.5.</span> <span class="nav-text">5. NIC 等待 rx-usecs 的超时时间或者 rx 队列长度达到 rx-frames 后触发硬件中断 IRQ，表示数据包收到了</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#6-CPU-执行硬件中断和网卡的驱动程序"><span class="nav-number">1.1.6.</span> <span class="nav-text">6. CPU 执行硬件中断和网卡的驱动程序</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#7-驱动程序清理硬中断并触发软中断-NET-RX-SOFTIRQ"><span class="nav-number">1.1.7.</span> <span class="nav-text">7. 驱动程序清理硬中断并触发软中断 NET_RX_SOFTIRQ</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#8-软中断对网卡进行轮训收包"><span class="nav-number">1.1.8.</span> <span class="nav-text">8. 软中断对网卡进行轮训收包</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#9-数据包被放入-qdisc-队列"><span class="nav-number">1.1.9.</span> <span class="nav-text">9. 数据包被放入 qdisc 队列</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#10-将数据包送入协议栈，调用-ip-recv"><span class="nav-number">1.1.10.</span> <span class="nav-text">10. 将数据包送入协议栈，调用 ip_recv</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#11-调用-netfilter-的-PREROUTING-链"><span class="nav-number">1.1.11.</span> <span class="nav-text">11. 调用 netfilter 的 PREROUTING 链</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#12-查找路由表，进行转发或者投递到-local"><span class="nav-number">1.1.12.</span> <span class="nav-text">12. 查找路由表，进行转发或者投递到 local</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#13-对投递到-local-的数据包调用-netfilter-的-LOCAL-IN-链"><span class="nav-number">1.1.13.</span> <span class="nav-text">13. 对投递到 local 的数据包调用 netfilter 的 LOCAL_IN 链</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#14-调用四层协议栈，如-tcp-v4-rcv"><span class="nav-number">1.1.14.</span> <span class="nav-text">14. 调用四层协议栈，如 tcp_v4_rcv</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#15-查找到对应的-socket，运行-TCP-的状态机"><span class="nav-number">1.1.15.</span> <span class="nav-text">15. 查找到对应的 socket，运行 TCP 的状态机</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#16-将数据放入-TCP-的接收缓冲区中"><span class="nav-number">1.1.16.</span> <span class="nav-text">16. 将数据放入 TCP 的接收缓冲区中</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#17-通过-epoll-或者其他轮训方式通知应用程序"><span class="nav-number">1.1.17.</span> <span class="nav-text">17. 通过 epoll 或者其他轮训方式通知应用程序</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#18-应用程序读取程序"><span class="nav-number">1.1.18.</span> <span class="nav-text">18. 应用程序读取程序</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#发包流程"><span class="nav-number">1.2.</span> <span class="nav-text">发包流程</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-应用数据发送程序"><span class="nav-number">1.2.1.</span> <span class="nav-text">1. 应用数据发送程序</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-TCP-为发送的数据申请-skb"><span class="nav-number">1.2.2.</span> <span class="nav-text">2. TCP 为发送的数据申请 skb</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-构建-TCP-头部，如-src-和-dst-的-port，checksum"><span class="nav-number">1.2.3.</span> <span class="nav-text">3. 构建 TCP 头部，如 src 和 dst 的 port，checksum</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-调用第三层协议，构建-IP-头部，调用-netfilter-的-LOCAL-OUT-链"><span class="nav-number">1.2.4.</span> <span class="nav-text">4. 调用第三层协议，构建 IP 头部，调用 netfilter 的 LOCAL_OUT 链</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#5-查找路由表，确定下一跳"><span class="nav-number">1.2.5.</span> <span class="nav-text">5. 查找路由表，确定下一跳</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#6-调用-netfilter-的-POST-ROUTING-链"><span class="nav-number">1.2.6.</span> <span class="nav-text">6. 调用 netfilter 的 POST_ROUTING 链</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#7-对超时-MTU-的报文进行分片-fragment"><span class="nav-number">1.2.7.</span> <span class="nav-text">7. 对超时 MTU 的报文进行分片(fragment)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#8-调用二成的发包函数-dev-queue-xmit"><span class="nav-number">1.2.8.</span> <span class="nav-text">8. 调用二成的发包函数 dev_queue_xmit</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#9-将待发数据包放入输出的-QDisc-队列"><span class="nav-number">1.2.9.</span> <span class="nav-text">9. 将待发数据包放入输出的 QDisc 队列</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#10-调用网卡驱动程序，将数据包放入循环缓冲队列-tx"><span class="nav-number">1.2.10.</span> <span class="nav-text">10. 调用网卡驱动程序，将数据包放入循环缓冲队列 tx</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#11-驱动程序在-tx-usecs-的超时时间后，或者积累-tx-frames-个待发数据包后触发软中断"><span class="nav-number">1.2.11.</span> <span class="nav-text">11. 驱动程序在 tx-usecs 的超时时间后，或者积累 tx-frames 个待发数据包后触发软中断</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#12-驱动程序启用网卡的硬件中断"><span class="nav-number">1.2.12.</span> <span class="nav-text">12. 驱动程序启用网卡的硬件中断</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#13-驱动程序将数据包映射到-DMA-内存"><span class="nav-number">1.2.13.</span> <span class="nav-text">13. 驱动程序将数据包映射到 DMA 内存</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#14-网卡从-DMA-中取数据并发送"><span class="nav-number">1.2.14.</span> <span class="nav-text">14. 网卡从 DMA 中取数据并发送</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#15-网卡发送完毕后触发硬件中断"><span class="nav-number">1.2.15.</span> <span class="nav-text">15. 网卡发送完毕后触发硬件中断</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#16-硬中断清理中断信号后触发软中断"><span class="nav-number">1.2.16.</span> <span class="nav-text">16. 硬中断清理中断信号后触发软中断</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#17-软中断释放已经发送完的数据包的内存"><span class="nav-number">1.2.17.</span> <span class="nav-text">17. 软中断释放已经发送完的数据包的内存</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#防火墙"><span class="nav-number">2.</span> <span class="nav-text">防火墙</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#iptales"><span class="nav-number">2.1.</span> <span class="nav-text">iptales</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#netfilter"><span class="nav-number">2.2.</span> <span class="nav-text">netfilter</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#表-链-规则"><span class="nav-number">2.2.1.</span> <span class="nav-text">表&#x2F;链&#x2F;规则</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#五表"><span class="nav-number">2.2.2.</span> <span class="nav-text">五表</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#五链"><span class="nav-number">2.2.3.</span> <span class="nav-text">五链</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#规则"><span class="nav-number">2.2.4.</span> <span class="nav-text">规则</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#关系"><span class="nav-number">2.3.</span> <span class="nav-text">关系</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Filter-表"><span class="nav-number">2.3.1.</span> <span class="nav-text">Filter 表</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#NAT-表"><span class="nav-number">2.3.2.</span> <span class="nav-text">NAT 表</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Mangle-表"><span class="nav-number">2.3.3.</span> <span class="nav-text">Mangle 表</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Raw-表"><span class="nav-number">2.3.4.</span> <span class="nav-text">Raw 表</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#数据包流程"><span class="nav-number">2.4.</span> <span class="nav-text">数据包流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#遍历链流程图"><span class="nav-number">2.5.</span> <span class="nav-text">遍历链流程图</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#本机发出的包"><span class="nav-number">2.5.1.</span> <span class="nav-text">本机发出的包</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#本机收到的包"><span class="nav-number">2.5.2.</span> <span class="nav-text">本机收到的包</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#iptables-实战"><span class="nav-number">3.</span> <span class="nav-text">iptables 实战</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#命令选项"><span class="nav-number">3.1.</span> <span class="nav-text">命令选项</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#匹配选项"><span class="nav-number">3.2.</span> <span class="nav-text">匹配选项</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#操作选项"><span class="nav-number">3.3.</span> <span class="nav-text">操作选项</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#命令详解"><span class="nav-number">3.4.</span> <span class="nav-text">命令详解</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#常用命令"><span class="nav-number">3.5.</span> <span class="nav-text">常用命令</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#查看帮助"><span class="nav-number">3.5.1.</span> <span class="nav-text">查看帮助</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#查看规则"><span class="nav-number">3.5.2.</span> <span class="nav-text">查看规则</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#设置默认规则"><span class="nav-number">3.5.3.</span> <span class="nav-text">设置默认规则</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#清除所有规则"><span class="nav-number">3.5.4.</span> <span class="nav-text">清除所有规则</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#增加规则"><span class="nav-number">3.5.5.</span> <span class="nav-text">增加规则</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#删除规则"><span class="nav-number">3.5.6.</span> <span class="nav-text">删除规则</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#修改规则"><span class="nav-number">3.5.7.</span> <span class="nav-text">修改规则</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#开放指定端口"><span class="nav-number">3.5.8.</span> <span class="nav-text">开放指定端口</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#设置白名单"><span class="nav-number">3.5.9.</span> <span class="nav-text">设置白名单</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#屏蔽某-IP"><span class="nav-number">3.5.10.</span> <span class="nav-text">屏蔽某 IP</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#指定数据包出去的网络接口"><span class="nav-number">3.5.11.</span> <span class="nav-text">指定数据包出去的网络接口</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#防止SYN洪水攻击"><span class="nav-number">3.5.12.</span> <span class="nav-text">防止SYN洪水攻击</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#端口映射"><span class="nav-number">3.5.13.</span> <span class="nav-text">端口映射</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#持久化规则："><span class="nav-number">3.5.14.</span> <span class="nav-text">持久化规则：</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#切记"><span class="nav-number">3.5.15.</span> <span class="nav-text">切记</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考"><span class="nav-number">4.</span> <span class="nav-text">参考</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木子"
+      src="https://blog.502.li/favicon.ico">
+  <p class="site-author-name" itemprop="name">木子</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">66</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">79</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/muzi502" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;muzi502" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:blog@502.li" title="E-Mail → mailto:blog@502.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://twitter.com/muzi_ii" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;muzi_ii" rel="noopener" target="_blank"><i class="fa fa-fw fa-twitter"></i>Twitter</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://t.me/muzi_ii" title="Telegram → https:&#x2F;&#x2F;t.me&#x2F;muzi_ii" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Telegram</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://kindle.502.li/" title="Kindle → https:&#x2F;&#x2F;kindle.502.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-book"></i>Kindle</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://https//t.me/rss_kubernetes" title="Channel → https:&#x2F;&#x2F;https:&#x2F;&#x2F;t.me&#x2F;rss_kubernetes" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Channel</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-fw fa-rss"></i>RSS</a>
+      </span>
+  </div>
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+      </div>
+    </main>
+    <footer class="footer">
+      <div class="footer-inner">
+<div class="copyright">
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木子</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">853k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">23:42</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">主题 – <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a>
+  </div>
+      </div>
+    </footer>
+  </div>
+  <script src="/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script>
+<script src="/js/schemes/pisces.js"></script>
+<script src="/js/next-boot.js"></script>
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://muzi.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: {page: {
+            url: "https://blog.502.li/linux-net-and-iptables.html",
+            identifier: "linux-net-and-iptables.html",
+            title: "Linux 网络和 iptables 运行原理"
+          }
+        }
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://muzi.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+</body>
+</html>
