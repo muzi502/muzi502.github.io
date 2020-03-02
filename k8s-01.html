@@ -1,0 +1,1339 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon.ico">
+  <link rel="mask-icon" href="/favicon.ico" color="#222">
+<link rel="stylesheet" href="/css/main.css">
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Roboto Mono:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://blog.502.li').hostname,
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":true,"scrollpercent":true},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"buttons","active":null,"storage":true,"lazyload":true,"nav":{"disqus":{"text":"Load Disqus","order":-1}}},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":false,"async":true,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+  <meta name="description" content="俗话说文档写得好，同行抄到老😂。  在前期的技术选型调研过程中，对 K8s 密切相关的解决方案：网络插件、存储解决方案、监控告警系统、日志收集和处理、持续集成和交付系统等做了充分的调研和测试工作，现如今总结一下调研过程中的记录。 参考俗话说文档写得好，同行抄到老😂。不过咱木子还是有点原则的，最起码标注引用来源，尊重原作者的版权。所以就在此罗列了本文 剽窃 引用的来源。由于是技术调研，文中">
+<meta property="og:type" content="article">
+<meta property="og:title" content="kubernets 相关技术调研">
+<meta property="og:url" content="https://blog.502.li/k8s-01.html">
+<meta property="og:site_name" content="木子">
+<meta property="og:description" content="俗话说文档写得好，同行抄到老😂。  在前期的技术选型调研过程中，对 K8s 密切相关的解决方案：网络插件、存储解决方案、监控告警系统、日志收集和处理、持续集成和交付系统等做了充分的调研和测试工作，现如今总结一下调研过程中的记录。 参考俗话说文档写得好，同行抄到老😂。不过咱木子还是有点原则的，最起码标注引用来源，尊重原作者的版权。所以就在此罗列了本文 剽窃 引用的来源。由于是技术调研，文中">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/muzi502/blog/source/img/image-20191227151129673.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/muzi502/blog/source/img/Picture1.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/muzi502/blog/source/img/Picture2.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/muzi502/blog/source/img/Picture3.png">
+<meta property="article:published_time" content="2020-02-29T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-02-29T16:00:00.000Z">
+<meta property="article:author" content="木子">
+<meta property="article:tag" content="容器">
+<meta property="article:tag" content="K8s">
+<meta property="article:tag" content="调研">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://cdn.jsdelivr.net/gh/muzi502/blog/source/img/image-20191227151129673.png">
+<link rel="canonical" href="https://blog.502.li/k8s-01.html">
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+  <title>kubernets 相关技术调研 | 木子</title>
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+<link rel="alternate" href="/atom.xml" title="木子" type="application/atom+xml">
+</head>
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">木子</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+    <a href="/" rel="section"><i class="fa fa-fw fa-desktop"></i>Home</a>
+  </li>
+        <li class="menu-item menu-item-books">
+    <a href="/booklist.html" rel="section"><i class="fa fa-fw fa-book"></i>Books</a>
+  </li>
+        <li class="menu-item menu-item-kindle">
+    <a href="https://kindle.502.li/" rel="noopener" target="_blank"><i class="fa fa-fw fa-book"></i>Kindle</a>
+  </li>
+        <li class="menu-item menu-item-friend">
+    <a href="/link/" rel="section"><i class="fa fa-fw fa-link"></i>Friend</a>
+  </li>
+        <li class="menu-item menu-item-about">
+    <a href="/about.html" rel="section"><i class="fa fa-fw fa-user-circle-o"></i>About</a>
+  </li>
+  </ul>
+</nav>
+</div>
+    </header>
+  <div class="reading-progress-bar"></div>
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div class="content">
+  <div class="posts-expand">
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.502.li/k8s-01.html">
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://blog.502.li/favicon.ico">
+      <meta itemprop="name" content="木子">
+      <meta itemprop="description" content="">
+    </span>
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木子">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          kubernets 相关技术调研
+        </h1>
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              <time title="创建时间：2020-03-01 2020-03-01T00:00:00+08:00" itemprop="dateCreated datePublished" datetime="2020-03-01T00:00:00+08:00">2020-03-01</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%8A%80%E6%9C%AF/" itemprop="url" rel="index">
+                    <span itemprop="name">技术</span>
+                  </a>
+                </span>
+            </span>
+  <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-comment-o"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    <a title="disqus" href="/k8s-01.html#comments" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="k8s-01.html" itemprop="commentCount"></span>
+    </a>
+  </span>
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>27k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>45 分钟</span>
+            </span>
+        </div>
+      </header>
+    <div class="post-body" itemprop="articleBody">
+        <blockquote>
+<p>  俗话说文档写得好，同行抄到老😂。</p>
+</blockquote>
+<p>在前期的技术选型调研过程中，对 K8s 密切相关的解决方案：网络插件、存储解决方案、监控告警系统、日志收集和处理、持续集成和交付系统等做了充分的调研和测试工作，现如今总结一下调研过程中的记录。</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p>俗话说文档写得好，同行抄到老😂。不过咱木子还是有点原则的，最起码标注引用来源，尊重原作者的版权。所以就在此罗列了本文 <del>剽窃</del> 引用的来源。由于是技术调研，文中提到的相关开源软件介绍多数都是引用自官方文档或者英文翻译的文档。具体的细节稍后再更新博客补充。本文的内容涉及比较多，主要参考和引用了以下站点。</p>
+<table>
+<thead>
+<tr>
+<th>站点</th>
+<th>主要内容</th>
+<th>印象</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="https://jimmysong.io/" target="_blank" rel="noopener">Jimmy Song - 宋净超的博客</a></td>
+<td>微服务、服务网格、云原生</td>
+<td>蚂蚁金服云原生布道师</td>
+</tr>
+<tr>
+<td><a href="https://jimmysong.io/cloud-native/" target="_blank" rel="noopener">Cloud Native Wiki</a></td>
+<td>云原生百科、图书、编年史</td>
+<td>蚂蚁金服云原生布道师</td>
+</tr>
+<tr>
+<td><a href="https://skyao.io/" target="_blank" rel="noopener">敖小剑的博客</a></td>
+<td>微服务、服务网格、云原生</td>
+<td>蚂蚁金服云原生布道师</td>
+</tr>
+<tr>
+<td><a href="https://fuckcloudnative.io/" target="_blank" rel="noopener">云原生实验室 - 米开朗基杨的博客</a></td>
+<td>Cloud Native</td>
+<td>云原生布道师</td>
+</tr>
+<tr>
+<td><a href="https://zhangguanzhang.github.io/" target="_blank" rel="noopener">zhangguanzhang’s Blog</a></td>
+<td>Kubernetes、嵌入式、Linux</td>
+<td>张馆长😂</td>
+</tr>
+<tr>
+<td><a href="https://mritd.me/" target="_blank" rel="noopener">漠然的博客mritd Blog</a></td>
+<td>Kubernetes、Golang</td>
+<td>Java Web 开发者 1 枚</td>
+</tr>
+<tr>
+<td><a href="https://moelove.info/" target="_blank" rel="noopener">MoeLove</a></td>
+<td>Kubernetes 生态相关、开源</td>
+<td>每周坚持周报👍</td>
+</tr>
+<tr>
+<td><a href="https://k2r2bai.com/" target="_blank" rel="noopener">KaiRen’s Blog</a></td>
+<td>Kubernetes、Docker 容器</td>
+<td>台湾博主</td>
+</tr>
+<tr>
+<td><a href="https://www.hwchiu.com/" target="_blank" rel="noopener">Hwchiu Learning Note</a></td>
+<td>Kubernetes、SDN、DevOps</td>
+<td>台湾博主</td>
+</tr>
+<tr>
+<td><a href="https://kkc.github.io/" target="_blank" rel="noopener">Kakashi’s Blog</a></td>
+<td>AWS、Kubernetes、Prometheus</td>
+<td>台湾博主</td>
+</tr>
+<tr>
+<td><a href="https://aleiwu.com/" target="_blank" rel="noopener">Aylei’s Blog</a></td>
+<td>Kubernetes、云原生、TiDB</td>
+<td>在 <a href="https://www.pingcap.com/" target="_blank" rel="noopener">PingCAP</a> 的阿磊</td>
+</tr>
+<tr>
+<td><a href="https://qingmu.io/" target="_blank" rel="noopener">青木のJava小屋</a></td>
+<td><a href="https://qingmu.io/2019/09/03/Spring-cloud-on-Kubernetes-index/" target="_blank" rel="noopener">SpringCloud on Kubernetes</a></td>
+<td>打杂程序猿</td>
+</tr>
+<tr>
+<td><a href="https://nicksors.cc/" target="_blank" rel="noopener">开元DevOps知识库</a></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><a href="https://xuchao918.github.io/" target="_blank" rel="noopener">起风了</a></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><a href="https://maiyang.me/" target="_blank" rel="noopener">茶歇驿站 </a></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><a href="https://docs.lvrui.io/" target="_blank" rel="noopener">Polar Snow Documentation</a></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><a href="http://www.rhca.me/" target="_blank" rel="noopener">DevOps – 成长之路</a></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><a href="https://blog.ihypo.net/index.html" target="_blank" rel="noopener">梦旭随想</a></td>
+<td>Kubernetes 、容器</td>
+<td>无栈工程师😂</td>
+</tr>
+<tr>
+<td><a href="https://www.bladewan.com/" target="_blank" rel="noopener">我爱西红柿</a></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><a href="https://bingohuang.com/" target="_blank" rel="noopener">Bingo Huang</a></td>
+<td>Golang、Docker</td>
+<td>一个程序员的自我修养</td>
+</tr>
+<tr>
+<td><a href="https://hansedong.github.io/" target="_blank" rel="noopener">国南之境</a></td>
+<td>CoreDNS 、Kubernetes、Golang</td>
+<td></td>
+</tr>
+<tr>
+<td><a href="http://gaocegege.com/Blog/" target="_blank" rel="noopener">博客高策</a></td>
+<td>机器学习、Kubernetes、kubebuilder</td>
+<td>江湖小虾米</td>
+</tr>
+<tr>
+<td><a href="https://birdben.github.io/" target="_blank" rel="noopener">birdben</a></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><a href="https://fs.tn/" target="_blank" rel="noopener">浮生若梦</a></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><a href="http://www.yangguanjun.com/" target="_blank" rel="noopener">ictfox blog</a></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><a href="https://www.duyidong.com/" target="_blank" rel="noopener">杜屹东的博客学无止境</a></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><a href="http://team.jiunile.com/" target="_blank" rel="noopener">CloudNative 架构</a></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><a href="https://notes.doublemine.me/" target="_blank" rel="noopener">Doublemine</a></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><a href="http://chunqi.li/" target="_blank" rel="noopener">Arthur Chunqi Li’s Blog</a></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><a href="http://chunqi.li/archives/" target="_blank" rel="noopener">Archive Arthur Chunqi Li’s Blog</a></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><a href="https://www.lijiaocn.com/" target="_blank" rel="noopener">IT技术工作学习折腾笔记 李佶澳的博客</a></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><a href="http://moheqionglin.com/site/blogs/1/list.html" target="_blank" rel="noopener">墨荷琼林官网-编程日志</a></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><a href="https://cmgs.me/archive" target="_blank" rel="noopener">Archive - Nolla</a></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><a href="https://tomoyadeng.github.io/blog/" target="_blank" rel="noopener">Tomoya’s Blog</a></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><a href="https://youendless.com/" target="_blank" rel="noopener">君无止境</a></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><a href="https://jaminzhang.github.io/" target="_blank" rel="noopener">Jamin Zhang</a></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><a href="https://imroc.io/" target="_blank" rel="noopener">roc 的博客 - imroc.io</a></td>
+<td><a href="https://k8s.imroc.io/" target="_blank" rel="noopener">《Kubernetes实践指南》</a>、 算法</td>
+<td></td>
+</tr>
+<tr>
+<td><a href="https://sysdig.com/blog/" target="_blank" rel="noopener">Blog - Sysdig</a></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><a href="https://sleele.com/" target="_blank" rel="noopener">sleele的博客</a></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><a href="https://www.tauceti.blog/" target="_blank" rel="noopener">TauCeti blog · TauCeti blog</a></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><a href="https://zhangchenchen.github.io/" target="_blank" rel="noopener">Solar</a></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><a href="https://www.infvie.com/" target="_blank" rel="noopener">Infvie’s Blog运维SRE社区博客</a></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><a href="http://ghoulich.xninja.org/" target="_blank" rel="noopener">水晶命匣</a></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><a href="https://soulteary.com/" target="_blank" rel="noopener">苏洋博客</a></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><a href="https://ieevee.com/" target="_blank" rel="noopener">Zlatan Eevee</a></td>
+<td></td>
+<td></td>
+</tr>
+</tbody></table>
+<h2 id="开源容器平台"><a href="#开源容器平台" class="headerlink" title="开源容器平台"></a>开源容器平台</h2><h3 id="OpenShift"><a href="#OpenShift" class="headerlink" title="OpenShift"></a><a href="https://www.openshift.com/" target="_blank" rel="noopener">OpenShift</a></h3><h4 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h4><p>OpenShift 是红帽的云开发平台即服务（PaaS）。 通过 OpenShift，企业可以快速搭建稳定、安全、高效的容器应用平台。在这个平台上：</p>
+<ul>
+<li>可以构建企业内部的容器应用市场，为开发人员快速提供应用开发所依赖的中间件、数据库等服务。</li>
+<li>通过自动化的流程，开发人员可以快速进行应用的构建、容器化及部署。</li>
+<li>通过 OpenShift，用户可以贯通从应用开发到测试，再到上线的全流程，开发、测试和运维等不同的角色可以在一个平台上进行协作。</li>
+<li>支持 LDAP 用户权限管理，支持细粒度的权限资源管理。</li>
+<li>OpenShift 可以提高应用从研发到上线的效率和速度，缩短产品上市的时间，可以有效地帮助企业推进DevOps，提高资源利用率，提升生产效率。</li>
+</ul>
+<h3 id="KubeSphere"><a href="#KubeSphere" class="headerlink" title="KubeSphere"></a><a href="https://kubesphere.io/zh-CN/projects/" target="_blank" rel="noopener">KubeSphere</a></h3><h4 id="简介-1"><a href="#简介-1" class="headerlink" title="简介"></a>简介</h4><p><a href="https://kubesphere.io" target="_blank" rel="noopener">KubeSphere</a> 是在目前主流容器调度平台 <a href="https://kubernetes.io" target="_blank" rel="noopener">Kubernetes</a>  之上构建的企业级分布式多租户容器平台，提供简单易用的操作界面以及向导式操作方式，在降低用户使用容器调度平台学习成本的同时，极大减轻开发、测试、运维的日常工作的复杂度，旨在解决 Kubernetes  本身存在的存储、网络、安全和易用性等痛点。除此之外，平台已经整合并优化了多个适用于容器场景的功能模块，以完整的解决方案帮助企业轻松应对敏捷开发与自动化运维、微服务治理、多租户管理、工作负载和集群管理、服务与网络管理、应用编排与管理、镜像仓库管理和存储管理等业务场景。</p>
+<p>KubeSphere 高级版提供企业级容器应用管理服务，支持更强大的功能和灵活的配置，满足企业复杂的业务需求。比如支持  Master 和 etcd 节点高可用、可视化 CI/CD 流水线、多维度监控告警日志、多租户管理、LDAP 集成、新增支持 HPA  (水平自动伸缩) 、容器健康检查以及 Secrets、ConfigMaps  的配置管理等功能，新增微服务治理、灰度发布、s2i、代码质量检查等，后续还将提供和支持多集群管理、大数据、人工智能等更为复杂的业务场景。</p>
+<h3 id="Rancher"><a href="#Rancher" class="headerlink" title="Rancher"></a><a href="https://rancher.com/" target="_blank" rel="noopener">Rancher</a></h3><h4 id="简介-2"><a href="#简介-2" class="headerlink" title="简介"></a>简介</h4><p>Rancher 是一个开源的企业级多集群 Kubernetes 管理平台。通过 Rancher，企业再也不必自己使用一系列的开源软件去从头搭建容器服务平台。它提供了在生产环境中使用的管理 Docker 和 Kubernetes 的全栈化容器部署与管理平台。它可以帮助企业在生产环境中轻松快捷的部署和管理容器，轻松地管理各种环境的 Kubernetes ，满足IT需求并为DevOps团队提供支持。</p>
+<h2 id="部署工具"><a href="#部署工具" class="headerlink" title="部署工具"></a>部署工具</h2><h3 id="RKE"><a href="#RKE" class="headerlink" title="RKE"></a><a href="https://github.com/rancher/rke" target="_blank" rel="noopener">RKE</a></h3><p>RKE 全称为 Rancher Kubernetes Engine，是 Rancher 开源的轻量级 K8s 集群部署工具，使用它可以快速的部署一个 K8s 集群。参考文档 <a href="https://fs.tn/post/PmaL-uIiQ" target="_blank" rel="noopener">使用RKE部署一个K8s集群并部署Rancher HA</a> 。</p>
+<h3 id="Kops"><a href="#Kops" class="headerlink" title="Kops"></a><a href="https://github.com/kubernetes/kops" target="_blank" rel="noopener">Kops</a></h3><p><a href="https://github.com/kubernetes/kops" target="_blank" rel="noopener">kops</a> 是一个生产级 Kubernetes 集群部署工具，可以在 AWS、GCE、VMWare vSphere 等平台上自动部署高可用的 Kubernetes 集群。主要功能包括：</p>
+<ul>
+<li><p>命令行自动补全</p>
+</li>
+<li><p>全自动安装流程</p>
+</li>
+<li><p>使用 DNS 识别集群</p>
+</li>
+<li><p>支持自定义扩展 add-ons</p>
+</li>
+<li><p>支持高可用 - 参考 <a href="https://github.com/kubernetes/kops/blob/master/docs/high_availability.md" target="_blank" rel="noopener">high_availability.md</a></p>
+</li>
+<li><p>dry-run 和自动幂等升级等基于状态同步模型</p>
+</li>
+<li><p>支持从 <a href="https://github.com/kubernetes/kops/blob/master/docs/upgrade_from_kubeup.md" target="_blank" rel="noopener">kube-up</a> 创建的集群升级到 kops 版本</p>
+</li>
+<li><p>自动部署高可用的 Kubernetes 集群</p>
+</li>
+<li><p>自我修复：一切都在自动扩展组中运行</p>
+</li>
+<li><p>可以直接提供或者生成 terraform 清单 - 参考 <a href="https://github.com/kubernetes/kops/blob/master/docs/terraform.md" target="_blank" rel="noopener">terraform.md</a></p>
+</li>
+<li><p>支持多种操作系统（如 Debian、Ubuntu 16.04、CentOS、RHEL、Amazon Linux 和 CoreOS）</p>
+</li>
+</ul>
+<h3 id="Kubeadm"><a href="#Kubeadm" class="headerlink" title="Kubeadm"></a><a href="https://github.com/kubernetes/kubeadm" target="_blank" rel="noopener">Kubeadm</a></h3><p>Kubeadm 是 Kubernetes 官方推出的集群部署工具，在 1.14.0 版本之后就已经达到生产可用 GA 的稳定性。对于刚刚接触 Kubernetes 的人员来说，Kubeadm 无疑是个好工具。需要注意的是 kubeadm 所需要的镜像是在 gcr.k8s.io 上的，被 GFW 给墙掉了，可以将镜像从墙外的台服务器上搞下来，然后通过 docker load 的方式加载镜像，这样就不会因为无法 pull 镜像 pod 一直处在 pending 状态。</p>
+<h3 id="sealos"><a href="#sealos" class="headerlink" title="sealos"></a><a href="https://github.com/fanux/sealos" target="_blank" rel="noopener">sealos</a></h3><p>sealos 基于 kubeadm 来部署，旨在做一个简单干净轻量级稳定的 kubernetes 安装工具，能很好的支持高可用安装。特性如下：</p>
+<ul>
+<li>证书延期</li>
+<li>使用简单，支持自定义配置</li>
+<li>内核负载，极其稳定，因为简单所以排查问题也极其简单</li>
+<li>支持离线安装，工具与资源包（二进制程序 配置文件 镜像  yaml 文件等）分离,这样不同版本替换不同离线包即可</li>
+</ul>
+<h3 id="kubeasz"><a href="#kubeasz" class="headerlink" title="kubeasz"></a><a href="https://github.com/easzlab/kubeasz" target="_blank" rel="noopener">kubeasz</a></h3><p>使用 Ansible 脚本安装 K8s 集群，介绍组件交互原理，方便直接，不受国内网络环境影响。是目前 kubernetes 中文社区最为热门的部署工具，GitHub 上的 start 数超过了 4K5 。基于二进制方式部署和利用<code>ansible-playbook</code>实现自动化；既提供一键安装脚本, 也可以根据<code>安装指南</code>分步执行安装各个组件。</p>
+<ul>
+<li>集群特性 <code>TLS</code>双向认证、<code>RBAC</code>授权、<a href="https://github.com/easzlab/kubeasz/blob/master/docs/setup/00-planning_and_overall_intro.md#ha-architecture" target="_blank" rel="noopener">多Master高可用</a>、支持<code>Network Policy</code>、备份恢复、<a href="https://github.com/easzlab/kubeasz/blob/master/docs/setup/offline_install.md" target="_blank" rel="noopener">离线安装</a></li>
+<li>集群版本 kubernetes v1.13, v1.14, v1.15, v1.16</li>
+<li>操作系统 CentOS/RedHat 7, Debian 9/10, Ubuntu 1604/1804</li>
+<li>运行时 docker 18.06.x-ce, 18.09.x, <a href="https://github.com/easzlab/kubeasz/blob/master/docs/guide/containerd.md" target="_blank" rel="noopener">containerd</a> 1.2.6</li>
+<li>网络 <a href="https://github.com/easzlab/kubeasz/blob/master/docs/setup/network-plugin/calico.md" target="_blank" rel="noopener">calico</a>, <a href="https://github.com/easzlab/kubeasz/blob/master/docs/setup/network-plugin/cilium.md" target="_blank" rel="noopener">cilium</a>, <a href="https://github.com/easzlab/kubeasz/blob/master/docs/setup/network-plugin/flannel.md" target="_blank" rel="noopener">flannel</a>, <a href="https://github.com/easzlab/kubeasz/blob/master/docs/setup/network-plugin/kube-ovn.md" target="_blank" rel="noopener">kube-ovn</a>, <a href="https://github.com/easzlab/kubeasz/blob/master/docs/setup/network-plugin/kube-router.md" target="_blank" rel="noopener">kube-router</a></li>
+</ul>
+<h3 id="kubespray"><a href="#kubespray" class="headerlink" title="kubespray"></a><a href="https://github.com/kubernetes-sigs/kubespray" target="_blank" rel="noopener">kubespray</a></h3><p><a href="https://github.com/kubernetes-incubator/kubespray" target="_blank" rel="noopener">Kubespray</a> 是 Kubernetes incubator 中的项目，也是 kubernetes 官方出品。目标是提供生产可用 Kubernetes 部署方案，该项目基础是通过 Ansible Playbook 来定义系统与 Kubernetes 集群部署的任务，具有以下几个特点：</p>
+<ul>
+<li>可以部署在 AWS, GCE, Azure, OpenStack 以及裸机上.</li>
+<li>部署 High Available Kubernetes 集群.</li>
+<li>可组合性 (Composable)，可自行选择 Network Plugin (flannel, calico, canal, weave) 来部署.</li>
+<li>支持多种 Linux distributions(CoreOS, Debian Jessie, Ubuntu 16.04, CentOS/RHEL7).</li>
+</ul>
+<p>不过由于是国外开发者维护，有些软件包因为网络原因无法下载下来所以会比较麻烦。所以国内用户不建议触碰，除非你再去手动修改那些软件包的源为国内的。</p>
+<h2 id="稳定版本选择"><a href="#稳定版本选择" class="headerlink" title="稳定版本选择"></a>稳定版本选择</h2><p>可以参照这张表格，来选择小版本号介于 5~~8 之间且还在维护的版本。比如 v1.16.7 ，有 CVE 安全漏洞之前的版本也不建议使用。</p>
+<table>
+<thead>
+<tr>
+<th>month</th>
+<th>stable</th>
+<th>stable</th>
+<th>stable</th>
+<th>stable</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>2020-02</td>
+<td><a href="https://github.com/kubernetes/kubernetes/releases/tag/v1.17.3" target="_blank" rel="noopener">v1.17.3</a></td>
+<td><a href="https://github.com/kubernetes/kubernetes/releases/tag/v1.16.7" target="_blank" rel="noopener">v1.16.7</a></td>
+<td><a href="https://github.com/kubernetes/kubernetes/releases/tag/v1.15.10" target="_blank" rel="noopener">v1.15.10</a></td>
+<td></td>
+</tr>
+<tr>
+<td>2020-01</td>
+<td><a href="https://github.com/kubernetes/kubernetes/releases/tag/v1.17.2" target="_blank" rel="noopener">v1.17.2</a><br> <a href="https://github.com/kubernetes/kubernetes/releases/tag/v1.17.1" target="_blank" rel="noopener">v1.17.1</a></td>
+<td><a href="https://github.com/kubernetes/kubernetes/releases/tag/v1.16.6" target="_blank" rel="noopener">v1.16.6</a><br> <a href="https://github.com/kubernetes/kubernetes/releases/tag/v1.16.5" target="_blank" rel="noopener">v1.16.5</a></td>
+<td><a href="https://github.com/kubernetes/kubernetes/releases/tag/v1.15.9" target="_blank" rel="noopener">v1.15.9</a><br> <a href="https://github.com/kubernetes/kubernetes/releases/tag/v1.15.8" target="_blank" rel="noopener">v1.15.8</a></td>
+<td>CVE</td>
+</tr>
+<tr>
+<td>2019-12</td>
+<td><a href="https://github.com/kubernetes/kubernetes/releases/tag/v1.17.0" target="_blank" rel="noopener">v1.17.0</a></td>
+<td><a href="https://github.com/kubernetes/kubernetes/releases/tag/v1.16.4" target="_blank" rel="noopener">v1.16.4</a></td>
+<td><a href="https://github.com/kubernetes/kubernetes/releases/tag/v1.15.7" target="_blank" rel="noopener">v1.15.7</a></td>
+<td><a href="https://github.com/kubernetes/kubernetes/releases/tag/v1.14.10" target="_blank" rel="noopener">v1.14.10</a></td>
+</tr>
+<tr>
+<td>2019-11</td>
+<td><a href="https://github.com/kubernetes/kubernetes/releases/tag/v1.16.3" target="_blank" rel="noopener">v1.16.3</a></td>
+<td><a href="https://github.com/kubernetes/kubernetes/releases/tag/v1.15.6" target="_blank" rel="noopener">v1.15.6</a></td>
+<td><a href="https://github.com/kubernetes/kubernetes/releases/tag/v1.14.9" target="_blank" rel="noopener">v1.14.9</a></td>
+<td></td>
+</tr>
+<tr>
+<td>2019-10</td>
+<td><a href="https://github.com/kubernetes/kubernetes/releases/tag/v1.16.1" target="_blank" rel="noopener">v1.16.1</a>  <br><a href="https://github.com/kubernetes/kubernetes/releases/tag/v1.16.2" target="_blank" rel="noopener">v1.16.2</a></td>
+<td><a href="https://github.com/kubernetes/kubernetes/releases/tag/v1.15.5" target="_blank" rel="noopener">v1.15.5</a></td>
+<td><a href="https://github.com/kubernetes/kubernetes/releases/tag/v1.14.8" target="_blank" rel="noopener">v1.14.8</a></td>
+<td><a href="https://github.com/kubernetes/kubernetes/releases/tag/v1.13.12" target="_blank" rel="noopener">v1.13.12</a></td>
+</tr>
+<tr>
+<td>2019-09</td>
+<td><a href="https://github.com/kubernetes/kubernetes/releases/tag/v1.16.0" target="_blank" rel="noopener">v1.16.0</a></td>
+<td><a href="https://github.com/kubernetes/kubernetes/releases/tag/v1.15.4" target="_blank" rel="noopener">v1.15.4</a></td>
+<td><a href="https://github.com/kubernetes/kubernetes/releases/tag/v1.14.7" target="_blank" rel="noopener">v1.14.7</a></td>
+<td><a href="https://github.com/kubernetes/kubernetes/releases/tag/v1.13.11" target="_blank" rel="noopener">v1.13.11</a></td>
+</tr>
+<tr>
+<td>2019-08</td>
+<td><a href="https://github.com/kubernetes/kubernetes/releases/tag/v1.15.2" target="_blank" rel="noopener">v1.15.2</a><br> <a href="https://github.com/kubernetes/kubernetes/releases/tag/v1.15.3" target="_blank" rel="noopener">v1.15.3</a></td>
+<td><a href="https://github.com/kubernetes/kubernetes/releases/tag/v1.14.5" target="_blank" rel="noopener">v1.14.5</a> <br> <a href="https://github.com/kubernetes/kubernetes/releases/tag/v1.14.6" target="_blank" rel="noopener">v1.14.6</a></td>
+<td><a href="https://github.com/kubernetes/kubernetes/releases/tag/v1.13.9" target="_blank" rel="noopener">v1.13.9</a>  <br><a href="https://github.com/kubernetes/kubernetes/releases/tag/v1.13.10" target="_blank" rel="noopener">v1.13.10</a></td>
+<td>CVE</td>
+</tr>
+<tr>
+<td>2019-07</td>
+<td><a href="https://github.com/kubernetes/kubernetes/releases/tag/v1.15.1" target="_blank" rel="noopener">v1.15.1</a></td>
+<td><a href="https://github.com/kubernetes/kubernetes/releases/tag/v1.14.4" target="_blank" rel="noopener">v1.14.4</a></td>
+<td><a href="https://github.com/kubernetes/kubernetes/releases/tag/v1.13.8" target="_blank" rel="noopener">v1.13.8</a></td>
+<td><a href="https://github.com/kubernetes/kubernetes/releases/tag/v1.12.10" target="_blank" rel="noopener">v1.12.10</a></td>
+</tr>
+<tr>
+<td>2019-06</td>
+<td><a href="https://github.com/kubernetes/kubernetes/releases/tag/v1.15.0" target="_blank" rel="noopener">v1.15.0</a></td>
+<td><a href="https://github.com/kubernetes/kubernetes/releases/tag/v1.14.3" target="_blank" rel="noopener">v1.14.3</a></td>
+<td><a href="https://github.com/kubernetes/kubernetes/releases/tag/v1.13.7" target="_blank" rel="noopener">v1.13.7</a></td>
+<td></td>
+</tr>
+</tbody></table>
+<h3 id="1-14-10"><a href="#1-14-10" class="headerlink" title="1.14.10"></a>1.14.10</h3><h4 id="上游进展"><a href="#上游进展" class="headerlink" title="上游进展"></a>上游进展</h4><ul>
+<li>对 Windows Node 和 container 的支持达到生产级别，支持 Windows Server 2019；</li>
+<li>本地持久化数据卷正式可用，这可以方便使用本地 SSD 之类的存储，但注意这个特性容错性较差；</li>
+<li>Pod 优先级和抢占机制正式可用，(建议慎重使用)；</li>
+<li>Pod Ready++ (Pod Readiness Gates) 达到稳定，可以更好的判断 Pod 及其需要的资源是否均已就绪；</li>
+</ul>
+<h3 id="1-15-7"><a href="#1-15-7" class="headerlink" title="1.15.7"></a>1.15.7</h3><h4 id="上游进展-1"><a href="#上游进展-1" class="headerlink" title="上游进展"></a>上游进展</h4><ul>
+<li><p>v1.15 版本由 25 个增强功能组成，其中 2 个移动到 stable ，13 个 beta 以及 10 个 alpha ，整体上集中于稳定性改进和扩展的增强。</p>
+</li>
+<li><p>CRD (Custom Resource Definition) 是 Kubernetes  提供的一种可用于扩展其能力的方式，当前有很多使用 CRD 构建于 Kubernetes 上的平台/系统，可以说之后对 Kubernetes  的扩展，或者说想要基于 Kubernetes 开发，同时又想与上游保持同步的话，CRD 是个最佳的选择。</p>
+</li>
+<li><p>Kubeadm 在此版本开始有了自己独立的 LOGO ，同时在这个版本中 kubeadm 的功能也得到了很多的完善和补充。这使得 kubeadm 成为更普遍/更好用的搭建集群的工具，同时对集群生命周期的管理也做的更加到位了。</p>
+</li>
+</ul>
+<h3 id="1-16-5"><a href="#1-16-5" class="headerlink" title="1.16.5"></a>1.16.5</h3><h4 id="上游进展-2"><a href="#上游进展-2" class="headerlink" title="上游进展"></a>上游进展</h4><ul>
+<li>CRD 达到 GA ，这是当前社区最为推崇的一种扩展 Kubernetes 的方式，并且自从 1.7 加入后，也被越来越广泛的使用了；</li>
+<li>准入控制 webhooks 达到 GA ，准入控制在 Kubernetes 中太过于重要了，自 1.9 该功能加入以来，被广泛用于扩展 Kubernetes 相关功能；</li>
+<li>现在 CSI 规范中支持调整卷大小，当前正在迁移至 Beta 阶段；</li>
+<li>IPv4/IPv6 双栈支持；</li>
+<li>为了更好的控制 kube-apiserver 的网络流量，正在尝试给它增加一个<a href="https://github.com/kubernetes/enhancements/blob/master/keps/sig-api-machinery/20190226-network-proxy.md" target="_blank" rel="noopener">代理</a>，详情可点击链接查看；</li>
+<li>现在 kubeadm  在 TLS bootstrap 之后，将会删除 <code>bootstrap-kubelet.conf</code>，如果有依赖此文件的小伙伴，请尽快迁移使用 <code>kubelet.conf</code> ，此外也建议先看看 RBAC 相关的内容，了解下切换的意义；</li>
+<li><code>beta.kubernetes.io/metadata-proxy-ready</code> 和 <code>beta.kubernetes.io/kube-proxy-ds-ready</code> 都被移除了；</li>
+<li>还有之前提到过的 <code>pps/v1beta1</code> 和 <code>apps/v1beta2</code> 已经被 <code>apps/v1</code> 取代等，这里不再一一列举了，有兴趣可参考之前的周报内容。</li>
+</ul>
+<h3 id="1-17-0"><a href="#1-17-0" class="headerlink" title="1.17.0"></a>1.17.0</h3><h4 id="上游进展-3"><a href="#上游进展-3" class="headerlink" title="上游进展"></a>上游进展</h4><ul>
+<li><p>Kubernetes v1.17 包含 22 个增强功能，其中 14 个已经 stable ，4 个 beta 以及剩余 4 个 alpha 。</p>
+</li>
+<li><p><a href="https://github.com/kubernetes/kubernetes/pull/87714" target="_blank" rel="noopener">#87714</a> kubectl 的 <code>--server-dry-run</code> 被标记为废弃，并且可以通过使用 <code>--dry-run=server</code> 替代。并且 kubectl 的 <code>--dry-run</code> 参数接收的值，也变成了 <code>client</code>, <code>server</code> 以及 <code>none</code>；</p>
+</li>
+<li><p><a href="https://github.com/kubernetes/kubernetes/pull/86810" target="_blank" rel="noopener">#86810</a> <code>kubeadm config images list</code> 实现了结构化输出，支持文本，JSON，YAML 和 GO 模板等。（我个人认为，这个功能不错的，但目前我还没想到什么情况下我会需要它）；</p>
+</li>
+<li><p><a href="https://github.com/kubernetes/kubernetes/pull/87975" target="_blank" rel="noopener">#87975</a> <code>kubeadm upgrade node config</code> 从 v1.15 起标记废弃，现在正式移除，请使用 <code>kubeadm upgrade node phase kubelet-config</code> 代替。</p>
+</li>
+</ul>
+<p><code>关于上有进展引用自</code> <a href="https://moelove.info/" target="_blank" rel="noopener">K8s生态周报</a> ，推荐各位去关注。</p>
+<h2 id="节点-OS"><a href="#节点-OS" class="headerlink" title="节点 OS"></a>节点 OS</h2><h3 id="Photon-OS"><a href="#Photon-OS" class="headerlink" title="Photon OS"></a><a href="https://vmware.github.io/photon/" target="_blank" rel="noopener">Photon OS</a></h3><h4 id="特性"><a href="#特性" class="headerlink" title="特性"></a>特性</h4><p>Photon OS 是 VMware 团队对 vSphere ESXi 虚拟化平台专门打造的容器优化型操作系统，从目前的使用来看是基于 RHEL 或 CentOS 系的发行版。针对 ESXi 虚拟胡优化内核，理论上在 vSphere ESXi 虚拟化上 Photon OS 要比传统的 CentOS/Ubuntu 发行版性能要好一些，系统占用的资源也少一些。另外 Photon OS V3.0 的内核是 4.19 版本的，使用方式和 CentOS 差别不大。</p>
+<blockquote>
+<p>Photon OS™ is an open source Linux container host optimized for cloud-native applications, cloud platforms, and VMware infrastructure. Photon OS provides a secure run-time environment for efficiently running containers. Some of the key highlights of Photon OS are:</p>
+<ul>
+<li>Optimized for VMware hypervisor: The Linux kernel is tuned for performance when Photon OS runs on VMware ESXi.</li>
+<li>Support for containers: Photon OS includes the Docker daemon and works with container orchestration frameworks, such as Mesos and Kubernetes.</li>
+<li>Efficient lifecycle management: Photon OS is easy to manage, patch, and update, using the <a href="https://github.com/vmware/photon/blob/master/docs/photon-admin-guide.md#tiny-dnf-for-package-management" target="_blank" rel="noopener">tdnf package manager</a> and the <a href="https://github.com/vmware/pmd" target="_blank" rel="noopener">Photon Management Daemon (pmd)</a>.</li>
+<li>Security hardened: Photon OS provides secure and up-to-date kernel and other packages, and its policies are designed to govern the system securely.</li>
+</ul>
+<p>For an overview of Photon OS, see <a href="https://vmware.github.io/photon/" target="_blank" rel="noopener">https://vmware.github.io/photon/</a></p>
+</blockquote>
+<h3 id="CoreOS"><a href="#CoreOS" class="headerlink" title="CoreOS"></a><a href="https://coreos.com/" target="_blank" rel="noopener">CoreOS</a></h3><p>CoreOS 是以安全性、一致性、可靠性为设计目标的一款操作系统。因为CoreOS的设计初衷只为运行应用容器，因此需要安装很少系统级别的依赖包即可。相比典型的Linux服务器，这就意味着CoreOS需要很低耗的CPU和高效的RAM即可满足需求。CoreOS 几乎可以运行在包括 <a href="https://coreos.com/products/" target="_blank" rel="noopener">Vagrant</a>, <a href="https://coreos.com/os/docs/latest/booting-on-ec2.html" target="_blank" rel="noopener">Amazon EC2</a>, <a href="https://coreos.com/docs/qemu/" target="_blank" rel="noopener">QEMU/KVM</a>, <a href="https://coreos.com/docs/vmware/" target="_blank" rel="noopener">VMware</a>, <a href="https://coreos.com/docs/openstack/" target="_blank" rel="noopener">OpenStack</a> 的任何平台，甚至在未安装任何软件的裸机硬件环境都可以。</p>
+<ul>
+<li>最小化操作系统：CoreOS 被设计成一个基于容器的最小化的现代操作系统。它比现有的 Linux 安装平均节省 40% 的 RAM（大约 114M ）并允许从 PXE 或 iPXE 非常快速的启动。</li>
+<li>CoreOS 采用主动/被动双分区方案来实现自动更新。自动更新以单一体为单位，而不是通过逐包替换的方式进行。稍后我们将详细介绍这个。</li>
+<li>CoreOS 使用 Linux 容器在更高抽象层次上管理服务，而没有采用通过 yum 或者 APT 工具做包的安装管理。单一的服务代码以及它所有的依赖会被打包到一个容器中，打包进入容器后就可以运行在单一的CoreOS 机器，也可以运行在 CoreOS 集群中。</li>
+<li>Linux 容器提供与完整虚拟机相似的功能。但是容器聚焦在应用程序层次，而不是整个虚拟主机层次。因为容器不能运行独立的Linux内核，不需要一个中间件层，因此它几乎没有性能上的开销。低性能开销的特质意味着可以部署更少的机器、使用配置低的机器就可以完成虚拟机同样的功能，从而降低成本。</li>
+</ul>
+<h3 id="Rancher-OS"><a href="#Rancher-OS" class="headerlink" title="Rancher OS"></a>Rancher OS</h3><p>RancherOS 是 Rancher 团队所维护的开源项目，也是对标 CoreOS 一样，专门用来运行容器，并且可以运行在生产环境（至少官方做了这么样的承诺，咱也没在生产用过，不好说。在 RancherOS 中所有的进程（包括系统所有的服务，比如 udev 和 syslog）都是用 docker 来管理，这一点要比 CoreOS 更加激进一些，而 CoreOS 还是使用传统 Linux 发行版中的 systemd 来管理系统中的服务。通过移除传统 Linux 发行版中不必要的服务和库来最小化系统，使他专注单一的功能，即运行 docker 容器。</p>
+<blockquote>
+<p>  RancherOS is the smallest, easiest way to run Docker in production. Every process in RancherOS is a container managed by Docker. This includes system services such as <code>udev</code> and <code>syslog</code>. Because it only includes the services necessary to run Docker, RancherOS is significantly smaller than most traditional operating systems. By removing unnecessary libraries and services, requirements for security patches and other maintenance are also reduced. This is possible because, with Docker, users typically package all necessary libraries into their containers.</p>
+<p>  Another way in which RancherOS is designed specifically for running Docker is that it always runs the latest version of Docker. This allows users to take advantage of the latest Docker capabilities and bug fixes.</p>
+<p>  Like other minimalist Linux distributions, RancherOS boots incredibly quickly. Starting Docker containers is nearly instant, similar to starting any other process. This speed is ideal for organizations adopting microservices and autoscaling.</p>
+<p>  Docker is an open-source platform designed for developers, system admins, and DevOps. It is used to build, ship, and run containers, using a simple and powerful command line interface (CLI). To get started with Docker, please visit the <a href="https://docs.docker.com/engine/userguide/" target="_blank" rel="noopener">Docker user guide</a>.</p>
+</blockquote>
+<h2 id="高可用架构"><a href="#高可用架构" class="headerlink" title="高可用架构"></a>高可用架构</h2><h3 id="参考-1"><a href="#参考-1" class="headerlink" title="参考"></a>参考</h3><ul>
+<li><a href="https://jishu.io/kubernetes/kubernetes-master-ha/" target="_blank" rel="noopener">关于Kubernetes Master高可用的一些策略</a></li>
+</ul>
+<p>这张图从管理平面、执行平面和数据平面 三个部分来简单说明一下该高可用架构方案以及各个组件的功能。</p>
+<p><img src="https://cdn.jsdelivr.net/gh/muzi502/blog/source/img/image-20191227151129673.png" alt="image-20191227151129673"></p>
+<h3 id="etcd-高可用"><a href="#etcd-高可用" class="headerlink" title="etcd 高可用"></a>etcd 高可用</h3><p>etcd 是 Kubernetes 当中唯一带状态的服务，也是高可用的难点。Kubernetes 选用 etcd 作为它的后端数据存储仓库正是看重了其使用分布式架构，没有单点故障的特性。etcd 的高可用基本有三种思路：</p>
+<h4 id="独立的-etcd-集群"><a href="#独立的-etcd-集群" class="headerlink" title="独立的 etcd 集群"></a>独立的 etcd 集群</h4><p>使用 3 台或者 5 台服务器只运行 etcd，独立维护和升级。甚至可以使用 CoreOS 的<code>update-engine</code>和<code>locksmith</code>，让服务器完全自主的完成升级。这个 etcd 集群将作为基石用于构建整个集群。 采用这项策略的主要动机是 etcd 集群的节点增减都需要显式的通知集群，保证 etcd 集群节点稳定可以更方便的用程序完成集群滚动升级，减轻维护负担。</p>
+<h4 id="Master-节点-static-pod-形式"><a href="#Master-节点-static-pod-形式" class="headerlink" title="Master 节点 static pod 形式"></a>Master 节点 static pod 形式</h4><p>二是在 Kubernetes Master上用 static pod 的形式来运行 etcd，并将多台 Kubernetes Master上的 etcd 组成集群。 在这一模式下，各个服务器的 etcd 实例被注册进了 Kubernetes 当中，虽然无法直接使用<code>kubectl</code>来管理这部分实例，但是监控以及日志搜集组件均可正常工作。在这一模式运行下的 etcd 可管理性更强。</p>
+<h4 id="self-hosted-etcd方案"><a href="#self-hosted-etcd方案" class="headerlink" title="self-hosted etcd方案"></a>self-hosted etcd方案</h4><p>三是使用 CoreOS 提出的 <a href="https://github.com/kubernetes-incubator/bootkube/issues/31" target="_blank" rel="noopener">self-hosted etcd方案</a>，将本应在底层为 Kubernetes 提供服务的 etcd 运行在Kubernetes 之上。 实现 Kubernetes 对自身依赖组件的管理。在这一模式下的 etcd 集群可以直接使用 <a href="https://github.com/coreos/etcd-operator" target="_blank" rel="noopener">etcd-operator</a> 来自动化运维，最符合 Kubernetes 的使用习惯。</p>
+<p>这三种思路均可以实现 etcd 高可用的目标，但是在选择过程中却要根据实际情况做出一些判断。简单来讲硬件资源充足但保守的项目选方案一， 想一步到位并愿意承担一定风险的项目选方案三。折中一点选方案二。</p>
+<h3 id="kube-apiserver-高可用"><a href="#kube-apiserver-高可用" class="headerlink" title="kube-apiserver  高可用"></a>kube-apiserver  高可用</h3><p>apiserver 本身是一个无状态服务，要实现其高可用相对要容易一些，难点在于如何将运行在多台服务器上的apiserver 用一个统一的外部入口暴露给所有Node节点。</p>
+<p>说是难点，其实对于这种无状态服务的高可用，我们在设计业务系统的高可用方案时已经有了相当多的经验积累。需要注意的是 apiserver 所使用的 SSL 证书要包含外部入口的地址，不然 Node 节点无法正常访问 apiserver。</p>
+<p>apiserver 的高可用也有三种基本思路：</p>
+<h4 id="使用外部负载均衡器"><a href="#使用外部负载均衡器" class="headerlink" title="使用外部负载均衡器"></a>使用外部负载均衡器</h4><p>一是使用外部负载均衡器，不管是使用公有云提供的负载均衡器服务或是在私有云中使用<code>LVS</code>或者<code>HaProxy</code>自建负载均衡器都可以归到这一类。 负载均衡器是非常成熟的方案，在这里略过不做过多介绍。如何保证负载均衡器的高可用，则是选择这一方案需要考虑的新问题。</p>
+<h4 id="在网络层做负载均衡"><a href="#在网络层做负载均衡" class="headerlink" title="在网络层做负载均衡"></a>在网络层做负载均衡</h4><p>二是在网络层做负载均衡。比如在 Master 节点上用<code>BGP</code>做<code>ECMP</code>，或者在Node节点上用<code>iptables</code>做NAT都可以实现。采用这一方案不需要额外的外部服务，但是对网络配置有一定的要求。</p>
+<h4 id="在-Node-节点上使用反向代理对多个-Master-做负载均衡"><a href="#在-Node-节点上使用反向代理对多个-Master-做负载均衡" class="headerlink" title="在 Node 节点上使用反向代理对多个 Master 做负载均衡"></a>在 Node 节点上使用反向代理对多个 Master 做负载均衡</h4><p>三是在 Node 节点上使用反向代理对多个 Master 做负载均衡。这一方案同样不需要依赖外部的组件，但是当Master 节点有增减时，如何动态配置 Node 节点上的负载均衡器成为了另外一个需要解决的问题。</p>
+<p>从目前各个集群管理工具的选择来看，这三种模式都有被使用，目前还没有明确的推荐方案产生。建议在公有云上的集群多考虑第一种模式，在私有云环境中由于维护额外的负载均衡器也是一项负担，建议考虑第二种或是第三种方案。</p>
+<h3 id="Kube-dns-高可用"><a href="#Kube-dns-高可用" class="headerlink" title="Kube-dns  高可用"></a>Kube-dns  高可用</h3><p>严格来说 kube-dns 并不算是 Master 组件的一部分，因为它是可以跑在 Node 节点上，并用<code>Service</code>向集群内部提供服务的。但在实际环境中， 由于默认配置只运行了一份 kube-dns 实例，在其升级或是所在节点当机时，会出现集群内部 dns 服务不可用的情况，严重时会影响到线上服务的正常运行。</p>
+<p>为了避免故障，请将 kube-dns 的<code>replicas</code>值设为 2 或者更多，并用<code>anti-affinity</code>将他们部署在不同的 Node 节点上。这项操作比较容易被疏忽，直到出现故障时才发现原来是 kube-dns 只运行了一份实例导致的故障。</p>
+<h3 id="kube-controller-manager-与-kube-scheduler高可用"><a href="#kube-controller-manager-与-kube-scheduler高可用" class="headerlink" title="kube-controller-manager 与 kube-scheduler高可用"></a>kube-controller-manager 与 kube-scheduler高可用</h3><p>这两项服务是 Master 节点的一部分，他们的高可用相对容易，仅需要运行多份实例即可。这些实例会通过向 apiserver 中的<code>Endpoint</code>加锁的方式来进行 leader election， 当目前拿到 leader 的实例无法正常工作时，别的实例会拿到锁，变为新的leader。</p>
+<p>目前在多个 Master 节点上采用 static pod 模式部署这两项服务的方案比较常见，激进一点也可以采用 self-hosted 的模式，在 Kubernetes 之上用<code>DaemonSet</code>或者<code>Deployment</code>来部署。</p>
+<h2 id="网络插件"><a href="#网络插件" class="headerlink" title="网络插件"></a>网络插件</h2><h3 id="参考-2"><a href="#参考-2" class="headerlink" title="参考"></a>参考</h3><ul>
+<li><a href="https://ieevee.com/tech/2017/08/12/k8s-flannel-src.html" target="_blank" rel="noopener">kubernetes flannel代码解析</a></li>
+<li><a href="https://cizixs.com/2016/07/16/flannel-source-code-insight/" target="_blank" rel="noopener">flannel 源码分析</a></li>
+<li><a href="http://www.sel.zju.edu.cn/?p=690" target="_blank" rel="noopener">技术干货|深入理解flannel</a></li>
+<li><a href="http://dockone.io/article/618" target="_blank" rel="noopener">DockOne技术分享（十八）：一篇文章带你了解Flannel</a></li>
+<li><a href="http://wsfdl.com/kubernetes/2018/07/09/why_not_flanneld.html" target="_blank" rel="noopener">蘑菇街 K8S 为什么不选择 flannel 网络模型</a></li>
+<li><a href="https://ggaaooppeenngg.github.io/zh-CN/2017/09/21/flannel-%E7%BD%91%E7%BB%9C%E6%9E%B6%E6%9E%84/" target="_blank" rel="noopener">flannel 网络架构</a></li>
+<li><a href="https://ieevee.com/tech/2017/01/18/k8s-flannel.html#k8s%E7%9A%84flannel%E6%A8%A1%E5%BC%8F" target="_blank" rel="noopener">kubernets的网络插件：flannel</a></li>
+<li><a href="https://cizixs.com/2017/10/19/docker-calico-network/" target="_blank" rel="noopener">docker 容器网络方案：calico 网络模型</a></li>
+<li><a href="https://mritd.me/2017/07/31/calico-yml-bug/" target="_blank" rel="noopener">Calico 部署踩坑记录</a></li>
+<li><a href="https://chunqi.li/2015/11/15/Battlefield-Calico-Flannel-Weave-and-Docker-Overlay-Network/#Conclusion" target="_blank" rel="noopener">Battlefield: Calico, Flannel, Weave and Docker Overlay Network</a></li>
+<li><a href="https://chunqi.li/2015/09/06/calico-docker/" target="_blank" rel="noopener">Calico: A Solution of Multi-host Network For Docker</a></li>
+<li><a href="https://www.lijiaocn.com/%E9%A1%B9%E7%9B%AE/2017/04/11/calico-usage.html" target="_blank" rel="noopener">Calico网络的原理、组网方式与使用</a></li>
+</ul>
+<h3 id="静态路由"><a href="#静态路由" class="headerlink" title="静态路由"></a>静态路由</h3><p>事先设置好路由器和主机中的路由表信息，网络性能最佳的方案，但不便于管理路由表。</p>
+<h3 id="flannel"><a href="#flannel" class="headerlink" title="flannel"></a><a href="https://github.com/coreos/flannel" target="_blank" rel="noopener">flannel</a></h3><ul>
+<li>Flannel 是 CoreOS 团队针对 Kubernetes 设计的一个网络规划服务，简单来说，它的功能是让集群中的不同节点主机创建的 Docker 容器都具有全集群唯一的虚拟IP地址。</li>
+<li>在默认的 Docker 配置中，每个节点上的 Docker 服务会分别负责所在节点容器的IP分配。这样导致的一个问题是，不同节点上容器可能获得相同的内外 IP 地址。并使这些容器之间能够之间通过IP地址相互找到，也就是相互 ping 通。</li>
+<li>Flannel 的设计目的就是为集群中的所有节点重新规划 IP 地址的使用规则，从而使得不同节点上的容器能够获得“同属一个内网”且”不重复的” IP 地址，并让属于不同节点上的容器能够直接通过内网 IP 通信。</li>
+<li>Flannel 实质上是一种“覆盖网络（overlaynetwork）”，也就是将TCP数据包装在另一种网络包里面进行路由转发和通信，目前已经支持 UDP、VXLAN、host-gw、aws-vpc、GCE 和 Alloc 路由等数据转发方式，默认的节点间数据通信方式是 UDP 转发。</li>
+</ul>
+<h4 id="hostgw-模式"><a href="#hostgw-模式" class="headerlink" title="hostgw 模式"></a>hostgw 模式</h4><p>性能最高，原理非常简单，直接添加路由，将目的主机当做网关，直接路由原始封包。这正是 host-gw 的含义。所有的子网和主机的信息，都保存在 etcd 中，flanneld 只需要 watch 这些数据的变化 ，实时更新路由表就行了。 核心是 IP 包在封装成桢的时候，使用路由表的“下一跳”设置上的 MAC 地址，这样可以经过二层网络到达目的宿主机。</p>
+<p>例如，我们从 etcd 中监听到一个 Event Added 事件 subnet 为 10.1.15.0/24 被分配给主机 Public IP 192.168.0.100，hostgw 要做的工作就是在本主机上添加一条目的地址为 10.1.15.0/24，网关地址为192.168.0.100，输出设备为上文中选择的集群间交互的网卡即可。对于 Event Removed 事件，只需删除对应的路由。</p>
+<h4 id="udp-模式"><a href="#udp-模式" class="headerlink" title="udp 模式"></a>udp 模式</h4><p>核心就是通过 TUN 设备 flannel0 实现（ TUN 设备是工作在三层的虚拟网络设备，功能是：在操作系统内核和用户应用程序之间传递 IP 包）相比两台宿主机直接通信，多出了 flanneld 的处理过程，这个过程，使用了flannel0 这个 TUN 设备，仅在发出IP包的过程中就要经过了三次用户态到内核态的数据拷贝（ linux 的上下文切换代价比较大），所以性能非常差。</p>
+<h4 id="vxlan-模式"><a href="#vxlan-模式" class="headerlink" title="vxlan 模式"></a>vxlan 模式</h4><p>VXLAN，即 Virtual Extensible LAN（虚拟可扩展局域网），是 Linux 本身支持的一网种网络虚拟化技术。VXLAN 可以完全在内核态实现封装和解封装工作，从而通过“隧道”机制，构建出覆盖网络（Overlay Network）</p>
+<p>VXLAN 的设计思想是：在现有的三层网络之上，“覆盖”一层虚拟的、由内核 VXLAN 模块负责维护的二层网络，使得连接在这个 VXLAN 二 nfcu 网络上的“主机”（虚拟机或容器都可以），可以像在同一个局域网（LAN）里那样自由通信。为了能够在二 nfcu 网络上打通“隧道”，VXLAN 会在宿主机上设置一个特殊的网络设备作为“隧道”的两端，叫VTEP：VXLAN Tunnel End Point（虚拟隧道端点）</p>
+<h3 id="Calico"><a href="#Calico" class="headerlink" title="Calico"></a><a href="https://www.projectcalico.org/" target="_blank" rel="noopener">Calico</a></h3><ul>
+<li>Calico 是一个纯 3 层的数据中心网络方案，而且无缝集成像 OpenStack 这种 IaaS 云架构，能够提供可控的VM、容器、裸机之间的IP通信。Calico 不使用叠加网络比如 Flannel 和 Libnetwork 叠加网络驱动，它是一个纯三层的方法，使用虚拟路由代替虚拟交换，每一台虚拟路由通过 BGP 协议传播可达信息（路由）到剩余数据中心。</li>
+<li>Calico 在每一个计算节点利用 Linux Kernel 实现了一个高效的 vRouter 来负责数据转发，而每个 vRouter 通过 BGP 协议负责把自己上运行的 workload 的路由信息像整个 Calico 网络内传播——小规模部署可以直接互联，大规模下可通过指定的 BGP route reflector 来完成。</li>
+<li>Calico 节点组网可以直接利用数据中心的网络结构（无论是 L2 或者 L3），不需要额外的 NAT，隧道或者Overlay Network 。</li>
+<li>Calico 基于 iptables 还提供了丰富而灵活的网络 Policy，保证通过各个节点上的 ACLs 来提供 Workload 的多租户隔离、安全组以及其他可达性限制等功能。</li>
+</ul>
+<h3 id="NSX-T"><a href="#NSX-T" class="headerlink" title="NSX-T"></a><a href="https://docs.vmware.com/cn/VMware-NSX-T-Data-Center/index.html" target="_blank" rel="noopener">NSX-T</a></h3><p>主要适用于 vSphere 虚拟化平台，ESXi 虚拟化的不二之选。以下内容摘自官方文档 <a href="https://docs.vmware.com/cn/VMware-NSX-T-Data-Center/2.4/nsxt_24_ncp_kubernetes.pdf" target="_blank" rel="noopener">适用于 Kubernetes 和 Cloud Foundry 的 NSX Container Plug-in - 安装和管理指南</a> 。</p>
+<p>VMware NSX-T™ Data Center（以前称为 NSX-T）提供了一个敏捷式软件定义基础架构，用来构建云原生应用程序环境。专注于为具有异构端点环境和技术堆栈的新兴应用程序框架和架构提供网络、安全和自动化并简化操作。NSX-T Data Center 支持云原生应用程序、裸机工作负载、多管理程序环境、公有云和多个云。旨在由开发组织管理、操作和使用。NSX-T Data Center 允许 IT 和开发团队选择最适合其应用程序的技术。</p>
+<p>NSX Container Plug-in(NCP) 提供 NSX-T Data Center 与容器协调器（如 Kubernetes）之间的集成以及 NSX-T Data Center 与基于容器的 PaaS（平台即服务）产品（如 OpenShift 和 Pivotal Cloud Foundry）之间的集成。NCP 的主要组件在容器中运行，并与 NSX Manager 和 Kubernetes 控制层面进行通信。NCP 调用 NSX API 以监控对容器和其他资源的更改以及管理网络资源，如容器的逻辑端口、交换机、路由器和安全组。NSX CNI 插件在每个 Kubernetes 节点上运行。它监控容器生命周期事件，将容器接口连接到客户机 vSwitch，并对客户机 vSwitch 进行编程以标记和转发容器接口和 vNIC 之间的容器流量。</p>
+<h4 id="功能特性"><a href="#功能特性" class="headerlink" title="功能特性"></a>功能特性</h4><ul>
+<li><p>自动为 Kubernetes 群集创建 NSX-T Data Center 逻辑拓扑，并为每个 Kubernetes 命名空间创建一个单独的逻辑网络。</p>
+</li>
+<li><p>将 Kubernetes pod 连接到逻辑网络，并分配 IP 和 MAC 地址。</p>
+</li>
+<li><p>支持网络地址转换 (NAT) 并为每个 Kubernetes 命名空间分配一个单独的 SNAT IP。</p>
+</li>
+<li><p>使用 NSX-T Data Center 分布式防火墙实现 Kubernetes 网络策略。</p>
+</li>
+<li><p>支持输入和输出网络策略。</p>
+</li>
+<li><p>支持网络策略中的 IPBlock 选择器。</p>
+</li>
+<li><p>为网络策略指定标签选择器时，支持 matchLabels 和 matchExpression。</p>
+</li>
+<li><p>支持在其他命名空间中选择 pod。</p>
+</li>
+<li><p>实现 ClusterIP 类型的 Kubernetes 服务和 LoadBalancer 类型的服务。</p>
+</li>
+<li><p>使用 NSX-T 第 7 层负载平衡器实现 Kubernetes Ingress。</p>
+</li>
+<li><p>通过 TLS Edge 终止支持 HTTP Ingress 和 HTTPS Ingress。</p>
+</li>
+<li><p>支持 Ingress 默认后端配置。</p>
+</li>
+<li><p>支持 Ingress URI 重写。</p>
+</li>
+<li><p>在 NSX-T Data Center 逻辑交换机端口上为命名空间、pod 名称和 pod 标签创建标记，并允许管理员根据标记定义 NSX-T 安全组和策略。</p>
+</li>
+</ul>
+<h2 id="持久化存储方案"><a href="#持久化存储方案" class="headerlink" title="持久化存储方案"></a>持久化存储方案</h2><h3 id="参考-3"><a href="#参考-3" class="headerlink" title="参考"></a>参考</h3><ul>
+<li><p><a href="http://www.taocloudx.com/index.php?a=shows&catid=4&id=102" target="_blank" rel="noopener">GlusterFS小文件应用调优 - 技术 - TaoCloud - 软件定义智能存储</a></p>
+</li>
+<li><p><a href="https://czero000.github.io/2016/04/05/glusterfs-technical-explanation.html" target="_blank" rel="noopener">GlusterFS技术详解 | Zero’s Blog</a></p>
+</li>
+<li><p><a href="http://ceph.org.cn/2018/06/05/redhat-ceph存储-《面向生产环境的ceph-对象网关指南》/" target="_blank" rel="noopener">RedHat Ceph存储——《面向生产环境的Ceph 对象网关指南》 – Ceph开源社区</a></p>
+</li>
+<li><p><a href="http://www.strugglesquirrel.com/2018/03/09/ceph运维常用命令/" target="_blank" rel="noopener">ceph运维常用命令 | 奋斗的松鼠 - blog</a></p>
+</li>
+<li><p><a href="http://ceph.org.cn/2018/06/29/red-hat-ceph存储-《深入理解ceph架构》/" target="_blank" rel="noopener">Red Hat Ceph存储—《深入理解Ceph架构》 – Ceph开源社区</a></p>
+</li>
+<li><p><a href="http://ceph.org.cn/2019/04/29/k8s-存储的那点事儿：3-种-ceph-rbd-灾备方案对比/" target="_blank" rel="noopener">K8S 存储的那点事儿：3 种 Ceph RBD 灾备方案对比 – Ceph开源社区</a></p>
+</li>
+<li><p><a href="https://cloud.tencent.com/info/f66bfb4df31ac6e6c52c0180c02ebcc8.html" target="_blank" rel="noopener">如何基于 Ceph 攻破海量小文件存储难题-腾讯云资讯</a></p>
+</li>
+<li><p><a href="https://cloud.tencent.com/developer/news/137215" target="_blank" rel="noopener">海量小文件的开源存储方案选型建议 - 云+社区 - 腾讯云</a></p>
+</li>
+<li><p><a href="https://vmware.github.io/vsphere-storage-for-kubernetes/documentation/overview.html#vsphere-storage-concepts" target="_blank" rel="noopener">vSphere Cloud Provider | vSphere Storage for Kubernetes</a></p>
+</li>
+<li><p><a href="https://docs.openshift.com/container-platform/3.6/install_config/configuring_vsphere.html" target="_blank" rel="noopener">Configuring for VMWare vSphere | Installation and Configuration | OpenShift Container Platform 3.6</a></p>
+</li>
+<li><p><a href="https://docs.openshift.com/container-platform/3.6/install_config/persistent_storage/persistent_storage_vsphere.html#install-config-persistent-storage-persistent-storage-vsphere" target="_blank" rel="noopener">Using VMware vSphere volumes for persistent storage - Configuring Persistent Storage | Installation and Configuration | OpenShift Container Platform 3.6</a></p>
+</li>
+<li><p><a href="https://www.kancloud.cn/ningjing_home/ceph/462428" target="_blank" rel="noopener">GlusterFS搭建 · 王康宁的笔记 · 看云</a></p>
+</li>
+<li><p><a href="https://win-man.github.io/2017/08/25/NFS总结/" target="_blank" rel="noopener">NFS总结 | Win-Man’s Blog</a></p>
+</li>
+<li><p><a href="http://www.chinastor.com/distristor/012J01022019.html" target="_blank" rel="noopener">红帽 Ceph发布最新3.2版本_分布式存储_中国存储网</a></p>
+</li>
+<li><p><a href="https://mritd.me/2017/06/03/use-ceph-storage-on-kubernetes/" target="_blank" rel="noopener">Kubernetes 使用 Ceph 存储 - 漠然的博客 | mritd Blog</a></p>
+</li>
+<li><p><a href="https://rancher.com/docs/rancher/v2.x/en/cluster-admin/volumes-and-storage/examples/vsphere/" target="_blank" rel="noopener">vSphere Storage</a></p>
+</li>
+</ul>
+<h3 id="NFS"><a href="#NFS" class="headerlink" title="NFS"></a><a href="https://kubernetes.io/docs/concepts/storage/persistent-volumes/" target="_blank" rel="noopener">NFS</a></h3><h3 id="vSphere-vSAN"><a href="#vSphere-vSAN" class="headerlink" title="vSphere vSAN"></a><a href="https://vmware.github.io/vsphere-storage-for-kubernetes/documentation/overview.html" target="_blank" rel="noopener">vSphere vSAN</a></h3><h3 id="Gluster"><a href="#Gluster" class="headerlink" title="Gluster"></a><a href="https://www.gluster.org/" target="_blank" rel="noopener">Gluster</a></h3><h3 id="Ceph"><a href="#Ceph" class="headerlink" title="Ceph"></a><a href="https://ceph.io/" target="_blank" rel="noopener">Ceph</a></h3><h4 id="Rook"><a href="#Rook" class="headerlink" title="Rook"></a><a href="https://rook.io/" target="_blank" rel="noopener">Rook</a></h4><h2 id="日志方案"><a href="#日志方案" class="headerlink" title="日志方案"></a>日志方案</h2><h3 id="采集方式："><a href="#采集方式：" class="headerlink" title="采集方式："></a>采集方式：</h3><h4 id="在宿主机上实现日志采集"><a href="#在宿主机上实现日志采集" class="headerlink" title="在宿主机上实现日志采集"></a>在宿主机上实现日志采集</h4><h4 id="在容器镜像中添加采集-Agent"><a href="#在容器镜像中添加采集-Agent" class="headerlink" title="在容器镜像中添加采集 Agent"></a>在容器镜像中添加采集 Agent</h4><h4 id="基于Sidecar日志采集方式"><a href="#基于Sidecar日志采集方式" class="headerlink" title="基于Sidecar日志采集方式"></a>基于Sidecar日志采集方式</h4><h3 id="ELK-方案"><a href="#ELK-方案" class="headerlink" title="ELK 方案"></a><a href="https://www.elastic.co/cn/what-is/elk-stack" target="_blank" rel="noopener">ELK</a> 方案</h3><h4 id="Elasticsearch"><a href="#Elasticsearch" class="headerlink" title="Elasticsearch"></a><a href="https://www.elastic.co/cn/" target="_blank" rel="noopener">Elasticsearch</a></h4><h4 id="Logstash"><a href="#Logstash" class="headerlink" title="Logstash"></a><a href="https://www.elastic.co/cn/products/logstash" target="_blank" rel="noopener">Logstash</a></h4><h4 id="Kibana"><a href="#Kibana" class="headerlink" title="Kibana"></a><a href="https://www.elastic.co/cn/products/kibana" target="_blank" rel="noopener">Kibana</a></h4><h3 id="EFK-方案"><a href="#EFK-方案" class="headerlink" title="EFK 方案"></a><a href="https://github.com/kubernetes/kubernetes/tree/master/cluster/addons/fluentd-elasticsearch" target="_blank" rel="noopener">EFK</a> 方案</h3><p>和 ELK 不同的是  EFK 方案中使用 Fluentd 来采集日志。</p>
+<h4 id="Fluentd"><a href="#Fluentd" class="headerlink" title="Fluentd"></a><a href="https://www.fluentd.org" target="_blank" rel="noopener">Fluentd</a></h4><h2 id="监控方案"><a href="#监控方案" class="headerlink" title="监控方案"></a>监控方案</h2><h3 id="Cadvisor-InfluxDB-Grafana"><a href="#Cadvisor-InfluxDB-Grafana" class="headerlink" title="Cadvisor+InfluxDB+Grafana"></a>Cadvisor+InfluxDB+Grafana</h3><h3 id="Heapster-InfluxDB-Grafana"><a href="#Heapster-InfluxDB-Grafana" class="headerlink" title="Heapster+InfluxDB+Grafana"></a>Heapster+InfluxDB+Grafana</h3><h3 id="Promethus-metrics-Grafana"><a href="#Promethus-metrics-Grafana" class="headerlink" title="Promethus+metrics+Grafana"></a>Promethus+metrics+Grafana</h3><table>
+<thead>
+<tr>
+<th align="center">采集</th>
+<th>cAdvisor、Heapster,、collectd,、Statsd、 Tcollector、 Scout</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">存储</td>
+<td>InfluxDb、OpenTSDB、 Elasticsearch</td>
+</tr>
+<tr>
+<td align="center">展示</td>
+<td>Graphite、Grafana、facette、 Cacti、Ganglia、DataDog</td>
+</tr>
+<tr>
+<td align="center">告警</td>
+<td>Nagios、prometheus、Icinga、Zabbix</td>
+</tr>
+</tbody></table>
+<h4 id="Grafana"><a href="#Grafana" class="headerlink" title="Grafana"></a><a href="https://grafana.com" target="_blank" rel="noopener">Grafana</a></h4><p>开源DashBoard，后端支持多种数据库，如：Influxdb、Prometheus…，插件也比较多，功能强大。非常适合用于做展示。</p>
+<h4 id="InfluxDB"><a href="#InfluxDB" class="headerlink" title="InfluxDB"></a><a href="https://www.influxdata.com" target="_blank" rel="noopener">InfluxDB</a></h4><p>开源分布式时间时序、事件和指标数据库，使用 Go 语言编写，性能高效，无需外部依赖，其设计目标是实现分布式和水平伸缩扩展。</p>
+<h5 id="特性-1"><a href="#特性-1" class="headerlink" title="特性"></a>特性</h5><ul>
+<li>使用类 SQL 语句；</li>
+<li>提供 min, max, sum, count, mean 等聚合函数；</li>
+<li>采用 Schemaless ，列存储，压缩率高，可以存储任意数量的列；</li>
+<li>可以将秒级监控在后台转换为分钟级，减小存储空间 (Continuous Queries)；</li>
+<li>Built-in Explorer 自带管理工具，默认不打开，需要在配置文件中配置；</li>
+<li>Native HTTP API，采用内置 HTTP 服务 (Protobuf API 暂时不提供)。</li>
+<li>支持 Regular Timeseries 以及 Irregular Timeseries，前者是指时间间隔固定，后者指不固定，例如报警、入侵事件等；</li>
+</ul>
+<h4 id="cAdvisor"><a href="#cAdvisor" class="headerlink" title="cAdvisor"></a><a href="https://github.com/google/cadvisor" target="_blank" rel="noopener">cAdvisor</a></h4><p> 来自 Google 的容器监控工具，也是 Kubelet 内置的容器资源收集工具。它会自动收集本机容器 CPU、内存、网络和文件系统的资源占用情况，并对外提供 cAdvisor 原生的 API。</p>
+<h4 id="Heapster"><a href="#Heapster" class="headerlink" title="Heapster"></a><a href="https://github.com/kubernetes-retired/heapster" target="_blank" rel="noopener">Heapster</a></h4><p>由于 cAdvisor 只提供了单机的容器资源占用情况，而 Heapster 则提供了整个集群的资源监控（kubernetes 1.11 之前，hpa都是从heapster获取数据），并支持持久化数据存储到 InfluxDB</p>
+<h4 id="kube-state-metrics"><a href="#kube-state-metrics" class="headerlink" title="kube-state-metrics"></a><a href="https://github.com/kubernetes/kube-state-metrics" target="_blank" rel="noopener">kube-state-metrics</a></h4><p>在这里作为prometheus的一个exporter来使用，提供deployment、daemonset、cronjob等服务的监控数据，由kubernestes官方提供，与prometheus紧密结合。</p>
+<h4 id="Promethues"><a href="#Promethues" class="headerlink" title="Promethues"></a><a href="https://prometheus.io" target="_blank" rel="noopener">Promethues</a></h4><p>在Kubernetes社区中，很多人认为 Prometheus 是容器场景中监控的第一方案，成为容器监控标准的制定者。其提供强大的数据采集、数据存储、数据展示、告警等，天生完美支持 kubernetes，CNCF基金会的第二个成员，第一个是 Kubernetes 。而且 Prometheus 里面很多思想都来源于 Google 内部的监控系统 Borgmon，其方案相当成熟。</p>
+<h5 id="特性-2"><a href="#特性-2" class="headerlink" title="特性"></a>特性</h5><ul>
+<li>多维数据模型（有metric名称和键值对确定的时间序列）</li>
+<li>灵活的查询语言</li>
+<li>不依赖分布式存储</li>
+<li>通过pull方式采集时间序列，通过http协议传输</li>
+<li>支持通过中介网关的push时间序列的方式</li>
+<li>监控数据通过服务或者静态配置来发现</li>
+<li>支持多维度可视化分析和dashboard等</li>
+</ul>
+<h5 id="监控层面"><a href="#监控层面" class="headerlink" title="监控层面"></a>监控层面</h5><ul>
+<li>基础设施层：监控各个主机服务器资源(包括Kubernetes的Node和非Kubernetes的Node)，如CPU,内存,网络吞吐和带宽占用,磁盘I/O和磁盘使用等指标。</li>
+<li>中间件层：监控独立部署于Kubernetes集群之外的中间件，例如：MySQL、Redis、RabbitMQ、ElasticSearch、Nginx等。</li>
+<li>Kubernetes 集群：监控Kubernetes集群本身的关键指标</li>
+<li>Kubernetes 集群上部署的应用：监控部署在Kubernetes集群上的应用</li>
+</ul>
+<h5 id="组件"><a href="#组件" class="headerlink" title="组件"></a>组件</h5><ul>
+<li>prometheus-server：数据存储以及监控数据聚合</li>
+<li>prometheus-config-reloader：动态更新prometheus配置</li>
+<li>rules-configmap-reloader：动态更新prometheus报警配置</li>
+<li>alert manager：报警组件</li>
+<li>node-exporter：节点资源信息采集组件</li>
+<li>kube-state-metrics：动态发现endpoint，三方监控的核心组件</li>
+<li>prometheus-operator：prometheus配置的operator</li>
+<li>grafana：数据展现</li>
+</ul>
+<h2 id="CI-CD-方案"><a href="#CI-CD-方案" class="headerlink" title="CI/CD 方案"></a>CI/CD 方案</h2><h3 id="参考-4"><a href="#参考-4" class="headerlink" title="参考"></a>参考</h3><h3 id="Jenkins"><a href="#Jenkins" class="headerlink" title="Jenkins"></a><a href="https://jenkins.io/" target="_blank" rel="noopener">Jenkins</a></h3><h3 id="Gitlab-CI"><a href="#Gitlab-CI" class="headerlink" title="Gitlab CI"></a><a href="https://docs.gitlab.com/ee/ci/" target="_blank" rel="noopener">Gitlab CI</a></h3><h3 id="Drone"><a href="#Drone" class="headerlink" title="Drone"></a><a href="https://drone.io/" target="_blank" rel="noopener">Drone</a></h3><h2 id="镜像-registry"><a href="#镜像-registry" class="headerlink" title="镜像 registry"></a>镜像 registry</h2><p>镜像仓库负责存储和发布应用的镜像部署版本，在功能上并不复杂，但由于安全性的要求。用于生产发布的镜像版本必须通过严格的测试阶段，以及严密的安全检查步骤，因此建议对生产环境运行专用的生产镜像仓库；同时，在持续集成越来越普遍的情况下，为了保证开发和测试的方便，我们需要测试镜像仓库。建议生产镜像库和测试镜像库在物理上分开、网络上的连通通过防火墙策略做限制（只开放必须的端口用于镜像同步）。</p>
+<p>在使用规则上，测试镜像仓库允许随时的镜像上传和更新，通常都会对接持续集成系统；而对于生产镜像仓库，为了保证镜像来源的安全、可控，建议限制为只能从测试镜像同步，规定只有在测试镜像仓库中标记为完成测试、经过安全检查的镜像，由有相应权限的账号，在经过必要的审批或者满足一定规则的情况下，从测试镜像仓库中把镜像同步到生产镜像仓库。一旦镜像进入生产镜像仓库，就被当做正式的生产发布版本，接下来就按照现有的生产发布和变更流程，在指定的变更窗口，从生产镜像库中拉取镜像进行部署，这样做也很好地满足安全监管要求。</p>
+<h3 id="harbor"><a href="#harbor" class="headerlink" title="harbor"></a><a href="https://goharbor.io/" target="_blank" rel="noopener">harbor</a></h3><p>Harbor是一个用于存储和分发Docker镜像的企业级Registry服务器。通过添加一些企业必需的功能特性，例如安全、标识和管理等，扩展了开源 Docker Distribution。作为一个企业级私有Registry服务器，Harbor提供了更好的性能和安全。提升用户使用Registry构建和运行环境传输镜像的效率。Harbor支持安装在多个Registry节点的镜像资源复制，镜像全部保存在私有Registry中， 确保数据和知识产权在公司内部网络中管控。另外，Harbor也提供了高级的安全特性，诸如用户管理，访问控制和活动审计等。</p>
+<h4 id="特性-3"><a href="#特性-3" class="headerlink" title="特性"></a>特性</h4><ul>
+<li>镜像注册中心:支持容器镜像和Helm。为镜像提供一个注册服务和编排平台。</li>
+<li>基于角色的访问控制: 用户可以创建不同的‘项目‘，并且拥有不同权限。</li>
+<li>镜像复制:Harbor会在复制遇到任何错误时自动重试。 适用于负载均衡、高可用性、多数据中心、混合和多云场景</li>
+<li>漏洞扫描：Harbor定期扫描镜像并警告用户存在漏洞。</li>
+<li>AD/LDAP 支持:Harbor可以集成企业内部已有的AD/LDAP，用于鉴权认证管理。</li>
+<li>OIDC支持:一种基于OAuth2的协议</li>
+<li>垃圾回收:镜像被删除的时候可以自动垃圾回收。并且可以定时设置垃圾清理。</li>
+<li>友好的界面操作:用户可以轻松方便的镜像管理，支持中英文等多语言。</li>
+<li>审计:跟踪用户对镜像的操作历史</li>
+<li>RESTful API：大多数管理操作的RESTful Api，易于与外部系统集成。 嵌入式Swagger UI可用于探索和测试API（管理界面左下角的‘API控制中心)</li>
+<li>轻松部署：提供联机和脱机安装程序。 此外，Helm Chart用于在Kubernetes上部署Harbor。</li>
+</ul>
+<h3 id="quay"><a href="#quay" class="headerlink" title="quay"></a><a href="https://quay.io/" target="_blank" rel="noopener">quay</a></h3><p>在 11 月份红帽宣布开源 quay </p>
+<h4 id="特性-4"><a href="#特性-4" class="headerlink" title="特性"></a>特性</h4><ol>
+<li>镜像仓库高可用和灾备：数据中心内部 HA，在数据中心之间同步镜像</li>
+<li>支持 CI：当开发人员提交代码以后，自动触发代码构建。</li>
+<li>支持安全扫描：自动扫描容器镜像，以查找已知的安全漏洞。</li>
+<li>企业认证：集成到现有的身份基础架构：LDAP，Keystone 等</li>
+<li>灵活的存储后端：将容器存储在 Amazon S3，OpenStack Swift，Google 云端存储中，或直接存储到磁盘。</li>
+<li>记录和审计 审计对于 CI 管道中的所有内容都至关重要。跟踪通过 API 和 UI 执行的操作。</li>
+</ol>
+<h5 id="Quay的企业级功能"><a href="#Quay的企业级功能" class="headerlink" title="Quay的企业级功能"></a>Quay的企业级功能</h5><ul>
+<li>异地复制</li>
+<li>高可用性和可扩展性</li>
+<li>安全扫描</li>
+<li>自动构建触发器</li>
+<li>时间机器image回滚（基于build版本的回退）</li>
+<li>细粒度的访问控制</li>
+<li>自动连续垃圾收集，无需停机</li>
+<li>与多个存储后端集成（ceph等）</li>
+<li>加密的CLI密码</li>
+<li>洪流分布</li>
+<li>容器和应用程序注册</li>
+<li>与Quay.io保持一致的UI和代码库</li>
+</ul>
+<h5 id="镜像扫描："><a href="#镜像扫描：" class="headerlink" title="镜像扫描："></a>镜像扫描：</h5><p>quay的镜像安全扫描基于clair：Clair项目是一个开源项目，使Quay Security Scanner能够检测Quay Enterprise中所有图像的漏洞，并在发现这些问题时通知开发人员。</p>
+<h5 id="自动构建："><a href="#自动构建：" class="headerlink" title="自动构建："></a>自动构建：</h5><p>通过集成到GitHub，Bitbucket等，自动构建存储库推送操作上的映像。随着代码（GitHub，Bitbucket，GitLab和Git）中的推送操作发生，Quay将自动构建新版本的应用程序</p>
+<h5 id="image回滚"><a href="#image回滚" class="headerlink" title="image回滚:"></a>image回滚:</h5><p>Time Machine提供图像回滚，查看标签历史记录，快速轻松地切换图像构建。</p>
+<p>查看image build历史记录，并可以选择某个版本的构建进行回退;</p>
+<h5 id="细颗粒度的RBAC配置"><a href="#细颗粒度的RBAC配置" class="headerlink" title="细颗粒度的RBAC配置:"></a>细颗粒度的RBAC配置:</h5><p>支持许多身份提供商：LDAP，OAuth，OpenStack Keystone等。</p>
+<h5 id="事件和使用日志："><a href="#事件和使用日志：" class="headerlink" title="事件和使用日志："></a>事件和使用日志：</h5><ul>
+<li>针对存储库捕获所有事件</li>
+<li>Pull, push events</li>
+<li>权限更改</li>
+<li>build事件</li>
+<li>标签更改</li>
+</ul>
+<h5 id="自动压缩image："><a href="#自动压缩image：" class="headerlink" title="自动压缩image："></a>自动压缩image：</h5><p>将多个docker layer压缩成一个，以创建一个layer更少的image：</p>
+<h5 id="自动进行K8S应用部署："><a href="#自动进行K8S应用部署：" class="headerlink" title="自动进行K8S应用部署："></a>自动进行K8S应用部署：</h5><p>$ helm registry install quay.io/jzelinskie/nginx</p>
+<h5 id="事件通知"><a href="#事件通知" class="headerlink" title="事件通知"></a>事件通知</h5><p>发布电子邮件、quay通知、webhook发布、flowdock，hipchat，基于Quay Enterprise内部各种事件的通知</p>
+<h2 id="集群优化"><a href="#集群优化" class="headerlink" title="集群优化"></a>集群优化</h2><h3 id="网络-MTU"><a href="#网络-MTU" class="headerlink" title="网络 MTU"></a>网络 MTU</h3><h3 id="内核版本"><a href="#内核版本" class="headerlink" title="内核版本"></a>内核版本</h3><h4 id="参考文档"><a href="#参考文档" class="headerlink" title="参考文档"></a>参考文档</h4><ul>
+<li><a href="https://mp.weixin.qq.com/s/bSNWPnFZ3g_gciOv_qNhIQ" target="_blank" rel="noopener">干货 | 携程容器偶发性超时问题案例分析（一）</a></li>
+<li><a href="https://mp.weixin.qq.com/s/7ZZqWPE1XNf9Mn_wj1HjUw" target="_blank" rel="noopener">干货 | 携程容器偶发性超时问题案例分析（二)</a> </li>
+<li><a href="https://github.blog/2019-11-21-debugging-network-stalls-on-kubernetes/" target="_blank" rel="noopener">Debugging network stalls on Kubernetes</a></li>
+</ul>
+<h3 id="内核参数"><a href="#内核参数" class="headerlink" title="内核参数"></a>内核参数</h3><h3 id="网段优化"><a href="#网段优化" class="headerlink" title="网段优化"></a>网段优化</h3><h3 id="swap-优化"><a href="#swap-优化" class="headerlink" title="swap 优化"></a>swap 优化</h3><h3 id="service-实现形式"><a href="#service-实现形式" class="headerlink" title="service 实现形式"></a>service 实现形式</h3><p>性能对比参考文章 <a href="">kube-proxy 模式对比：iptables 还是 IPVS</a></p>
+<p>kube-proxy 是 Kubernetes 中的关键组件。他的角色就是在服务（ClusterIP 和 NodePort）和其后端 Pod 之间进行负载均衡。kube-proxy 有三种运行模式，每种都有不同的实现技术：userspace、iptables 或者 IPVS。</p>
+<p>userspace 模式非常陈旧、缓慢，已经不推荐使用。但是 iptables 和 IPVS 该如何选择呢？本文中我们会对这两种模式进行比较，看看他们在真正的微服务上下文中的表现，并解释在特定情况下的选择方法。</p>
+<p>首先我们说一下这两种模式的背景，然后开始测试并查看结果。</p>
+<h4 id="背景：iptables-模式"><a href="#背景：iptables-模式" class="headerlink" title="背景：iptables 模式"></a>背景：iptables 模式</h4><p>iptables 是一个 Linux 内核功能，是一个高效的防火墙，并提供了大量的数据包处理和过滤方面的能力。它可以在核心数据包处理管线上用 Hook 挂接一系列的规则。iptables 模式中 kube-proxy 在 <code>NAT pre-routing</code> Hook 中实现它的 NAT 和负载均衡功能。这种方法简单有效，依赖于成熟的内核功能，并且能够和其它跟 iptables 协作的应用（例如 Calico）融洽相处。</p>
+<p>然而 kube-proxy 的用法是一种 O(n) 算法，其中的 n 随集群规模同步增长，这里的集群规模，更明确的说就是服务和后端 Pod 的数量。</p>
+<h4 id="背景：IPVS-模式"><a href="#背景：IPVS-模式" class="headerlink" title="背景：IPVS 模式"></a>背景：IPVS 模式</h4><p>IPVS 是一个用于负载均衡的 Linux 内核功能。IPVS 模式下，kube-proxy 使用 IPVS 负载均衡代替了 iptable。这种模式同样有效，IPVS 的设计就是用来为大量服务进行负载均衡的，它有一套优化过的 API，使用优化的查找算法，而不是简单的从列表中查找规则。</p>
+<p>这样一来，kube-proxy 在 IPVS 模式下，其连接过程的复杂度为 O(1)。换句话说，多数情况下，他的连接处理效率是和集群规模无关的。</p>
+<p>另外作为一个独立的负载均衡器，IPVS 包含了多种不同的负载均衡算法，例如轮询、最短期望延迟、最少连接以及各种哈希方法等。而 iptables 就只有一种随机平等的选择算法。</p>
+<p>IPVS 的一个潜在缺点就是，IPVS 处理数据包的路径和通常情况下 iptables 过滤器的路径是不同的。如果计划在有其他程序使用 iptables 的环境中使用 IPVS，需要进行一些研究，看看他们是否能够协调工作。（Calico 已经和 IPVS kube-proxy 兼容）</p>
+<h4 id="性能对比"><a href="#性能对比" class="headerlink" title="性能对比"></a>性能对比</h4><p>iptables 的连接处理算法复杂度是 O(n)，而 IPVS 模式是 O(1)，但是在微服务环境中，其具体表现如何呢？</p>
+<p>在多数场景中，有两个关键属性需要关注：</p>
+<ul>
+<li>响应时间：一个微服务向另一个微服务发起调用时，第一个微服务发送请求，并从第二个微服务中得到响应，中间消耗了多少时间？</li>
+<li>CPU 消耗：运行微服务的过程中，总体 CPU 使用情况如何？包括用户和核心空间的 CPU 使用，包含所有用于支持微服务的进程（也包括 kube-proxy）。</li>
+</ul>
+<p>为了说明问题，我们运行一个微服务作为客户端，这个微服务以 Pod 的形式运行在一个独立的节点上，每秒钟发出 1000 个请求，请求的目标是一个 Kubernetes 服务，这个服务由 10 个 Pod 作为后端，运行在其它的节点上。接下来我们在客户端节点上进行了测量，包括 iptables 以及 IPVS 模式，运行了数量不等的 Kubernetes 服务，每个服务都有 10 个 Pod，最大有 10,000 个服务（也就是 100,000 个 Pod）。我们用 golang 编写了一个简单的测试工具作为客户端，用标准的 NGINX 作为后端服务。</p>
+<h4 id="响应时间"><a href="#响应时间" class="headerlink" title="响应时间"></a>响应时间</h4><p>响应时间很重要，有助于我们理解连接和请求的差异。典型情况下，多数微服务都会使用持久或者 <code>keepalive</code> 连接，这意味着每个连接都会被多个请求复用，而不是每个请求一次连接。这很重要，因为多数连接的新建过程都需要完成三次 TCP 握手的过程，这需要消耗时间，也需要在 Linux 网络栈中进行更多操作，也就会消耗更多 CPU 和时间。</p>
+<p><img src="https://cdn.jsdelivr.net/gh/muzi502/blog/source/img/Picture1.png" alt="Round-Trip Response TIme vs Number of Services"></p>
+<p>这张图展示了两个关键点：</p>
+<ul>
+<li>iptables 和 IPVS 的平均响应时间在 1000 个服务（10000 个 Pod）以上时，会开始观察到差异。</li>
+<li>只有在每次请求都发起新连接的情况下，两种模式的差异才比较明显。</li>
+</ul>
+<p>不管是 iptables 还是 IPVS，kube-proxy 的响应时间开销都是和建立连接的数量相关的，而不是数据包或者请求数量，这是因为 Linux 使用了 Conntrack，能够高效地将数据包和现存连接关联起来。如果数据包能够被 Conntrack 成功匹配，那就不需要通过 kube-proxy 的 iptables 或 IPVS 规则来推算去向。Linux conntrack 非常棒！（绝大多数时候）</p>
+<p>值得注意的是，例子中的服务端微服务使用 NGINX 提供一个静态小页面。多数微服务要做更多操作，因此会产生更高的响应时间，也就是 kube-proxy 处理过程在总体时间中的占比会减少。</p>
+<p>还有个需要解释的古怪问题：既然 IPVS 的连接过程复杂度是 O(1)，为什么在 10,000 服务的情况下，非 Keepalive 的响应时间还是提高了？我们需要深入挖掘更多内容才能解释这一问题，但是其中一个因素就是因为上升的 CPU 用量拖慢了整个系统。这就是下一个主题需要探究的内容。</p>
+<h4 id="CPU-用量"><a href="#CPU-用量" class="headerlink" title="CPU 用量"></a>CPU 用量</h4><p>为了描述 CPU 用量，下图关注的是最差情况：不使用持久/keepalive 连接的情况下，kube-proxy 会有最大的处理开销。</p>
+<p><img src="https://cdn.jsdelivr.net/gh/muzi502/blog/source/img/Picture2.png" alt="Total CPU"></p>
+<p>上图说明了两件事：</p>
+<ul>
+<li>在超过 1000 个服务（也就是 10,000 个 Pod）的情况下，CPU 用量差异才开始明显。</li>
+<li>在一万个服务的情况下（十万个后端 Pod），iptables 模式增长了 0.35 个核心的占用，而 IPVS 模式仅增长了 8%。</li>
+</ul>
+<p>有两个主要因素造成 CPU 用量增长：</p>
+<p>第一个因素是，缺省情况下 kube-proxy 每 30 秒会用所有服务对内核重新编程。这也解释了为什么 IPVS 模式下，新建连接的 O(1) 复杂度也仍然会产生更多的 CPU 占用。另外，如果是旧版本内核，重新编程 iptables 的 API 会更慢。所以如果你用的内核较旧，iptables 模式可能会占用更多的 CPU。</p>
+<p>另一个因素是，kube-proxy 使用 IPVS 或者 iptables 处理新连接的消耗。对 iptables 来说，通常是 O(n) 的复杂度。在存在大量服务的情况下，会出现显著的 CPU 占用升高。例如在 10,000 服务（100,000 个后端 Pod）的情况下，iptables 会为每个请求的每个连接处理大约 20000 条规则。如果使用 NINGX 缺省每连接 100 请求的 keepalive 设置，kube-proxy 的 iptables 规则执行次数会减少为 1%，会把 iptables 的 CPU 消耗降低到和 IPVS 类似的水平。</p>
+<p>客户端微服务会简单的丢弃响应内容。真实世界中自然会进行更多处理，也会造成更多的 CPU 消耗，但是不会影响 CPU 消耗随服务数量增长的事实。</p>
+<h4 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h4><p>在超过 1000 服务的规模下，kube-proxy 的 IPVS 模式会有更好的性能表现。虽然可能有多种不同情况，但是通常来说，让微服务使用持久连接、运行现代内核，也能取得较好的效果。如果运行的内核较旧，或者无法使用持久连接，那么 IPVS 模式可能是个更好的选择。</p>
+<p>抛开性能问题不谈，IPVS 模式还有个好处就是具有更多的负载均衡算法可供选择。</p>
+<p>如果你还不确定 IPVS 是否合适，那就继续使用 iptables 模式好了。这种传统模式有大量的生产案例支撑，他是一个不完美的缺省选项。</p>
+<h4 id="补充：Calico-和-kube-proxy-的-iptables-比较"><a href="#补充：Calico-和-kube-proxy-的-iptables-比较" class="headerlink" title="补充：Calico 和 kube-proxy 的 iptables 比较"></a>补充：Calico 和 kube-proxy 的 iptables 比较</h4><p>本文中我们看到，kube-proxy 中的 iptables 用法在大规模集群中可能会产生性能问题。有人问我 Calico 为什么没有类似的问题。答案是 Calico 中 kube-proxy 的用法是不同的。kube-proxy 使用了一个很长的规则链条，链条长度会随着集群规模而增长，Calico 使用的是一个很短的优化过的规则链，经由 ipsets 的加持，也具备了 O(1) 复杂度的查询能力。</p>
+<p>下图证明了这一观点，其中展示了每次连接过程中，kube-proxy 和 Calico 中 iptables 规则数量的平均值。这里假设集群中的节点平均有 30 个 Pod，每个 Pod 具有 3 个网络规则。</p>
+<p><img src="https://cdn.jsdelivr.net/gh/muzi502/blog/source/img/Picture3.png" alt="calico vs kube-proxy"></p>
+<p>即使是使用 10,000 个服务和 100,000 个 Pod 的情况下，Calico 每连接执行的 iptables 规则也只是和 kube-proxy 在 20 服务 200 个 Pod 的情况基本一致。</p>
+<h2 id="安全加固"><a href="#安全加固" class="headerlink" title="安全加固"></a>安全加固</h2><h3 id="工具"><a href="#工具" class="headerlink" title="工具"></a>工具</h3><h4 id="TUF"><a href="#TUF" class="headerlink" title="TUF"></a><a href="https://theupdateframework.github.io/" target="_blank" rel="noopener">TUF</a></h4><p>TUF 是一项用于保护软件更新系统的开源安全技术，也是从云原生计算基金会毕业的第一个以规范与安全性为重点的项目。与此同时，TUF 还是首个源自高校的 CNCF 毕业项目。</p>
+<h4 id="kube-score"><a href="#kube-score" class="headerlink" title="kube-score"></a><a href="https://github.com/zegl/kube-score" target="_blank" rel="noopener">kube-score</a></h4><p>kube-score 是 K8s 对象静态检查工具，通过分析 K8s 对象的 Yaml 文件做一些推荐，以提升可靠性和安全性。</p>
+<h2 id="Ingress"><a href="#Ingress" class="headerlink" title="Ingress"></a>Ingress</h2><h3 id="常见-ingress-对比列表"><a href="#常见-ingress-对比列表" class="headerlink" title="常见 ingress 对比列表"></a>常见 ingress 对比列表</h3><table>
+<thead>
+<tr>
+<th><a href="https://medium.com/flant-com/comparing-ingress-controllers-for-kubernetes-9b397483b46b" target="_blank" rel="noopener">全文</a></th>
+<th>Kubernetes Ingress</th>
+<th>NGINX Ingress</th>
+<th>Traefik</th>
+<th>HAproxy</th>
+<th>Contour</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Protocol</td>
+<td>http/https, http2, grpc, tcp/udp (partial)</td>
+<td>http/https, http2, grpc, tcp/udp</td>
+<td>http/https, http2 (h2c), grpc, tcp, tcp+tls</td>
+<td>http/https, http2, grpc, tcp, tcp+tls</td>
+<td>http/https, http2, grpc, tcp/udp, tcp+tls</td>
+</tr>
+<tr>
+<td>base</td>
+<td>nginx</td>
+<td>nginx/nginx plus</td>
+<td>traefik</td>
+<td>haproxy</td>
+<td>envoy</td>
+</tr>
+<tr>
+<td>Traffic routing</td>
+<td>host, path (with regex)</td>
+<td>host, path</td>
+<td>host (regex), path (regex), headers (regex), query, path prefix, method</td>
+<td>host, path</td>
+<td>host, path</td>
+</tr>
+<tr>
+<td>Namespace limitations</td>
+<td>All cluster or specified namespaces</td>
+<td>All cluster or specified namespaces</td>
+<td>All cluster or specified namespaces</td>
+<td>All cluster or specified namespaces</td>
+<td>All cluster or specified namespaces</td>
+</tr>
+<tr>
+<td>Traffic distribution</td>
+<td>canary, a/b (cookie balancing)</td>
+<td>-</td>
+<td>canary, blue-green, shadowing</td>
+<td>blue-green, shadowing</td>
+<td>canary, blue-green</td>
+</tr>
+<tr>
+<td>Upstream probes</td>
+<td>retry, timeouts</td>
+<td>retry, active health checks (based on http probe for pod)</td>
+<td>retry, timeouts, active, circuit breaker</td>
+<td>check-uri, check-address, check-port</td>
+<td>timeouts, active</td>
+</tr>
+<tr>
+<td>负载均衡</td>
+<td>round-robin, sticky sessions, least-conn, ip-hash, ewma</td>
+<td>round-robin, least-conn, least-time, random, sticky sessions</td>
+<td>weighted-round-robin, dynamic-round-robin, sticky sessions</td>
+<td>round-robin, static-rr, leastconn, first, source, uri, url_param, header, sticky sessions</td>
+<td>round-robin, sticky sessions, weighted-least-request, ring hash, maglev, random</td>
+</tr>
+<tr>
+<td>Authentication</td>
+<td>Basic, Client cert, external Basic, external OAuth</td>
+<td>Basic</td>
+<td>Basic, auth-url, auth-tls, external auth</td>
+<td>Basic, OAuth, Auth TLS</td>
+<td>-</td>
+</tr>
+<tr>
+<td>Paid subscription</td>
+<td>-</td>
+<td>+</td>
+<td>+</td>
+<td>+</td>
+<td>-</td>
+</tr>
+<tr>
+<td>GUI</td>
+<td>-</td>
+<td>+</td>
+<td>+</td>
+<td>-</td>
+<td>-</td>
+</tr>
+<tr>
+<td>JWT validation</td>
+<td>-</td>
+<td>+</td>
+<td>-</td>
+<td>+</td>
+<td>-</td>
+</tr>
+<tr>
+<td>Basic DDoS protection</td>
+<td>rate limit, limit conn, liimt rps, limit rpm, limit-rate-after, limit-whitelist</td>
+<td>rate limit, rate-limit-burst</td>
+<td>max-conn, rate limit, ip whitelist</td>
+<td>limit-rps, limit-connections, limit-whitelist</td>
+<td>max-conn, max-request</td>
+</tr>
+<tr>
+<td>Requests tracing</td>
+<td>+</td>
+<td>-</td>
+<td>+</td>
+<td>-</td>
+<td>-</td>
+</tr>
+<tr>
+<td>Config customization</td>
+<td>+</td>
+<td>+</td>
+<td>+</td>
+<td>+</td>
+<td>-</td>
+</tr>
+<tr>
+<td>WAF</td>
+<td>lua-resty-waf, ModSecurity</td>
+<td>+</td>
+<td>-</td>
+<td>ModSecurity</td>
+<td>-</td>
+</tr>
+</tbody></table>
+<h3 id="Ingress-NGINX"><a href="#Ingress-NGINX" class="headerlink" title="Ingress NGINX"></a><a href="https://github.com/kubernetes/ingress-nginx" target="_blank" rel="noopener">Ingress NGINX</a></h3><p>Kubernetes 官方维护的方案</p>
+<h3 id="Traefik"><a href="#Traefik" class="headerlink" title="Traefik"></a><a href="https://github.com/containous/traefik" target="_blank" rel="noopener">Traefik</a></h3><p>是一个用 Golang 开发的轻量级的 http 反向代理和负载均衡器，虽然相比于 nginx ，它是后起之秀，但是它天然拥抱 Kubernetes，直接与集群 K8s 的 api Server通信，反应非常迅速，实时感知集群中 ingress 定义的路由规则集合和后端 Service、Pod 的变化，自动热更新 Traefik 后端配置，根本不用创建 ingress controller 对象，同时还提供了友好的控制面板和监控界面，不仅可以方便地查看 Traefik 根据 ingress 生成的路由配置信息，还可以查看统计的一些性能指标数据，如：总响应时间、平均响应时间、不同的响应码返回的总次数等。</p>
+<h3 id="Contour"><a href="#Contour" class="headerlink" title="Contour"></a><a href="https://github.com/projectcontour/contour" target="_blank" rel="noopener">Contour</a></h3><p>Contour 不仅基于 Envoy，而且还与该流行代理的作者共同开发。通过特殊的 CRD（称为 Ingress Route 的新API ）管理 Ingress 资源的能力是其特殊功能。对于具有多个开发团队并发使用一个集群的组织，这有助于保护相邻环境中的流量并保护它们免受 Ingress 资源更改时产生的错误的影响。</p>
+<p>它还提供了一组扩展的平衡算法（镜像，自动重复，限制请求率等等），详细的流量和故障监控。对于某些人来说，也许缺少对粘性会议的支持将是一个严重的缺陷（朝这个方向的 <a href="https://link.zhihu.com/?target=https%3A//github.com/projectcontour/contour/issues/361">持续努力</a> 已经走了很长一段路）。</p>
+<h4 id="F5-BIG-IP-Controller"><a href="#F5-BIG-IP-Controller" class="headerlink" title="F5 BIG-IP Controller"></a><a href="https://clouddocs.f5.com/products/connectors/K8s-bigip-ctlr/v1.5/" target="_blank" rel="noopener">F5 BIG-IP Controller</a></h4><p>F5 所开发的控制器，它能够让管理员通过 CLI 或 API 让 Kubernetes 与 OpenShift 管理 F5 BIG-IP 设备。</p>
+<h2 id="性能测试"><a href="#性能测试" class="headerlink" title="性能测试"></a>性能测试</h2><h3 id="高可用测试"><a href="#高可用测试" class="headerlink" title="高可用测试"></a>高可用测试</h3><h4 id="应用高可用"><a href="#应用高可用" class="headerlink" title="应用高可用"></a>应用高可用</h4><p>使用工具随机杀死集群中一半的 Pod ，来测试工作负载的可用性。</p>
+<ul>
+<li><p><a href="https://github.com/berkay-dincer/kubethanos" target="_blank" rel="noopener">berkay-dincer/kubethanos</a> </p>
+</li>
+<li><p><a href="https://github.com/asobti" target="_blank" rel="noopener">asobti</a>/<a href="https://github.com/asobti/kube-monkey" target="_blank" rel="noopener">kube-monkey</a></p>
+</li>
+<li><p><a href="https://github.com/linki" target="_blank" rel="noopener">linki</a>/<a href="https://github.com/linki/chaoskube" target="_blank" rel="noopener">chaoskube</a></p>
+</li>
+</ul>
+<h3 id="网络性能测试"><a href="#网络性能测试" class="headerlink" title="网络性能测试"></a>网络性能测试</h3><h4 id="End-to-End-Testing-in-Kubernetes"><a href="#End-to-End-Testing-in-Kubernetes" class="headerlink" title="End-to-End Testing in Kubernetes"></a><a href="https://github.com/kubernetes/community/blob/master/contributors/devel/sig-testing/e2e-tests.md" target="_blank" rel="noopener">End-to-End Testing in Kubernetes</a></h4><h3 id="存储性能测试"><a href="#存储性能测试" class="headerlink" title="存储性能测试"></a>存储性能测试</h3><ul>
+<li><a href="https://blog.fleeto.us/post/kubernetes-storage-performance-comparison/" target="_blank" rel="noopener">Kubernetes 存储性能对比</a>_</li>
+<li><a href="https://www.v2ex.com/t/453961" target="_blank" rel="noopener">K8s分布式存储方案的选择</a></li>
+<li><a href="http://www.youruncloud.com/blog/131.html" target="_blank" rel="noopener">Kubernetes网络原理及方案</a></li>
+<li><a href="http://www.yangguanjun.com/2017/09/04/kubernetes-storage-confuse/" target="_blank" rel="noopener">kubernetes里存储概念的解疑</a></li>
+<li><a href="https://www.ibm.com/developerworks/cn/opensource/os-cn-glusterfs-docker-volume/index.html" target="_blank" rel="noopener">基于 GlusterFS 实现 Docker 集群的分布式存储</a></li>
+<li><a href="http://storage.it168.com/a2019/0114/5145/000005145601.shtml" target="_blank" rel="noopener">为什么Kubernetes的存储如此艰难?</a></li>
+<li><a href="https://blog.fleeto.us/post/the-ultimate-rook-and-ceph-survival-guide/" target="_blank" rel="noopener">Rook &amp; Ceph 简介</a></li>
+<li><a href="https://blog.gmem.cc/rook-based-K8s-storage-solution" target="_blank" rel="noopener">基于Rook的Kubernetes存储方案</a></li>
+<li><a href="http://www.strugglesquirrel.com/2018/08/09/ceph存储三十亿个小文件的实践/" target="_blank" rel="noopener">ceph存储三十亿个小文件的实践</a></li>
+<li><a href="https://tech.meituan.com/2016/03/11/block-store.html" target="_blank" rel="noopener">分布式块存储系统Ursa的设计与实现</a></li>
+<li><a href="http://www.yangguanjun.com/2017/09/04/kubernetes-storage-confuse/" target="_blank" rel="noopener">最近也在折腾 kubernetes给你一个分享</a></li>
+</ul>
+<h2 id="周边"><a href="#周边" class="headerlink" title="周边"></a>周边</h2><h3 id="dashboard"><a href="#dashboard" class="headerlink" title="dashboard"></a><a href="https://github.com/kubernetes/dashboard" target="_blank" rel="noopener">dashboard</a></h3><h3 id="Octant"><a href="#Octant" class="headerlink" title="Octant"></a><a href="https://github.com/vmware/octant" target="_blank" rel="noopener">Octant</a></h3><h3 id="Kuboard"><a href="#Kuboard" class="headerlink" title="Kuboard"></a><a href="https://kuboard.cn/" target="_blank" rel="noopener">Kuboard</a></h3><h3 id="Kustomize"><a href="#Kustomize" class="headerlink" title="Kustomize"></a><a href="https://github.com/kubernetes-sigs/kustomize/releases" target="_blank" rel="noopener">Kustomize</a></h3><p><strong>特性：</strong></p>
+<ul>
+<li>功能简单清晰，kubectl 直接支持。</li>
+<li>不考虑派生，仅作为应用的 YAML 组织方式也很有帮助。</li>
+<li>也有自己的插件系统。例如可以用简单的 YAML 定义，使用文件生成 Configmap/Secret。</li>
+</ul>
+<h3 id="helm"><a href="#helm" class="headerlink" title="helm"></a><a href="https://helm.sh/" target="_blank" rel="noopener">helm</a></h3><p><strong>特性：</strong></p>
+<ul>
+<li><p>强大的生命周期管理：有 Tiller 的帮助，可以实现对应用程序实例（Release）的查询、安装、卸载、升级、回滚等复杂操作。</p>
+</li>
+<li><p>严格的基础版本管控：Chart 是一种模板，Chart 的用户仅能通过对 <code>values</code> 的控制来定制应用的部署行为，模板中没有提供变量的位置，是无法在下游直接进行变更的。</p>
+</li>
+<li><p>方便的命令行：对于简单变量，可以在部署的同时直接指定内容，方便部署。</p>
+</li>
+<li><p>插件和工具：Helm 拥趸众多，提供了不少用于 CICD 或者其它方面辅助功能的插件和工具。</p>
+<p><strong>V3</strong></p>
+</li>
+<li><p>移除Tiller 组件：只有helm这个客户端来和kubernetes集群进行交互操作。helm2的交互流程： <code>helm client –gRPC–&gt; helm server (Tiller) –&gt; kubernetes api (install chart)</code></p>
+</li>
+<li><p>Release name 可缩小至Namespace范围（意味着release name 可重复）：helm2 中的 release name 是全局的，意味着即使安装某个chart到不同的Namespace，release name名字也不能一样。Chart Release 记录都和 Tiller 服务一起，在一个 Namespace 中。现在由于移除了 Tiller 组件，每个 chart 的 Release 记录与它部署到哪个 namespace 一样，存在同一个 Namespace中 。这样就可以在不同 Namespace 中使用同一个Release name。</p>
+</li>
+<li><p>默认关闭随机生成release name，需要显示启用选项 <code>--generate-name</code></p>
+</li>
+<li><p>移除 helm serve 提供本地repository 功能</p>
+</li>
+<li><p>将requirements.yaml的内容移到Chart.yaml文件中</p>
+</li>
+<li><p>支持 helm push 到远端 chart repository，支持登陆认证</p>
+</li>
+<li><p>支持 Chart Library（keeping charts DRY.）</p>
+</li>
+<li><p>简化内置模版里面的对象</p>
+</li>
+<li><p>使用JSONSchema验证chart的Values</p>
+</li>
+</ul>
+<h3 id="Operator"><a href="#Operator" class="headerlink" title="Operator"></a><a href="https://coreos.com/operators/" target="_blank" rel="noopener">Operator</a></h3><p>Operator 是由 CoreOS 开发的，用来扩展 Kubernetes API，特定的应用程序控制器，它用来创建、配置和管理复杂的有状态应用，如数据库、缓存和监控系统。Operator 基于 Kubernetes 的资源和控制器概念之上构建，但同时又包含了应用程序特定的领域知识。创建Operator 的关键是CRD（自定义资源）的设计。</p>
+<p>Kubernetes 1.7 版本以来就引入了<a href="https://kubernetes.io/docs/concepts/api-extension/custom-resources/" target="_blank" rel="noopener">自定义控制器</a>的概念，该功能可以让开发人员扩展添加新功能，更新现有的功能，并且可以自动执行一些管理任务，这些自定义的控制器就像 Kubernetes 原生的组件一样，Operator 直接使用 Kubernetes API进行开发，也就是说他们可以根据这些控制器内部编写的自定义规则来监控集群、更改 Pods/Services、对正在运行的应用进行扩缩容。</p>
+<p>Operator Framework 同样也是 CoreOS 开源的一个用于快速开发 Operator 的工具包，该框架包含两个主要的部分：</p>
+<ul>
+<li><p>Operator SDK: 无需了解复杂的 Kubernetes API 特性，即可让你根据你自己的专业知识构建一个 Operator 应用。</p>
+</li>
+<li><p>Operator Lifecycle Manager OLM: 帮助你安装、更新和管理跨集群的运行中的所有 Operator（以及他们的相关服务）</p>
+<p><strong>工作流程：</strong></p>
+</li>
+</ul>
+<ol>
+<li>使用 SDK 创建一个新的 Operator 项目</li>
+<li>通过添加自定义资源（CRD）定义新的资源 API</li>
+<li>指定使用 SDK API 来 watch 的资源</li>
+<li>定义 Operator 的协调（reconcile）逻辑</li>
+<li>使用 Operator SDK 构建并生成 Operator 部署清单文件</li>
+</ol>
+<h3 id="kubebuilder"><a href="#kubebuilder" class="headerlink" title="kubebuilder"></a><a href="https://github.com/kubernetes-sigs/kubebuilder/releases" target="_blank" rel="noopener">kubebuilder</a></h3><p>目前扩展 Kubernetes 的 API 的方式有创建 <a href="https://jimmysong.io/kubernetes-handbook/concepts/crd.html" target="_blank" rel="noopener">CRD</a>、使用 <a href="https://jimmysong.io/kubernetes-handbook/develop/operator.html" target="_blank" rel="noopener">Operator</a> SDK 等方式，都需要写很多的样本文件（boilerplate），使用起来十分麻烦。为了能够更方便构建 Kubernetes API 和工具，就需要一款能够事半功倍的工具，与其他 Kubernetes API 扩展方案相比，kubebuilder 更加简单易用，并获得了社区的广泛支持。</p>
+<p>通过 Operator 的方案，可以对 Kubernetes 的功能进行友好地扩展。Operatpr = CRD + Controller。首先通过 yaml 定义，生成 CRD ，然后 Controller 不断地监听 etcd 中的数据，执行相应动作。开发 Operator 时，有很多繁琐且重复的事情。KubeBuilder 可以帮助我们快速生成骨架代码，开发一个 Kubernetes 的扩展功能， 更多介绍可以参考文档：<a href="https://www.chenshaowen.com/blog/complex-application-management-framework-operator-for-kubernetes.html" target="_blank" rel="noopener">Kubernetes 复杂有状态应用管理框架 – Operator</a> </p>
+<p><strong>工作流程：</strong></p>
+<ol>
+<li>创建一个新的工程目录</li>
+<li>创建一个或多个资源 API CRD 然后将字段添加到资源</li>
+<li>在控制器中实现协调循环（reconcile loop），watch 额外的资源</li>
+<li>在集群中运行测试（自动安装 CRD 并自动启动控制器）</li>
+<li>更新引导集成测试测试新字段和业务逻辑</li>
+<li>使用用户提供的 Dockerfile 构建和发布容器</li>
+</ol>
+    </div>
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%AE%B9%E5%99%A8/" rel="tag"><i class="fa fa-tag"></i> 容器</a>
+              <a href="/tags/K8s/" rel="tag"><i class="fa fa-tag"></i> K8s</a>
+              <a href="/tags/%E8%B0%83%E7%A0%94/" rel="tag"><i class="fa fa-tag"></i> 调研</a>
+          </div>
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/nonprofit-foundation-overview.html" rel="prev" title="知名软件基金会概览">
+      <i class="fa fa-chevron-left"></i> 知名软件基金会概览
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+  </article>
+  </div>
+          </div>
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+        </div>
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#参考"><span class="nav-number">1.</span> <span class="nav-text">参考</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#开源容器平台"><span class="nav-number">2.</span> <span class="nav-text">开源容器平台</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#OpenShift"><span class="nav-number">2.1.</span> <span class="nav-text">OpenShift</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#简介"><span class="nav-number">2.1.1.</span> <span class="nav-text">简介</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#KubeSphere"><span class="nav-number">2.2.</span> <span class="nav-text">KubeSphere</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#简介-1"><span class="nav-number">2.2.1.</span> <span class="nav-text">简介</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Rancher"><span class="nav-number">2.3.</span> <span class="nav-text">Rancher</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#简介-2"><span class="nav-number">2.3.1.</span> <span class="nav-text">简介</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#部署工具"><span class="nav-number">3.</span> <span class="nav-text">部署工具</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#RKE"><span class="nav-number">3.1.</span> <span class="nav-text">RKE</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Kops"><span class="nav-number">3.2.</span> <span class="nav-text">Kops</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Kubeadm"><span class="nav-number">3.3.</span> <span class="nav-text">Kubeadm</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#sealos"><span class="nav-number">3.4.</span> <span class="nav-text">sealos</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#kubeasz"><span class="nav-number">3.5.</span> <span class="nav-text">kubeasz</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#kubespray"><span class="nav-number">3.6.</span> <span class="nav-text">kubespray</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#稳定版本选择"><span class="nav-number">4.</span> <span class="nav-text">稳定版本选择</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-14-10"><span class="nav-number">4.1.</span> <span class="nav-text">1.14.10</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#上游进展"><span class="nav-number">4.1.1.</span> <span class="nav-text">上游进展</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-15-7"><span class="nav-number">4.2.</span> <span class="nav-text">1.15.7</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#上游进展-1"><span class="nav-number">4.2.1.</span> <span class="nav-text">上游进展</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-16-5"><span class="nav-number">4.3.</span> <span class="nav-text">1.16.5</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#上游进展-2"><span class="nav-number">4.3.1.</span> <span class="nav-text">上游进展</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-17-0"><span class="nav-number">4.4.</span> <span class="nav-text">1.17.0</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#上游进展-3"><span class="nav-number">4.4.1.</span> <span class="nav-text">上游进展</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#节点-OS"><span class="nav-number">5.</span> <span class="nav-text">节点 OS</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Photon-OS"><span class="nav-number">5.1.</span> <span class="nav-text">Photon OS</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#特性"><span class="nav-number">5.1.1.</span> <span class="nav-text">特性</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#CoreOS"><span class="nav-number">5.2.</span> <span class="nav-text">CoreOS</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Rancher-OS"><span class="nav-number">5.3.</span> <span class="nav-text">Rancher OS</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#高可用架构"><span class="nav-number">6.</span> <span class="nav-text">高可用架构</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#参考-1"><span class="nav-number">6.1.</span> <span class="nav-text">参考</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#etcd-高可用"><span class="nav-number">6.2.</span> <span class="nav-text">etcd 高可用</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#独立的-etcd-集群"><span class="nav-number">6.2.1.</span> <span class="nav-text">独立的 etcd 集群</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Master-节点-static-pod-形式"><span class="nav-number">6.2.2.</span> <span class="nav-text">Master 节点 static pod 形式</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#self-hosted-etcd方案"><span class="nav-number">6.2.3.</span> <span class="nav-text">self-hosted etcd方案</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#kube-apiserver-高可用"><span class="nav-number">6.3.</span> <span class="nav-text">kube-apiserver  高可用</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#使用外部负载均衡器"><span class="nav-number">6.3.1.</span> <span class="nav-text">使用外部负载均衡器</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#在网络层做负载均衡"><span class="nav-number">6.3.2.</span> <span class="nav-text">在网络层做负载均衡</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#在-Node-节点上使用反向代理对多个-Master-做负载均衡"><span class="nav-number">6.3.3.</span> <span class="nav-text">在 Node 节点上使用反向代理对多个 Master 做负载均衡</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Kube-dns-高可用"><span class="nav-number">6.4.</span> <span class="nav-text">Kube-dns  高可用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#kube-controller-manager-与-kube-scheduler高可用"><span class="nav-number">6.5.</span> <span class="nav-text">kube-controller-manager 与 kube-scheduler高可用</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#网络插件"><span class="nav-number">7.</span> <span class="nav-text">网络插件</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#参考-2"><span class="nav-number">7.1.</span> <span class="nav-text">参考</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#静态路由"><span class="nav-number">7.2.</span> <span class="nav-text">静态路由</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#flannel"><span class="nav-number">7.3.</span> <span class="nav-text">flannel</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#hostgw-模式"><span class="nav-number">7.3.1.</span> <span class="nav-text">hostgw 模式</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#udp-模式"><span class="nav-number">7.3.2.</span> <span class="nav-text">udp 模式</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#vxlan-模式"><span class="nav-number">7.3.3.</span> <span class="nav-text">vxlan 模式</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Calico"><span class="nav-number">7.4.</span> <span class="nav-text">Calico</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#NSX-T"><span class="nav-number">7.5.</span> <span class="nav-text">NSX-T</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#功能特性"><span class="nav-number">7.5.1.</span> <span class="nav-text">功能特性</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#持久化存储方案"><span class="nav-number">8.</span> <span class="nav-text">持久化存储方案</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#参考-3"><span class="nav-number">8.1.</span> <span class="nav-text">参考</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#NFS"><span class="nav-number">8.2.</span> <span class="nav-text">NFS</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#vSphere-vSAN"><span class="nav-number">8.3.</span> <span class="nav-text">vSphere vSAN</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Gluster"><span class="nav-number">8.4.</span> <span class="nav-text">Gluster</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Ceph"><span class="nav-number">8.5.</span> <span class="nav-text">Ceph</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Rook"><span class="nav-number">8.5.1.</span> <span class="nav-text">Rook</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#日志方案"><span class="nav-number">9.</span> <span class="nav-text">日志方案</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#采集方式："><span class="nav-number">9.1.</span> <span class="nav-text">采集方式：</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#在宿主机上实现日志采集"><span class="nav-number">9.1.1.</span> <span class="nav-text">在宿主机上实现日志采集</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#在容器镜像中添加采集-Agent"><span class="nav-number">9.1.2.</span> <span class="nav-text">在容器镜像中添加采集 Agent</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#基于Sidecar日志采集方式"><span class="nav-number">9.1.3.</span> <span class="nav-text">基于Sidecar日志采集方式</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ELK-方案"><span class="nav-number">9.2.</span> <span class="nav-text">ELK 方案</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Elasticsearch"><span class="nav-number">9.2.1.</span> <span class="nav-text">Elasticsearch</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Logstash"><span class="nav-number">9.2.2.</span> <span class="nav-text">Logstash</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Kibana"><span class="nav-number">9.2.3.</span> <span class="nav-text">Kibana</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#EFK-方案"><span class="nav-number">9.3.</span> <span class="nav-text">EFK 方案</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Fluentd"><span class="nav-number">9.3.1.</span> <span class="nav-text">Fluentd</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#监控方案"><span class="nav-number">10.</span> <span class="nav-text">监控方案</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Cadvisor-InfluxDB-Grafana"><span class="nav-number">10.1.</span> <span class="nav-text">Cadvisor+InfluxDB+Grafana</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Heapster-InfluxDB-Grafana"><span class="nav-number">10.2.</span> <span class="nav-text">Heapster+InfluxDB+Grafana</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Promethus-metrics-Grafana"><span class="nav-number">10.3.</span> <span class="nav-text">Promethus+metrics+Grafana</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Grafana"><span class="nav-number">10.3.1.</span> <span class="nav-text">Grafana</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#InfluxDB"><span class="nav-number">10.3.2.</span> <span class="nav-text">InfluxDB</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#特性-1"><span class="nav-number">10.3.2.1.</span> <span class="nav-text">特性</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#cAdvisor"><span class="nav-number">10.3.3.</span> <span class="nav-text">cAdvisor</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Heapster"><span class="nav-number">10.3.4.</span> <span class="nav-text">Heapster</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#kube-state-metrics"><span class="nav-number">10.3.5.</span> <span class="nav-text">kube-state-metrics</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Promethues"><span class="nav-number">10.3.6.</span> <span class="nav-text">Promethues</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#特性-2"><span class="nav-number">10.3.6.1.</span> <span class="nav-text">特性</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#监控层面"><span class="nav-number">10.3.6.2.</span> <span class="nav-text">监控层面</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#组件"><span class="nav-number">10.3.6.3.</span> <span class="nav-text">组件</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#CI-CD-方案"><span class="nav-number">11.</span> <span class="nav-text">CI&#x2F;CD 方案</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#参考-4"><span class="nav-number">11.1.</span> <span class="nav-text">参考</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Jenkins"><span class="nav-number">11.2.</span> <span class="nav-text">Jenkins</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Gitlab-CI"><span class="nav-number">11.3.</span> <span class="nav-text">Gitlab CI</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Drone"><span class="nav-number">11.4.</span> <span class="nav-text">Drone</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#镜像-registry"><span class="nav-number">12.</span> <span class="nav-text">镜像 registry</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#harbor"><span class="nav-number">12.1.</span> <span class="nav-text">harbor</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#特性-3"><span class="nav-number">12.1.1.</span> <span class="nav-text">特性</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#quay"><span class="nav-number">12.2.</span> <span class="nav-text">quay</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#特性-4"><span class="nav-number">12.2.1.</span> <span class="nav-text">特性</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#Quay的企业级功能"><span class="nav-number">12.2.1.1.</span> <span class="nav-text">Quay的企业级功能</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#镜像扫描："><span class="nav-number">12.2.1.2.</span> <span class="nav-text">镜像扫描：</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#自动构建："><span class="nav-number">12.2.1.3.</span> <span class="nav-text">自动构建：</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#image回滚"><span class="nav-number">12.2.1.4.</span> <span class="nav-text">image回滚:</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#细颗粒度的RBAC配置"><span class="nav-number">12.2.1.5.</span> <span class="nav-text">细颗粒度的RBAC配置:</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#事件和使用日志："><span class="nav-number">12.2.1.6.</span> <span class="nav-text">事件和使用日志：</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#自动压缩image："><span class="nav-number">12.2.1.7.</span> <span class="nav-text">自动压缩image：</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#自动进行K8S应用部署："><span class="nav-number">12.2.1.8.</span> <span class="nav-text">自动进行K8S应用部署：</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#事件通知"><span class="nav-number">12.2.1.9.</span> <span class="nav-text">事件通知</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#集群优化"><span class="nav-number">13.</span> <span class="nav-text">集群优化</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#网络-MTU"><span class="nav-number">13.1.</span> <span class="nav-text">网络 MTU</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#内核版本"><span class="nav-number">13.2.</span> <span class="nav-text">内核版本</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#参考文档"><span class="nav-number">13.2.1.</span> <span class="nav-text">参考文档</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#内核参数"><span class="nav-number">13.3.</span> <span class="nav-text">内核参数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#网段优化"><span class="nav-number">13.4.</span> <span class="nav-text">网段优化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#swap-优化"><span class="nav-number">13.5.</span> <span class="nav-text">swap 优化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#service-实现形式"><span class="nav-number">13.6.</span> <span class="nav-text">service 实现形式</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#背景：iptables-模式"><span class="nav-number">13.6.1.</span> <span class="nav-text">背景：iptables 模式</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#背景：IPVS-模式"><span class="nav-number">13.6.2.</span> <span class="nav-text">背景：IPVS 模式</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#性能对比"><span class="nav-number">13.6.3.</span> <span class="nav-text">性能对比</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#响应时间"><span class="nav-number">13.6.4.</span> <span class="nav-text">响应时间</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#CPU-用量"><span class="nav-number">13.6.5.</span> <span class="nav-text">CPU 用量</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#结论"><span class="nav-number">13.6.6.</span> <span class="nav-text">结论</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#补充：Calico-和-kube-proxy-的-iptables-比较"><span class="nav-number">13.6.7.</span> <span class="nav-text">补充：Calico 和 kube-proxy 的 iptables 比较</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#安全加固"><span class="nav-number">14.</span> <span class="nav-text">安全加固</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#工具"><span class="nav-number">14.1.</span> <span class="nav-text">工具</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#TUF"><span class="nav-number">14.1.1.</span> <span class="nav-text">TUF</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#kube-score"><span class="nav-number">14.1.2.</span> <span class="nav-text">kube-score</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ingress"><span class="nav-number">15.</span> <span class="nav-text">Ingress</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#常见-ingress-对比列表"><span class="nav-number">15.1.</span> <span class="nav-text">常见 ingress 对比列表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Ingress-NGINX"><span class="nav-number">15.2.</span> <span class="nav-text">Ingress NGINX</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Traefik"><span class="nav-number">15.3.</span> <span class="nav-text">Traefik</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Contour"><span class="nav-number">15.4.</span> <span class="nav-text">Contour</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#F5-BIG-IP-Controller"><span class="nav-number">15.4.1.</span> <span class="nav-text">F5 BIG-IP Controller</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#性能测试"><span class="nav-number">16.</span> <span class="nav-text">性能测试</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#高可用测试"><span class="nav-number">16.1.</span> <span class="nav-text">高可用测试</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#应用高可用"><span class="nav-number">16.1.1.</span> <span class="nav-text">应用高可用</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#网络性能测试"><span class="nav-number">16.2.</span> <span class="nav-text">网络性能测试</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#End-to-End-Testing-in-Kubernetes"><span class="nav-number">16.2.1.</span> <span class="nav-text">End-to-End Testing in Kubernetes</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#存储性能测试"><span class="nav-number">16.3.</span> <span class="nav-text">存储性能测试</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#周边"><span class="nav-number">17.</span> <span class="nav-text">周边</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#dashboard"><span class="nav-number">17.1.</span> <span class="nav-text">dashboard</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Octant"><span class="nav-number">17.2.</span> <span class="nav-text">Octant</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Kuboard"><span class="nav-number">17.3.</span> <span class="nav-text">Kuboard</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Kustomize"><span class="nav-number">17.4.</span> <span class="nav-text">Kustomize</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#helm"><span class="nav-number">17.5.</span> <span class="nav-text">helm</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Operator"><span class="nav-number">17.6.</span> <span class="nav-text">Operator</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#kubebuilder"><span class="nav-number">17.7.</span> <span class="nav-text">kubebuilder</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木子"
+      src="https://blog.502.li/favicon.ico">
+  <p class="site-author-name" itemprop="name">木子</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">65</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">77</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/muzi502" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;muzi502" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:blog@502.li" title="E-Mail → mailto:blog@502.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://twitter.com/muzi_ii" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;muzi_ii" rel="noopener" target="_blank"><i class="fa fa-fw fa-twitter"></i>Twitter</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://t.me/muzi_ii" title="Telegram → https:&#x2F;&#x2F;t.me&#x2F;muzi_ii" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Telegram</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://kindle.502.li/" title="Kindle → https:&#x2F;&#x2F;kindle.502.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-book"></i>Kindle</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://https//t.me/rss_kubernetes" title="Channel → https:&#x2F;&#x2F;https:&#x2F;&#x2F;t.me&#x2F;rss_kubernetes" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Channel</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-fw fa-rss"></i>RSS</a>
+      </span>
+  </div>
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+      </div>
+    </main>
+    <footer class="footer">
+      <div class="footer-inner">
+<div class="copyright">
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木子</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">832k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">23:06</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">主题 – <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a>
+  </div>
+      </div>
+    </footer>
+  </div>
+  <script src="/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script>
+<script src="/js/schemes/pisces.js"></script>
+<script src="/js/next-boot.js"></script>
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://muzi.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: {page: {
+            url: "https://blog.502.li/k8s-01.html",
+            identifier: "k8s-01.html",
+            title: "kubernets 相关技术调研"
+          }
+        }
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://muzi.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+</body>
+</html>
