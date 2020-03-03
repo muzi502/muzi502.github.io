@@ -59,7 +59,7 @@
 <meta property="og:image" content="https://cdn.jsdelivr.net/gh/muzi502/blog/source/img/image-20200102220642854.png">
 <meta property="og:image" content="https://cdn.jsdelivr.net/gh/muzi502/blog/source/img/image-20200102222349027.png">
 <meta property="article:published_time" content="2020-01-01T16:00:00.000Z">
-<meta property="article:modified_time" content="2020-03-02T14:36:19.392Z">
+<meta property="article:modified_time" content="2020-03-03T08:10:07.505Z">
 <meta property="article:author" content="木子">
 <meta property="article:tag" content="linux">
 <meta property="article:tag" content="telegram">
@@ -173,7 +173,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-03-02 2020-03-02T22:36:19+08:00" itemprop="dateModified" datetime="2020-03-02T22:36:19+08:00">2020-03-02</time>
+                <time title="修改时间：2020-03-03 2020-03-03T16:10:07+08:00" itemprop="dateModified" datetime="2020-03-03T16:10:07+08:00">2020-03-03</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -260,7 +260,7 @@
 <ul>
 <li>例如：</li>
 </ul>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">https:&#x2F;&#x2F;api.telegram.org&#x2F;bot1067796083:AAFjONLJ9-F2Y6IRSmQoBVAAgRhd589MXpk&#x2F;sendMessage?chat_id&#x3D;613640483&amp;text&#x3D;message</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">https://api.telegram.org/bot1067796083:AAFjONLJ9-F2Y6IRSmQoBVAAgRhd589MXpk/sendMessage?chat_id=613640483&amp;text=message</span><br></pre></td></tr></table></figure>
 <p>把这段 <code>url</code> 复制粘贴到浏览器测试一下即可，或者通过 <code>curl</code> &amp; <code>wget</code>命令也可以。看看你的 telegram 能否正常接受消息。如果出现的话，恭喜你成功了第一步😂</p>
 <figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="attr">"ok"</span>: <span class="literal">true</span>,</span><br><span class="line">  <span class="attr">"result"</span>: &#123;</span><br><span class="line">    <span class="attr">"message_id"</span>: <span class="number">2</span>,</span><br><span class="line">    <span class="attr">"from"</span>: &#123;</span><br><span class="line">      <span class="attr">"id"</span>: <span class="number">13</span>,</span><br><span class="line">      <span class="attr">"is_bot"</span>: <span class="literal">true</span>,</span><br><span class="line">      <span class="attr">"first_name"</span>: <span class="string">"linuxloginbot"</span>,</span><br><span class="line">      <span class="attr">"username"</span>: <span class="string">"linuxlogin_bot"</span></span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="attr">"chat"</span>: &#123;</span><br><span class="line">      <span class="attr">"id"</span>: <span class="number">13</span>,</span><br><span class="line">      <span class="attr">"first_name"</span>: <span class="string">"木子"</span>,</span><br><span class="line">      <span class="attr">"username"</span>: <span class="string">"muzi_ii"</span>,</span><br><span class="line">      <span class="attr">"type"</span>: <span class="string">"private"</span></span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="attr">"date"</span>: <span class="number">1577973988</span>,</span><br><span class="line">    <span class="attr">"text"</span>: <span class="string">"message"</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p><img src="https://cdn.jsdelivr.net/gh/muzi502/blog/source/img/image-20200102220642854.png" alt="image-20200102220642854"></p>
@@ -284,12 +284,12 @@
           </div>
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/container-linux-os.html" rel="prev" title="Container Linux OS 从入坑到爬出来😂">
-      <i class="fa fa-chevron-left"></i> Container Linux OS 从入坑到爬出来😂
+    <a href="/dockerfile-tips.html" rel="prev" title="Dockerfile 搓镜像的小技巧">
+      <i class="fa fa-chevron-left"></i> Dockerfile 搓镜像的小技巧
     </a></div>
       <div class="post-nav-item">
-    <a href="/dockerfile-tips.html" rel="next" title="Dockerfile 搓镜像的小技巧">
-      Dockerfile 搓镜像的小技巧 <i class="fa fa-chevron-right"></i>
+    <a href="/make-e-book-from-html.html" rel="next" title="网页小说制作 kindle 电子书">
+      网页小说制作 kindle 电子书 <i class="fa fa-chevron-right"></i>
     </a></div>
     </div>
       </footer>
@@ -417,13 +417,13 @@
       <i class="fa fa-area-chart"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">853k</span>
+    <span title="站点总字数">852k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">23:42</span>
+    <span title="站点阅读时长">23:41</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动
   </div>

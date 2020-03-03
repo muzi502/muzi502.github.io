@@ -41,12 +41,12 @@
     motion: {"enable":false,"async":true,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
   };
 </script>
-  <meta name="description" content="俗话说文档写得好，同行抄到老😂。  在前期的技术选型调研过程中，对 K8s 密切相关的解决方案：网络插件、存储解决方案、监控告警系统、日志收集和处理、持续集成和交付系统等做了充分的调研和测试工作，现如今总结一下调研过程中的记录。 参考俗话说文档写得好，同行抄到老😂。不过咱木子还是有点原则的，最起码标注引用来源，尊重原作者的版权。所以就在此罗列了本文 剽窃 引用的来源。由于是技术调研，文中">
+  <meta name="description" content="俗话说文档写得好，同行抄到老😂。  在前期的技术选型调研过程中，对 K8s 密切相关的解决方案：网络插件、存储解决方案、监控告警系统、日志收集和处理、持续集成和交付系统等做了充分的调研和测试工作，现如今总结一下调研过程中的记录。 参考俗话说文档写得好，同行抄到老😂。不过咱木子还是有点原则的，最起码标注引用来源，尊重原作者的版权。所以就在此罗列了本文 剽窃 引用的来源。由于是技术调研，文中提到">
 <meta property="og:type" content="article">
 <meta property="og:title" content="kubernets 相关技术调研">
 <meta property="og:url" content="https://blog.502.li/k8s-01.html">
 <meta property="og:site_name" content="木子">
-<meta property="og:description" content="俗话说文档写得好，同行抄到老😂。  在前期的技术选型调研过程中，对 K8s 密切相关的解决方案：网络插件、存储解决方案、监控告警系统、日志收集和处理、持续集成和交付系统等做了充分的调研和测试工作，现如今总结一下调研过程中的记录。 参考俗话说文档写得好，同行抄到老😂。不过咱木子还是有点原则的，最起码标注引用来源，尊重原作者的版权。所以就在此罗列了本文 剽窃 引用的来源。由于是技术调研，文中">
+<meta property="og:description" content="俗话说文档写得好，同行抄到老😂。  在前期的技术选型调研过程中，对 K8s 密切相关的解决方案：网络插件、存储解决方案、监控告警系统、日志收集和处理、持续集成和交付系统等做了充分的调研和测试工作，现如今总结一下调研过程中的记录。 参考俗话说文档写得好，同行抄到老😂。不过咱木子还是有点原则的，最起码标注引用来源，尊重原作者的版权。所以就在此罗列了本文 剽窃 引用的来源。由于是技术调研，文中提到">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://cdn.jsdelivr.net/gh/muzi502/blog/source/img/image-20191227151129673.png">
 <meta property="og:image" content="https://cdn.jsdelivr.net/gh/muzi502/blog/source/img/Picture1.png">
@@ -202,7 +202,7 @@
       </header>
     <div class="post-body" itemprop="articleBody">
         <blockquote>
-<p>  俗话说文档写得好，同行抄到老😂。</p>
+<p>俗话说文档写得好，同行抄到老😂。</p>
 </blockquote>
 <p>在前期的技术选型调研过程中，对 K8s 密切相关的解决方案：网络插件、存储解决方案、监控告警系统、日志收集和处理、持续集成和交付系统等做了充分的调研和测试工作，现如今总结一下调研过程中的记录。</p>
 <h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p>俗话说文档写得好，同行抄到老😂。不过咱木子还是有点原则的，最起码标注引用来源，尊重原作者的版权。所以就在此罗列了本文 <del>剽窃</del> 引用的来源。由于是技术调研，文中提到的相关开源软件介绍多数都是引用自官方文档或者英文翻译的文档。具体的细节稍后再更新博客补充。本文的内容涉及比较多，主要参考和引用了以下站点。</p>
@@ -631,10 +631,10 @@
 </ul>
 <h3 id="Rancher-OS"><a href="#Rancher-OS" class="headerlink" title="Rancher OS"></a>Rancher OS</h3><p>RancherOS 是 Rancher 团队所维护的开源项目，也是对标 CoreOS 一样，专门用来运行容器，并且可以运行在生产环境（至少官方做了这么样的承诺，咱也没在生产用过，不好说。在 RancherOS 中所有的进程（包括系统所有的服务，比如 udev 和 syslog）都是用 docker 来管理，这一点要比 CoreOS 更加激进一些，而 CoreOS 还是使用传统 Linux 发行版中的 systemd 来管理系统中的服务。通过移除传统 Linux 发行版中不必要的服务和库来最小化系统，使他专注单一的功能，即运行 docker 容器。</p>
 <blockquote>
-<p>  RancherOS is the smallest, easiest way to run Docker in production. Every process in RancherOS is a container managed by Docker. This includes system services such as <code>udev</code> and <code>syslog</code>. Because it only includes the services necessary to run Docker, RancherOS is significantly smaller than most traditional operating systems. By removing unnecessary libraries and services, requirements for security patches and other maintenance are also reduced. This is possible because, with Docker, users typically package all necessary libraries into their containers.</p>
-<p>  Another way in which RancherOS is designed specifically for running Docker is that it always runs the latest version of Docker. This allows users to take advantage of the latest Docker capabilities and bug fixes.</p>
-<p>  Like other minimalist Linux distributions, RancherOS boots incredibly quickly. Starting Docker containers is nearly instant, similar to starting any other process. This speed is ideal for organizations adopting microservices and autoscaling.</p>
-<p>  Docker is an open-source platform designed for developers, system admins, and DevOps. It is used to build, ship, and run containers, using a simple and powerful command line interface (CLI). To get started with Docker, please visit the <a href="https://docs.docker.com/engine/userguide/" target="_blank" rel="noopener">Docker user guide</a>.</p>
+<p>RancherOS is the smallest, easiest way to run Docker in production. Every process in RancherOS is a container managed by Docker. This includes system services such as <code>udev</code> and <code>syslog</code>. Because it only includes the services necessary to run Docker, RancherOS is significantly smaller than most traditional operating systems. By removing unnecessary libraries and services, requirements for security patches and other maintenance are also reduced. This is possible because, with Docker, users typically package all necessary libraries into their containers.</p>
+<p>Another way in which RancherOS is designed specifically for running Docker is that it always runs the latest version of Docker. This allows users to take advantage of the latest Docker capabilities and bug fixes.</p>
+<p>Like other minimalist Linux distributions, RancherOS boots incredibly quickly. Starting Docker containers is nearly instant, similar to starting any other process. This speed is ideal for organizations adopting microservices and autoscaling.</p>
+<p>Docker is an open-source platform designed for developers, system admins, and DevOps. It is used to build, ship, and run containers, using a simple and powerful command line interface (CLI). To get started with Docker, please visit the <a href="https://docs.docker.com/engine/userguide/" target="_blank" rel="noopener">Docker user guide</a>.</p>
 </blockquote>
 <h2 id="高可用架构"><a href="#高可用架构" class="headerlink" title="高可用架构"></a>高可用架构</h2><h3 id="参考-1"><a href="#参考-1" class="headerlink" title="参考"></a>参考</h3><ul>
 <li><a href="https://jishu.io/kubernetes/kubernetes-master-ha/" target="_blank" rel="noopener">关于Kubernetes Master高可用的一些策略</a></li>
@@ -1288,13 +1288,13 @@
       <i class="fa fa-area-chart"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">853k</span>
+    <span title="站点总字数">852k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">23:42</span>
+    <span title="站点阅读时长">23:41</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动
   </div>
