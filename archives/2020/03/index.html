@@ -43,7 +43,7 @@
 </script>
   <meta property="og:type" content="website">
 <meta property="og:title" content="木子">
-<meta property="og:url" content="https://blog.502.li/tags/Linux-%E7%BD%91%E7%BB%9C/index.html">
+<meta property="og:url" content="https://blog.502.li/archives/2020/03/index.html">
 <meta property="og:site_name" content="木子">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:author" content="木子">
@@ -52,7 +52,7 @@
 <meta property="article:tag" content="docker">
 <meta property="article:tag" content="linux">
 <meta name="twitter:card" content="summary">
-<link rel="canonical" href="https://blog.502.li/tags/Linux-%E7%BD%91%E7%BB%9C/">
+<link rel="canonical" href="https://blog.502.li/archives/2020/03/">
 <script id="page-configurations">
   // https://hexo.io/docs/variables.html
   CONFIG.page = {
@@ -61,7 +61,7 @@
     isPost: false
   };
 </script>
-  <title>标签: Linux 网络 | 木子</title>
+  <title>木子</title>
   <noscript>
   <style>
   .use-motion .brand,
@@ -135,9 +135,7 @@
   <div class="post-block">
     <div class="posts-collapse">
       <div class="collection-title">
-        <h1 class="collection-header">Linux 网络
-          <small>标签</small>
-        </h1>
+        <span class="collection-header">不错! 目前共计 66 篇日志。 继续努力。</span>
       </div>
     <div class="collection-year">
       <h1 class="collection-header">2020</h1>
@@ -296,6 +294,16 @@
 <script src="/js/utils.js"></script>
 <script src="/js/schemes/pisces.js"></script>
 <script src="/js/next-boot.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout: 3000,
+        priority: true,
+        ignores: [uri => uri.includes('#'),uri => uri == 'https://blog.502.li/archives/2020/03/',]
+      });
+      });
+  </script>
 <script>
   function loadCount() {
     var d = document, s = d.createElement('script');
