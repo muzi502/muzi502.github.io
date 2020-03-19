@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon.ico">
+  <link rel="mask-icon" href="/favicon.ico" color="#222">
+<link rel="stylesheet" href="/css/main.css">
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Roboto Mono:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://blog.502.li').hostname,
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":true,"scrollpercent":true},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"buttons","active":null,"storage":true,"lazyload":true,"nav":{"disqus":{"text":"Load Disqus","order":-1}}},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":false,"async":true,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+  <meta name="description" content="小插曲最近 土豆哥 在捣鼓 Webp Server Go 的时候发咱一张 systemctl status webp 的信息：  咦？咱的 systemctl status webp 为啥子没得 CPU 和 Memory 信息呐？  然后和土豆哥请教了一下，咱也想要。于是土豆哥发咱一篇 systemd – systemctl 不显示内存 CPU 信息 博客，于是拜师学艺就 get 到啦😋。只需要">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux 的小伙伴 systemd 详解">
+<meta property="og:url" content="https://blog.502.li/systemd.html">
+<meta property="og:site_name" content="木子">
+<meta property="og:description" content="小插曲最近 土豆哥 在捣鼓 Webp Server Go 的时候发咱一张 systemctl status webp 的信息：  咦？咱的 systemctl status webp 为啥子没得 CPU 和 Memory 信息呐？  然后和土豆哥请教了一下，咱也想要。于是土豆哥发咱一篇 systemd – systemctl 不显示内存 CPU 信息 博客，于是拜师学艺就 get 到啦😋。只需要">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/muzi502/blog/source/img/image-20200318080736564.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/muzi502/blog/source/img/image-20200318080903595.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/muzi502/blog/source/img/image-20200318211715509.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/muzi502/blog/source/img/systemd_components-svg.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/muzi502/blog/source/img/linux_kernel_unified_hierarchy_cgroups_and_systemd-svg.png">
+<meta property="article:published_time" content="2020-03-18T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-03-18T16:00:00.000Z">
+<meta property="article:author" content="木子">
+<meta property="article:tag" content="blog">
+<meta property="article:tag" content="Linux">
+<meta property="article:tag" content="笔记">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://cdn.jsdelivr.net/gh/muzi502/blog/source/img/image-20200318080736564.png">
+<link rel="canonical" href="https://blog.502.li/systemd.html">
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+  <title>Linux 的小伙伴 systemd 详解 | 木子</title>
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+<link rel="alternate" href="/atom.xml" title="木子" type="application/atom+xml">
+</head>
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">木子</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+    <a href="/" rel="section"><i class="fa fa-fw fa-desktop"></i>Home</a>
+  </li>
+        <li class="menu-item menu-item-books">
+    <a href="/booklist.html" rel="section"><i class="fa fa-fw fa-book"></i>Books</a>
+  </li>
+        <li class="menu-item menu-item-kindle">
+    <a href="https://kindle.502.li/" rel="noopener" target="_blank"><i class="fa fa-fw fa-book"></i>Kindle</a>
+  </li>
+        <li class="menu-item menu-item-friend">
+    <a href="/link/" rel="section"><i class="fa fa-fw fa-link"></i>Friend</a>
+  </li>
+        <li class="menu-item menu-item-about">
+    <a href="/about.html" rel="section"><i class="fa fa-fw fa-user-circle-o"></i>About</a>
+  </li>
+  </ul>
+</nav>
+</div>
+    </header>
+  <div class="reading-progress-bar"></div>
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div class="content">
+  <div class="posts-expand">
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.502.li/systemd.html">
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://blog.502.li/avatar.png">
+      <meta itemprop="name" content="木子">
+      <meta itemprop="description" content="">
+    </span>
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木子">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux 的小伙伴 systemd 详解
+        </h1>
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              <time title="创建时间：2020-03-19 2020-03-19T00:00:00+08:00" itemprop="dateCreated datePublished" datetime="2020-03-19T00:00:00+08:00">2020-03-19</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%8A%80%E6%9C%AF/" itemprop="url" rel="index">
+                    <span itemprop="name">技术</span>
+                  </a>
+                </span>
+            </span>
+  <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-comment-o"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    <a title="disqus" href="/systemd.html#comments" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="systemd.html" itemprop="commentCount"></span>
+    </a>
+  </span>
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>23k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>39 分钟</span>
+            </span>
+        </div>
+      </header>
+    <div class="post-body" itemprop="articleBody">
+        <h2 id="小插曲"><a href="#小插曲" class="headerlink" title="小插曲"></a>小插曲</h2><p>最近 <a href="https://www.bennythink.com/" target="_blank" rel="noopener">土豆哥</a> 在捣鼓 <a href="https://github.com/webp-sh/webp_server_go" target="_blank" rel="noopener">Webp Server Go</a> 的时候发咱一张 <code>systemctl status webp</code> 的信息：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/muzi502/blog/source/img/image-20200318080736564.png" alt="image-20200318080736564"></p>
+<p>咦？咱的 <code>systemctl status webp</code> 为啥子没得 CPU 和 Memory 信息呐？</p>
+<p><img src="https://cdn.jsdelivr.net/gh/muzi502/blog/source/img/image-20200318080903595.png" alt="image-20200318080903595"></p>
+<p>然后和土豆哥请教了一下，咱也想要。于是土豆哥发咱一篇 <a href="https://www.bennythink.com/systemd-accounting.html" target="_blank" rel="noopener">systemd – systemctl 不显示内存 CPU 信息</a> 博客，于是拜师学艺就 get 到啦😋。只需要在 systemd 的配置文件中 <code>/etc/systemd/system.conf</code> 追加</p>
+<figure class="highlight ini"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">DefaultCPUAccounting</span>=<span class="literal">yes</span></span><br><span class="line"><span class="attr">DefaultMemoryAccounting</span>=<span class="literal">yes</span></span><br><span class="line"><span class="attr">DefaultTasksAccounting</span>=<span class="literal">yes</span></span><br></pre></td></tr></table></figure>
+<p>然后再 <code>systemctl daemon-reload</code> 一把梭就可以啦😂</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">╭─root@blog /home/ubuntu</span><br><span class="line">╰─# systemctl status webps</span><br><span class="line">● webps.service - WebP Server</span><br><span class="line">   Loaded: loaded (/opt/webps/webps.service; enabled; vendor preset: enabled)</span><br><span class="line">   Active: active (running) since Sat 2020-03-14 10:32:31 UTC; 4 days ago</span><br><span class="line">     Docs: https://github.com/n0vad3v/webp_server_go</span><br><span class="line"> Main PID: 20691 (webp-server)</span><br><span class="line">    Tasks: 36 (limit: 684)</span><br><span class="line">   Memory: 9.1M</span><br><span class="line">      CPU: 20.421s</span><br><span class="line">   CGroup: /system.slice/webps.service</span><br><span class="line">           └─20691 /opt/webps/webp-server --config /opt/webps/config.json</span><br></pre></td></tr></table></figure>
+<p><img src="https://cdn.jsdelivr.net/gh/muzi502/blog/source/img/image-20200318211715509.png" alt="image-20200318211715509"></p>
+<p>不过，咱还是要深入地学习一下 <code>systemd</code> ，于是就水了这篇博客😂</p>
+<h2 id="Linux-启动流程"><a href="#Linux-启动流程" class="headerlink" title="Linux 启动流程"></a>Linux 启动流程</h2><p>提到 systemd 不得不提一下 Linux 的启动流程，这样才能清楚  systemd 在 Linux 系统中的地位和作用😋。所以就简明扼要第介绍一下 Linux 启动的流程。</p>
+<p>Linux 从按下电源键到进入用户交互界面整个启动流程大致可以分为四个阶段：</p>
+<ul>
+<li><p>BIOS 阶段</p>
+</li>
+<li><p>BootLoader 阶段</p>
+</li>
+<li><p>kernel 加载阶段</p>
+</li>
+<li><p>init：systemd/sysvinit 初始化阶段</p>
+</li>
+</ul>
+<h3 id="BIOS-EFI-阶段"><a href="#BIOS-EFI-阶段" class="headerlink" title="BIOS/EFI 阶段"></a>BIOS/EFI 阶段</h3><p>BIOS 想必大家都熟悉，也就是做一些基本的硬件自检准备以及加载 bootloader 程序。在按下电源电源键（冷启动）后， CPU 的程序计数器被初始化为一个特定的內存地址，存储在只读存储器（ROM）中的 BIOS 就是从这个特定的內存地址开始执行。<strong>所以没有 CPU 是无法启动主板上的 BIOS 的</strong> ，应该（小声。注意：对于嵌入式系统中的 CPU ，将会加载引导区去启动 flash/ROM 中已知地址的程序。</p>
+<p>BIOS 启动后就开始执行硬件的基本初始化也称之为（POST: 上电自检），并根据引导设备的优先级将系统控制权交给硬件启动项（比如硬盘/网络/U盘等）。也就是我们 BIOS 上的启动菜单，这一步是可以被打断的。当我们按下 F12 或者 ESC 键（根据主板芯片组而异）就会弹出选择启动项的界面，而且这些按键高度依赖硬件。</p>
+<p>BIOS 选择好硬件启动项之后就开始执行硬件设备上的初级引导程序代码，对于 MBR 硬盘来讲是最开始的一个扇区（512字节）將被加载到內存，並执行行其中的初始化代码来加载下一阶段的 Bootloader 。</p>
+<p>PS：MBR <strong>主引导记录</strong>是一个 512 字节的扇区，位于硬盘的第一扇区（0道0柱1扇区）。对于 GPT/EFI 来讲~~，有点头大，暂且先不谈😂。</p>
+<p>可以使用 dd 命令读取 MBR 里的内容 <code>dd if=/dev/sda of=mbr.bin bs=512 count=1</code></p>
+<p>使用 od 命令来查看 <code>od -xa mbr.bin</code></p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> od -xa mbr.bin</span></span><br><span class="line">0000000    63eb    0090    0000    0000    0000    0000    0000    0000</span><br><span class="line">          k   c dle nul nul nul nul nul nul nul nul nul nul nul nul nul</span><br><span class="line">0000020    0000    0000    0000    0000    0000    0000    0000    0000</span><br><span class="line">        nul nul nul nul nul nul nul nul nul nul nul nul nul nul nul nul</span><br><span class="line">*</span><br><span class="line">0000120    0000    0000    0000    0000    0000    8000    0800    0000</span><br><span class="line">        nul nul nul nul nul nul nul nul nul nul nul nul nul  bs nul nul</span><br><span class="line">0000140    0000    0000    faff    9090    c2f6    7480    f605    70c2</span><br><span class="line">        nul nul nul nul del   z dle dle   v   B nul   t enq   v   B   p</span><br><span class="line">0000160    0274    80b2    79ea    007c    3100    8ec0    8ed8    bcd0</span><br><span class="line">          t stx   2 nul   j   y   | nul nul   1   @  so   X  so   P   &lt;</span><br><span class="line">0000200    2000    a0fb    7c64    ff3c    0274    c288    bb52    0417</span><br><span class="line">        nul  sp   &#123;  sp   d   |   &lt; del   t stx  bs   B   R   ; etb eot</span><br><span class="line">0000220    07f6    7403    be06    7d88    17e8    be01    7c05    41b4</span><br><span class="line">          v bel etx   t ack   &gt;  bs   &#125;   h etb soh   &gt; enq   |   4   A</span><br><span class="line">0000240    aabb    cd55    5a13    7252    813d    55fb    75aa    8337</span><br><span class="line">……………………</span><br></pre></td></tr></table></figure>
+<h3 id="BootLoader-阶段"><a href="#BootLoader-阶段" class="headerlink" title="BootLoader 阶段"></a>BootLoader 阶段</h3><p>主引导记录加载完 Bootloader（主要为GRUB）到 RAM 中之后，GRUB 会根据需求显示一个可用的内核列表（定义在/etc/grub.conf，以及/etc/grub/menu.lst和/etc/grub.conf的软连接）。根据 GRUB 的配置加载默认内核镜像和 initrd 镜像到内存中，当所有镜像准备好后，即跳转到内核镜像。</p>
+<h3 id="kernel-阶段"><a href="#kernel-阶段" class="headerlink" title="kernel 阶段"></a>kernel 阶段</h3><p>BootLoader 阶段完成之后内核镜像加载到内存中，系统的控制权就交给内核镜像，由此内核阶段开始了。内核镜像不是一个可以执行的内核，而是一个被压缩的内核镜像 （zImage 或 bzImage）。在内核镜像的头部有一个小型程序 routine ，其做少量的硬件设置，然后自解压压缩的内核镜像并放到高端内存。如果存在初始磁盘镜像（initrd），routine 将拷贝 initrd 以供稍后安装使用，然后 routine 将调用内核开始内核启动。</p>
+<blockquote>
+<p>在内核引导过程中，初始 RAM 磁盘（initrd）是由 BootLoader 加载到内存中的，它会被复制到 RAM 中并挂载到系统上。这个 initrd 作为 RAM 中的临时根文件系统使用，并允许内核在没有挂载任何物理磁盘的情况下完整地实现引导。由于与外围设备进行交互所需要的模块可是 initrd 的一部分，因此内核可以非常小，但是仍然支持大量可能的硬件配置。在内核启动后，就可以正式装备根文件系统了（通过 pivot_root），此时会将 initrd 根文件系统卸载掉，并挂载真正的根文件系统。<br>initrd 函数让我们可以创建一个小型的 Linux 内核，其中包括作为可加载模块编译的驱动程序。这些可加载的模块为内核提供了访问磁盘和磁盘上的文件系统的方法，并为其他硬件提供了驱动程序。由于根文件系统是磁盘上的一个文件系统，因此 initrd 函数会提供一种启动方法来获得对磁盘的访问，并挂载真正的根文件系统。在没有硬盘的嵌入式目标中，initrd 可以是最终的根文件系统，或者也可以通过网络文件系统（NFS）来挂载最终的根文件系统。</p>
+</blockquote>
+<p>可以使用 dmesg 来查看从加载内核后的流程，下一篇博客会写从 dmesg 日志分析 Linux 内核启动流程（挖坑</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">╭─root@blog /home/ubuntu</span><br><span class="line">╰─# dmesg</span><br><span class="line">[    0.000000] Linux version 5.0.0-1031-gcp (buildd@lcy01-amd64-020) (gcc version 7.4.0 (Ubuntu 7.4.0-1ubuntu1~18.04.1)) #32-Ubuntu SMP Tue Feb 11 03:55:48 UTC 2020 (Ubuntu 5.0.0-1031.32-gcp 5.0.21)</span><br><span class="line">[    0.000000] Command line: BOOT_IMAGE=/boot/vmlinuz-5.0.0-1031-gcp root=PARTUUID=9b22aacc-c8b9-497a-9583-a20c1be968c4 ro scsi_mod.use_blk_mq=Y console=ttyS0</span><br><span class="line">[    0.000000] KERNEL supported cpus:</span><br><span class="line">[    0.000000]   Intel GenuineIntel</span><br><span class="line">[    0.000000]   AMD AuthenticAMD</span><br><span class="line">[    0.000000]   Hygon HygonGenuine</span><br><span class="line">[    0.000000]   Centaur CentaurHauls</span><br><span class="line">……………………………………………………………………………………………………</span><br><span class="line">[    2.486896] Write protecting the kernel read-only data: 22528k</span><br><span class="line">[    2.489395] Freeing unused kernel image memory: 2016K</span><br><span class="line">[    2.490937] Freeing unused kernel image memory: 1708K</span><br><span class="line">[    2.500867] x86/mm: Checked W+X mappings: passed, no W+X pages found.</span><br><span class="line">[    2.503126] x86/mm: Checking user space page tables</span><br><span class="line">[    2.513767] x86/mm: Checked W+X mappings: passed, no W+X pages found.</span><br><span class="line">[    2.516258] Run /sbin/init as init process</span><br><span class="line">[    3.992535] systemd[1]: systemd 237 running in system mode. (+PAM +AUDIT +SELINUX +IMA +APPARMOR +SMACK +SYSVINIT +UTMP +LIBCRYPTSETUP +GCRYPT +GNUTLS +ACL +XZ +LZ4 +SECCOMP +BLKID +ELFUTILS +KMOD -IDN2 +IDN -PCRE2 default-hierarchy=hybrid)</span><br><span class="line">[    4.002297] systemd[1]: Detected virtualization kvm.</span><br><span class="line">[    4.004593] systemd[1]: Detected architecture x86-64.</span><br><span class="line">[    4.031531] systemd[1]: Set hostname to &lt;blog&gt;.</span><br><span class="line">[    5.343604] systemd[1]: Reached target Swap.</span><br><span class="line">[    5.355156] systemd[1]: Started Dispatch Password Requests to Console Directory Watch.</span><br><span class="line">[    5.367360] systemd[1]: Created slice User and Session Slice.</span><br><span class="line">[    5.379321] systemd[1]: Set up automount Arbitrary Executable File Formats File System Automount Point.</span><br><span class="line">[    5.395189] systemd[1]: Started Forward Password Requests to Wall Directory Watch.</span><br><span class="line">[    5.411078] systemd[1]: Reached target Local Encrypted Volumes.</span><br><span class="line">[    5.644759] EXT4-fs (sda1): re-mounted. Opts: (null)</span><br><span class="line">[   11.663490] bpfilter: Loaded bpfilter_umh pid 456</span><br></pre></td></tr></table></figure>
+<h3 id="init-初始化阶段"><a href="#init-初始化阶段" class="headerlink" title="init 初始化阶段"></a>init 初始化阶段</h3><p>一旦内核自解压完成，启动并初始化后，内核启动第一个<strong>用户空间应用程序</strong>，即 systemd 进程（其是老式 System V 系统的 init 程序的替代品)，并系统的转移控制权到 systemd。这是调用的第一个使用标准 C 库编译的程序，在此进程之前，还没有执行任何标准的 C 应用程序。至此整个系统引导过程的结束，kernel和 systemd 处于运行状态，接下来就由 systemd 来启动各项程序。</p>
+<p>从 dmesg 的输出日志我们可以看到，直到 2.516258 秒才开始执行 <code>/sbin/init</code> 命令，而对于采用 systemd 的发行版来说，<code>/sbin/init</code> 是指向 <code>/sbin/init -&gt; /lib/systemd/systemd</code> 的链接文件，实际上就是在启动 systemd 😂</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[    2.516258] Run /sbin/init as init process</span><br><span class="line">[    3.992535] systemd[1]: systemd 237 running in system mode. (+PAM +AUDIT +SELINUX +IMA +APPARMOR +SMACK +SYSVINIT +UTMP +LIBCRYPTSETUP +GCRYPT +GNUTLS +ACL +XZ +LZ4 +SECCOMP +BLKID +ELFUTILS +KMOD -IDN2 +IDN -PCRE2 default-hierarchy=hybrid)</span><br></pre></td></tr></table></figure>
+<h2 id="主角-systemd"><a href="#主角-systemd" class="headerlink" title="主角 systemd"></a>主角 systemd</h2><p>为什么文章题名为 <strong>Linux 的小伙伴 systemd</strong> 呐，其实广义上来讲 Linux 是众多 Linux 系统发行版的集合，但严格来讲 Linux 仅仅是一个 OS 的 kernel 而已，仅仅有一个内核是无法组成一个系统的，所以 Linux kernel 还需要他的几个兄弟比如 GNU 、 systemd 、X Window 、GNOME 、 KDE 、Xfce 等等其他用户层面的程序来构建出一套完整的操作系统出来。</p>
+<p>还有如果你要是当着自由软件基金会主席 RMS <a href="https://zh.wikipedia.org/wiki/%E7%90%86%E6%9F%A5%E5%BE%B7%C2%B7%E6%96%AF%E6%89%98%E6%9B%BC" target="_blank" rel="noopener">理查德·斯托曼</a> 说 Linux 的话，他会给你发火哦，你要说 GNU/Linux 才行😂。</p>
+<p>将 Debian 哲学与方法论，GNU 工具集、Linux 内核，以及其他重要的自由软件结合在一起所构成的独特的软件发行版称为 Debian GNU/Linux。当你将 Debian 的安装镜像刻录到 U 盘之后显示的名称就是 <code>Debian GNU/Linux</code> 。关于 GNU 和 Linux 的故事可以去看一哈 <a href="https://zh.wikipedia.org/zh-cn/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E9%9D%A9%E5%91%BD" target="_blank" rel="noopener">操作系统革命</a> 纪录片，以及 RMS 的自传《若为自由故：自由软件之父理查德·斯托曼传》以及 Linus 的自传《只是为了好玩儿》。</p>
+<h3 id="systemd-简介"><a href="#systemd-简介" class="headerlink" title="systemd 简介"></a>systemd 简介</h3><p>讲完了 Linux 系统启动的流程，接下来就到了本文的主角 <code>systemd</code> 上场啦。剽窃一段 archlinux.org 上的文档来介绍一下 systemd 。（archlinux 的文档是做的最好的哦！</p>
+<blockquote>
+<p><em>systemd</em> 是一个 Linux 系统基础组件的集合，提供了一个系统和服务管理器，运行为 PID 1 并负责启动其它程序。功能包括：</p>
+<ul>
+<li>支持并行化任务；</li>
+<li>同时采用 socket 式与 <a href="https://wiki.archlinux.org/index.php/D-Bus_(简体中文)" target="_blank" rel="noopener">D-Bus</a> 总线式激活服务；</li>
+<li>按需启动守护进程（daemon）；</li>
+<li>利用 Linux 的 <a href="https://wiki.archlinux.org/index.php/Cgroups" target="_blank" rel="noopener">cgroups</a> 监视进程； # 本文开篇讲到的 systemctl 显示 CPU 和  Mem 信息就是基于此哦。</li>
+<li>支持快照和系统恢复；</li>
+<li>维护挂载点和自动挂载点；</li>
+<li>各服务间基于依赖关系进行精密控制。</li>
+<li>systemd* 支持 SysV 和 LSB 初始脚本，可以替代 sysvinit。</li>
+<li>除此之外，功能还包括日志进程、控制基础系统配置，维护登陆用户列表以及系统账户、运行时目录和设置，可以运行容器和虚拟机，可以简单的管理网络配置、网络时间同步、日志转发和名称解析等。</li>
+</ul>
+</blockquote>
+<p>还有一段摘自 <a href="https://systemd.io/" target="_blank" rel="noopener">systemd.io</a></p>
+<blockquote>
+<p>systemd is a suite of basic building blocks for a Linux system. It provides a system and service manager that runs as PID 1 and starts the rest of the system.</p>
+<p>systemd provides aggressive parallelization capabilities, uses socket and D-Bus activation for starting services, offers on-demand starting of daemons, keeps track of processes using Linux control groups, maintains mount and automount points, and implements an elaborate transactional dependency-based service control logic. systemd supports SysV and LSB init scripts and works as a replacement for sysvinit.</p>
+<p>Other parts include a logging daemon, utilities to control basic system configuration like the hostname, date, locale, maintain a list of logged-in users and running containers and virtual machines, system accounts, runtime directories and settings, and daemons to manage simple network configuration, network time synchronization, log forwarding, and name resolution.</p>
+</blockquote>
+<h3 id="systemd-设计目标"><a href="#systemd-设计目标" class="headerlink" title="systemd 设计目标"></a>systemd 设计目标</h3><ul>
+<li>改进效能。使用二进制代码替换松散的SYSV启动脚本，减少频繁的进程创建，库加载，内核/用户切换。</li>
+<li>利用 Dbus 进程间通讯与 socket 激活机制，解决任务启动时的依赖问题，实现启动并行化。</li>
+<li>实现任务（daemons）的精确控制。使用内核的 cgroup 机制，不依赖 pid 来追踪进程，即使是两次 fork之后生成的守护进程也不会脱离 systemd 的控制。</li>
+<li>统一任务定义。用户不需要自行编写 shell 脚本，而仅依据 systemd 制定的 unit 规则。</li>
+</ul>
+<h3 id="systemd-体系架构"><a href="#systemd-体系架构" class="headerlink" title="systemd 体系架构"></a>systemd 体系架构</h3><p><img src="https://cdn.jsdelivr.net/gh/muzi502/blog/source/img/systemd_components-svg.png" alt="img"></p>
+<ul>
+<li>最底层：systemd 内核层面依赖 cgroup、autofs、kdbus</li>
+<li>第二层：systemd libraries 是 systemd 依赖库</li>
+<li>第三层：systemd Core 是 systemd 自己的库</li>
+<li>第四层：systemd daemons 以及 targets 是自带的一些基本 unit、target，类似于 sysvinit 中自带的脚本</li>
+<li>最上层就是和  systemd 交互的一些工具</li>
+</ul>
+<p><img src="https://cdn.jsdelivr.net/gh/muzi502/blog/source/img/linux_kernel_unified_hierarchy_cgroups_and_systemd-svg.png" alt="img"></p>
+<h3 id="systemd-unit"><a href="#systemd-unit" class="headerlink" title="systemd unit"></a>systemd unit</h3><p>systemd 将各种系统启动和运行相关的对象， 表示为各种不同类型的单元<code>(unit)</code>， 并提供了 处理不同单元之间依赖关系的能力。</p>
+<table>
+<thead>
+<tr>
+<th align="center">type</th>
+<th align="center">name</th>
+<th align="left">作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">Service unit</td>
+<td align="center">.service</td>
+<td align="left">用于封装一个后台服务进程</td>
+</tr>
+<tr>
+<td align="center">Target unit</td>
+<td align="center">.target</td>
+<td align="left">用于将多个单元在逻辑上组合在一起。</td>
+</tr>
+<tr>
+<td align="center">Device unit</td>
+<td align="center">.device</td>
+<td align="left">用于定义内核识别的设备，在 sysfs(5) 里面作为 udev(7) 设备树展示</td>
+</tr>
+<tr>
+<td align="center">Socket unit</td>
+<td align="center">.socket</td>
+<td align="left">用于标识进程间通信用到的socket文件</td>
+</tr>
+<tr>
+<td align="center">Snapshot unit</td>
+<td align="center">.snapshot</td>
+<td align="left">管理系统快照</td>
+</tr>
+<tr>
+<td align="center">Swap unit</td>
+<td align="center">.swap</td>
+<td align="left">用于标识swap 文件或设备</td>
+</tr>
+<tr>
+<td align="center">Mount unit</td>
+<td align="center">.mount</td>
+<td align="left">用于封装一个文件系统挂载点(也向后兼容传统的 /etc/fstab 文件)</td>
+</tr>
+<tr>
+<td align="center">Automount unit</td>
+<td align="center">.automount</td>
+<td align="left">用于封装一个文件系统自动挂载点</td>
+</tr>
+<tr>
+<td align="center">Path unit</td>
+<td align="center">.path</td>
+<td align="left">用于根据文件系统上特定对象的变化来启动其他服务。</td>
+</tr>
+<tr>
+<td align="center">Time unit</td>
+<td align="center">.timer</td>
+<td align="left">用于封装一个基于时间触发的动作。取代传统的 crond 等任务计划服务</td>
+</tr>
+<tr>
+<td align="center">Slice unit</td>
+<td align="center">*.slice</td>
+<td align="left">用于控制特定 CGroup 内所有进程的总体资源占用。</td>
+</tr>
+</tbody></table>
+<p>需要注意的是 systemd 只在内存中加载最小化的一组单元。 只有至少满足下列条件之一的单元，才会被加载到内存中：</p>
+<ul>
+<li><p>处于 活动(active)、启动中(activating)、停止中(deactivating)、失败(failed) 状态之一(也就是停止(inactive)之外的状态)</p>
+</li>
+<li><p>至少有一个作业正在作业队列中</p>
+</li>
+<li><p>至少有一个其他已经加载到内存中的单元依赖于它</p>
+</li>
+<li><p>仍然占有某些资源 (例如一个已停止的服务单元的进程忽略了终止请求，仍在逗留)</p>
+</li>
+<li><p>被 D-Bus 调用以程序化的方式固定到了内存中</p>
+</li>
+</ul>
+<blockquote>
+<p>只要有需要，systemd 就会自动从磁盘加载所需的单元。 因此实际上用户并不能显而易见的看到某个单元是否已被加载到内存。 使用 <strong>systemctl list-units –all</strong> 命令可以显示当前已加载到内存中的所有单元。 不满足加载条件(见上文)的单元会被立即从内存中卸载，并且它的记帐数据(accounting data)也会被清空。 不过，因为每当一个单元关闭时，都会生成一条日志记录声明该单元所消耗的资源， 所以这些数据通常不会彻底消失。</p>
+</blockquote>
+<h3 id="systemd-unit-配置文件"><a href="#systemd-unit-配置文件" class="headerlink" title="systemd unit 配置文件"></a>systemd unit 配置文件</h3><ul>
+<li>在 CentOS/RedHat 发行版中 <code>man systemd.unit</code></li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">Table 1.  Load path when running in system mode (--system).</span><br><span class="line">┌────────────────────────┬─────────────────────────────┐</span><br><span class="line">│Path                    │ Description                 │</span><br><span class="line">├────────────────────────┼─────────────────────────────┤</span><br><span class="line">│&#x2F;etc&#x2F;systemd&#x2F;system     │ Local configuration         │</span><br><span class="line">├────────────────────────┼─────────────────────────────┤</span><br><span class="line">│&#x2F;run&#x2F;systemd&#x2F;system     │ Runtime units               │</span><br><span class="line">├────────────────────────┼─────────────────────────────┤</span><br><span class="line">│&#x2F;usr&#x2F;lib&#x2F;systemd&#x2F;system │ Units of installed packages │</span><br><span class="line">└────────────────────────┴─────────────────────────────┘</span><br></pre></td></tr></table></figure>
+<ul>
+<li>在 Ubuntu/Debian 发行版中 <code>man systemd.unit</code></li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">Table 1.  Load path when running in system mode (--system).</span><br><span class="line">┌────────────────────┬─────────────────────────────┐</span><br><span class="line">│Path                │ Description                 │</span><br><span class="line">├────────────────────┼─────────────────────────────┤</span><br><span class="line">│&#x2F;etc&#x2F;systemd&#x2F;system │ Local configuration         │</span><br><span class="line">├────────────────────┼─────────────────────────────┤</span><br><span class="line">│&#x2F;run&#x2F;systemd&#x2F;system │ Runtime units               │</span><br><span class="line">├────────────────────┼─────────────────────────────┤</span><br><span class="line">│&#x2F;lib&#x2F;systemd&#x2F;system │ Units of installed packages │</span><br><span class="line">└────────────────────┴─────────────────────────────┘</span><br></pre></td></tr></table></figure>
+<p>不同的发行版 systemd unit 的 path 不一样哦，不过 systemd 的配置文件主要位于以下三个目录中</p>
+<ul>
+<li><p><code>/usr/lib/systemd/system</code> 或 <code>/lib/systemd</code> : 使用包管理器安装的软件的 systemd unit 件实际配置文件的存放位置</p>
+</li>
+<li><p><code>/run/systemd/system</code>：在运行时创建的s ystemd unit 文件。该目录优先于已安装服务单元文件的目录。</p>
+<p>  <code>/etc/systemd/system</code>:  优先级最高，由 systemctl 命令创建的 systemd unit 文件以及为扩展服务而添加的 unit 文件都将启用。</p>
+</li>
+</ul>
+<p>在是使用 yum/apt 或其他包管理器，以及 rpm/deb 等软件包安装软件的时候，如果改软件支持 systemd 管理的话，就会自动在<code>/usr/lib/systemd/system</code>目录添加一个配置文件。可以用过  systemctl cat name 来查看该软件的  systemd 单元文件，比如查看一下 nginx 的 <code>nginx.service</code> 文件</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">╭─root@sg-02 ~</span><br><span class="line">╰─# systemctl cat nginx                                                                                         1 ↵</span><br><span class="line"><span class="meta">#</span><span class="bash"> /lib/systemd/system/nginx.service</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> Stop dance <span class="keyword">for</span> nginx</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> =======================</span></span><br><span class="line"><span class="meta">#</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> ExecStop sends SIGSTOP (graceful stop) to the nginx process.</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> If, after 5s (--retry QUIT/5) nginx is still running, systemd takes control</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> and sends SIGTERM (fast shutdown) to the main process.</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> After another 5s (TimeoutStopSec=5), and <span class="keyword">if</span> nginx is alive, systemd sends</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> SIGKILL to all the remaining processes <span class="keyword">in</span> the process group (KillMode=mixed).</span></span><br><span class="line"><span class="meta">#</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> nginx signals reference doc:</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> http://nginx.org/en/docs/control.html</span></span><br><span class="line"><span class="meta">#</span></span><br><span class="line">[Unit]</span><br><span class="line">Description=A high performance web server and a reverse proxy server</span><br><span class="line">Documentation=man:nginx(8)</span><br><span class="line">After=network.target</span><br><span class="line"></span><br><span class="line">[Service]</span><br><span class="line">Type=forking</span><br><span class="line">PIDFile=/run/nginx.pid</span><br><span class="line">ExecStartPre=/usr/sbin/nginx -t -q -g 'daemon on; master_process on;'</span><br><span class="line">ExecStart=/usr/sbin/nginx -g 'daemon on; master_process on;'</span><br><span class="line">ExecReload=/usr/sbin/nginx -g 'daemon on; master_process on;' -s reload</span><br><span class="line">ExecStop=-/sbin/start-stop-daemon --quiet --stop --retry QUIT/5 --pidfile /run/nginx.pid</span><br><span class="line">TimeoutStopSec=5</span><br><span class="line">KillMode=mixed</span><br><span class="line"></span><br><span class="line">[Install]</span><br></pre></td></tr></table></figure>
+<p>如果软件没有自带 systemd 配置文件的话，我们可以自己搓一个配置文件出来，并复制到相应的目录下即可。比我我们的 <a href="https://github.com/webp-sh/webp_server_go" target="_blank" rel="noopener">Webp Server Go</a> 的 <code>webps.service</code></p>
+<figure class="highlight ini"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="section">[Unit]</span></span><br><span class="line"><span class="attr">Description</span>=WebP Server Go</span><br><span class="line"><span class="attr">Documentation</span>=https://github.com/webp-sh/webp_server_go</span><br><span class="line"><span class="attr">After</span>=nginx.target</span><br><span class="line"></span><br><span class="line"><span class="section">[Service]</span></span><br><span class="line"><span class="attr">Type</span>=simple</span><br><span class="line"><span class="attr">StandardError</span>=journal</span><br><span class="line"><span class="attr">WorkingDirectory</span>=/opt/webps</span><br><span class="line"><span class="attr">ExecStart</span>=/opt/webps/webp-server --config /opt/webps/config.json</span><br><span class="line"><span class="attr">Restart</span>=always</span><br><span class="line"><span class="attr">RestartSec</span>=<span class="number">3</span>s</span><br><span class="line"></span><br><span class="line"><span class="section">[Install]</span></span><br><span class="line"><span class="attr">WantedBy</span>=multi-user.target</span><br></pre></td></tr></table></figure>
+<p>关于 systemd 的单元配置文件如何书写，因为根据不同的单元类型包含的配置项实在是巨多。不是三言两语就能讲清的，所以大家还是参考一下 systemd 的官方文档/社区翻译文档。比如 <a href="http://www.jinbuguo.com/systemd/systemd.index.html" target="_blank" rel="noopener">systemd (简体中文)</a>。</p>
+<h3 id="链接文件"><a href="#链接文件" class="headerlink" title="链接文件"></a>链接文件</h3><p>当我们使用 reboot 、poweroff 、shutdown 等命令的时候，其实并不是执行该命令本身，背后是调用的 systemctl 命令。systemctl 命令会将 reboot 这些命令作为 $1 参数传递进去。所以执行 reboot 和 systemctl reboot 本质上是一样的。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">╭─root@gitlab /sbin</span><br><span class="line">╰─# ls -alh /usr/bin /sbin /bin /usr/local/bin  | grep systemctl</span><br><span class="line">-rwxr-xr-x  1 root root 179K Feb  5 01:07 systemctl</span><br><span class="line">lrwxrwxrwx  1 root root      14 Feb  5 01:07 halt -&gt; /bin/systemctl</span><br><span class="line">lrwxrwxrwx  1 root root      14 Feb  5 01:07 poweroff -&gt; /bin/systemctl</span><br><span class="line">lrwxrwxrwx  1 root root      14 Feb  5 01:07 reboot -&gt; /bin/systemctl</span><br><span class="line">lrwxrwxrwx  1 root root      14 Feb  5 01:07 runlevel -&gt; /bin/systemctl</span><br><span class="line">lrwxrwxrwx  1 root root      14 Feb  5 01:07 shutdown -&gt; /bin/systemctl</span><br><span class="line">lrwxrwxrwx  1 root root      14 Feb  5 01:07 telinit -&gt; /bin/systemctl</span><br></pre></td></tr></table></figure>
+<p>还有前文提到的有一点就是绝大多数使用 systemd 的发行版都设置了一个软连接，由 <code>/sbin/init -&gt; /lib/systemd/systemd</code>。另外在 <code>/etc/systemd</code> 下也有很多链接文件，感兴趣的可以去分析一下。</p>
+<h3 id="systemd-启动流程"><a href="#systemd-启动流程" class="headerlink" title="systemd 启动流程"></a>systemd 启动流程</h3><p>回到 Linux 启动流程，当内核加载到内存中后开始执行 systemd 。根据 dmesg 的日志我们可以了解到 systemd 启动后执行了哪一些操作。</p>
+<figure class="highlight verilog"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">[    <span class="number">2</span><span class="variable">.516258</span>] Run /sbin/init as init process</span><br><span class="line">[    <span class="number">3</span><span class="variable">.992535</span>] systemd[<span class="number">1</span>]: systemd <span class="number">237</span> running in system mode. (+PAM +AUDIT +SELINUX +IMA +APPARMOR +SMACK +SYSVINIT +UTMP +LIBCRYPTSETUP +GCRYPT +GNUTLS +ACL +XZ +LZ4 +SECCOMP +BLKID +ELFUTILS +KMOD -IDN2 +IDN -PCRE2 <span class="keyword">default</span>-hierarchy=hybrid)</span><br><span class="line">[    <span class="number">4</span><span class="variable">.002297</span>] systemd[<span class="number">1</span>]: Detected virtualization kvm.</span><br><span class="line">[    <span class="number">4</span><span class="variable">.004593</span>] systemd[<span class="number">1</span>]: Detected architecture x86-<span class="number">64</span>.</span><br><span class="line">[    <span class="number">4</span><span class="variable">.031531</span>] systemd[<span class="number">1</span>]: Set hostname to &lt;blog&gt;.</span><br><span class="line">[    <span class="number">5</span><span class="variable">.343604</span>] systemd[<span class="number">1</span>]: Reached target Swap.</span><br><span class="line">[    <span class="number">5</span><span class="variable">.355156</span>] systemd[<span class="number">1</span>]: Started Dispatch Password Requests to Console Directory Watch.</span><br><span class="line">[    <span class="number">5</span><span class="variable">.367360</span>] systemd[<span class="number">1</span>]: Created slice User <span class="keyword">and</span> Session Slice.</span><br><span class="line">[    <span class="number">5</span><span class="variable">.379321</span>] systemd[<span class="number">1</span>]: Set up automount Arbitrary Executable File Formats File System Automount Point.</span><br><span class="line">[    <span class="number">5</span><span class="variable">.395189</span>] systemd[<span class="number">1</span>]: Started Forward Password Requests to Wall Directory Watch.</span><br><span class="line">[    <span class="number">5</span><span class="variable">.411078</span>] systemd[<span class="number">1</span>]: Reached target Local Encrypted Volumes.</span><br><span class="line">[    <span class="number">5</span><span class="variable">.644759</span>] EXT4-fs (sda1): re-mounted. Opts: (<span class="literal">null</span>)</span><br><span class="line">[    <span class="number">5</span><span class="variable">.702603</span>] RPC: Registered named UNIX socket transport <span class="keyword">module</span>.</span><br><span class="line">[    <span class="number">5</span><span class="variable">.704115</span>] RPC: Registered udp transport <span class="keyword">module</span>.</span><br><span class="line">[    <span class="number">5</span><span class="variable">.705318</span>] RPC: Registered tcp transport <span class="keyword">module</span>.</span><br><span class="line">[    <span class="number">5</span><span class="variable">.706573</span>] RPC: Registered tcp NFSv4<span class="variable">.1</span> backchannel transport <span class="keyword">module</span>.</span><br><span class="line">[    <span class="number">5</span><span class="variable">.825727</span>] Loading iSCSI transport <span class="keyword">class</span> v2<span class="variable">.0</span>-<span class="number">870</span>.</span><br><span class="line">[    <span class="number">5</span><span class="variable">.912079</span>] iscsi: registered transport (tcp)</span><br><span class="line">[    <span class="number">5</span><span class="variable">.942499</span>] systemd-journald[<span class="number">196</span>]: Received request to flush runtime journal from PID <span class="number">1</span></span><br><span class="line">[    <span class="number">5</span><span class="variable">.973269</span>] systemd-journald[<span class="number">196</span>]: File /<span class="keyword">var</span>/log/journal/<span class="number">7</span>bc72ce3e0aa559e38159aa4fa0547f9/system<span class="variable">.journal</span> corrupted <span class="keyword">or</span> uncleanly shut down, renaming <span class="keyword">and</span> replacing.</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>下面的图表解释了 这些具有特定含义的 target 单元之间的依赖关系 以及各自在启动流程中的位置。图中的箭头表示了单元之间的依赖关系与先后顺序， 整个图表按照自上而下的时间顺序执行。</p>
+</blockquote>
+<figure class="highlight verilog"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">local</span>-fs-pre<span class="variable">.target</span></span><br><span class="line">            |</span><br><span class="line">            v</span><br><span class="line">   (various mounts <span class="keyword">and</span>   (various swap   (various cryptsetup</span><br><span class="line">    fsck services...)     devices...)        devices...)       (various low-level   (various low-level</span><br><span class="line">            |                  |                  |             services: udevd,     API VFS mounts:</span><br><span class="line">            v                  v                  v             tmpfiles, random     mqueue, configfs,</span><br><span class="line">     <span class="keyword">local</span>-fs<span class="variable">.target</span>      swap<span class="variable">.target</span>     cryptsetup<span class="variable">.target</span>    seed, sysctl, ...)      debugfs, ...)</span><br><span class="line">            |                  |                  |                    |                    |</span><br><span class="line">            \<span class="number">__________________</span>|<span class="number">_________________</span> | <span class="meta">`_______________` |____________________/</span></span><br><span class="line">                                                 \|/</span><br><span class="line">                                                  v</span><br><span class="line">                                           sysinit<span class="variable">.target</span></span><br><span class="line">                                                  |</span><br><span class="line">             <span class="meta">`________________________________` /|\________________________________________</span></span><br><span class="line">            /                  |                  |                    |                    \</span><br><span class="line">            |                  |                  |                    |                    |</span><br><span class="line">            v                  v                  |                    v                    v</span><br><span class="line">        (various           (various               |                (various          rescue<span class="variable">.service</span></span><br><span class="line">       timers...)          paths...)              |               sockets...)               |</span><br><span class="line">            |                  |                  |                    |                    v</span><br><span class="line">            v                  v                  |                    v             *rescue<span class="variable">.target</span></span><br><span class="line">      timers<span class="variable">.target</span>      paths<span class="variable">.target</span>             |             sockets<span class="variable">.target</span></span><br><span class="line">            |                  |                  |                    |</span><br><span class="line">            v                  \<span class="number">_________________</span> | <span class="meta">`_______________` /</span></span><br><span class="line">                                                 \|/</span><br><span class="line">                                                  v</span><br><span class="line">                                            basic<span class="variable">.target</span></span><br><span class="line">                                                  |</span><br><span class="line">             <span class="meta">`________________________________` /|                                 emergency.service</span></span><br><span class="line">            /                  |                  |                                         |</span><br><span class="line">            |                  |                  |                                         v</span><br><span class="line">            v                  v                  v                                *emergency<span class="variable">.target</span></span><br><span class="line">        display-        (various system    (various system</span><br><span class="line">    manager<span class="variable">.service</span>         services           services)</span><br><span class="line">            |             required <span class="keyword">for</span>            |</span><br><span class="line">            |            graphical UIs)           v</span><br><span class="line">            |                  |          *multi-user<span class="variable">.target</span></span><br><span class="line">            |                  |                  |</span><br><span class="line">            \<span class="number">_________________</span> | <span class="meta">`_____________` /</span></span><br><span class="line">                              \|/</span><br><span class="line">                               v</span><br><span class="line">                  *graphical<span class="variable">.target</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>systemd 执行的第一个目标是 <strong>default.target</strong>。但实际上 default.target 是指向 <strong>graphical.target</strong> 的软链接。Graphical.target 的实际位置是<code>/usr/lib/systemd/system/graphical.target</code>。</li>
+</ul>
+<figure class="highlight ini"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">╭─root@ ~</span><br><span class="line">╰─# cat /usr/lib/systemd/system/graphical.target</span><br><span class="line"><span class="comment">#  This file is part of systemd.</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment">#  systemd is free software; you can redistribute it and/or modify it</span></span><br><span class="line"><span class="comment">#  under the terms of the GNU Lesser General Public License as published by</span></span><br><span class="line"><span class="comment">#  the Free Software Foundation; either version 2.1 of the License, or</span></span><br><span class="line"><span class="comment">#  (at your option) any later version.</span></span><br><span class="line"></span><br><span class="line"><span class="section">[Unit]</span></span><br><span class="line"><span class="attr">Description</span>=Graphical Interface</span><br><span class="line"><span class="attr">Documentation</span>=man:systemd.special(<span class="number">7</span>)</span><br><span class="line"><span class="attr">Requires</span>=multi-user.target</span><br><span class="line"><span class="attr">Wants</span>=display-manager.service</span><br><span class="line"><span class="attr">Conflicts</span>=rescue.service rescue.target</span><br><span class="line"><span class="attr">After</span>=multi-user.target rescue.service rescue.target display-manager.service</span><br><span class="line"><span class="attr">AllowIsolate</span>=<span class="literal">yes</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>在<strong>default.target</strong>这个阶段，会启动<strong>multi-user.target</strong>而这个 target 将自己的子单元放在目录<code>/etc/systemd/system/multi-user.target.wants</code>里。这个 target 为多用户支持设定系统环境。非 root用户会在这个阶段的引导过程中启用。防火墙相关的服务也会在这个阶段启动。<strong>multi-user.target</strong>会将控制权交给另一层<strong>basic.target</strong>。</li>
+</ul>
+<figure class="highlight ini"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">╭─root@docker-230 ~</span><br><span class="line">╰─# cat /usr/lib/systemd/system/multi-user.target</span><br><span class="line"><span class="comment">#  This file is part of systemd.</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment">#  systemd is free software; you can redistribute it and/or modify it</span></span><br><span class="line"><span class="comment">#  under the terms of the GNU Lesser General Public License as published by</span></span><br><span class="line"><span class="comment">#  the Free Software Foundation; either version 2.1 of the License, or</span></span><br><span class="line"><span class="comment">#  (at your option) any later version.</span></span><br><span class="line"></span><br><span class="line"><span class="section">[Unit]</span></span><br><span class="line"><span class="attr">Description</span>=Multi-User System</span><br><span class="line"><span class="attr">Documentation</span>=man:systemd.special(<span class="number">7</span>)</span><br><span class="line"><span class="attr">Requires</span>=basic.target</span><br><span class="line"><span class="attr">Conflicts</span>=rescue.service rescue.target</span><br><span class="line"><span class="attr">After</span>=basic.target rescue.service rescue.target</span><br><span class="line"><span class="attr">AllowIsolate</span>=<span class="literal">yes</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li><strong>basic.target</strong>单元用于启动普通服务特别是图形管理服务。它通过<code>/etc/systemd/system/basic.target.wants</code>目录来决定哪些服务会被启动，<strong>basic.target</strong> 之后将控制权交给 <strong>sysinit.target</strong>.</li>
+</ul>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">╭─root@docker-230 ~</span><br><span class="line">╰─# tree /etc/systemd/system/multi-user.target.wants</span><br><span class="line">/etc/systemd/system/multi-user.target.wants</span><br><span class="line">├── auditd.service -&gt; /usr/lib/systemd/system/auditd.service</span><br><span class="line">├── chronyd.service -&gt; /usr/lib/systemd/system/chronyd.service</span><br><span class="line">├── crond.service -&gt; /usr/lib/systemd/system/crond.service</span><br><span class="line">├── docker.service -&gt; /usr/lib/systemd/system/docker.service</span><br><span class="line">├── firewalld.service -&gt; /usr/lib/systemd/system/firewalld.service</span><br><span class="line">├── gitlab-runsvdir.service -&gt; /usr/lib/systemd/system/gitlab-runsvdir.service</span><br><span class="line">├── irqbalance.service -&gt; /usr/lib/systemd/system/irqbalance.service</span><br><span class="line">├── kdump.service -&gt; /usr/lib/systemd/system/kdump.service</span><br><span class="line">├── NetworkManager.service -&gt; /usr/lib/systemd/system/NetworkManager.service</span><br><span class="line">├── remote-fs.target -&gt; /usr/lib/systemd/system/remote-fs.target</span><br><span class="line">├── rhel-configure.service -&gt; /usr/lib/systemd/system/rhel-configure.service</span><br><span class="line">├── rsyslog.service -&gt; /usr/lib/systemd/system/rsyslog.service</span><br><span class="line">├── sshd.service -&gt; /usr/lib/systemd/system/sshd.service</span><br><span class="line">└── tuned.service -&gt; /usr/lib/systemd/system/tuned.service</span><br></pre></td></tr></table></figure>
+<ul>
+<li><strong>sysinit.target</strong>会启动重要的系统服务例如系统挂载，内存交换空间和设备，内核补充选项等等。sysinit.target 在启动过程中会传递给<strong>local-fs.target</strong>。</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">╭─root@docker-230 ~</span><br><span class="line">╰─<span class="comment"># tree /etc/systemd/system/basic.target.wants</span></span><br><span class="line">/etc/systemd/system/basic.target.wants</span><br><span class="line">├── microcode.service -&gt; /usr/lib/systemd/system/microcode.service</span><br><span class="line">└── rhel-dmesg.service -&gt; /usr/lib/systemd/system/rhel-dmesg.service</span><br><span class="line"></span><br><span class="line">0 directories, 2 files</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>local-fs.target</code>，这个 target 单元不会启动用户相关的服务，它只处理底层核心服务。这个 target 会根据 /etc/fstab 和 /etc/inittab 来执行相关操作。</li>
+</ul>
+<figure class="highlight ini"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">╭─root@docker-230 ~</span><br><span class="line">╰─# cat /usr/lib/systemd/system/sysinit.target</span><br><span class="line"><span class="comment">#  This file is part of systemd.</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment">#  systemd is free software; you can redistribute it and/or modify it</span></span><br><span class="line"><span class="comment">#  under the terms of the GNU Lesser General Public License as published by</span></span><br><span class="line"><span class="comment">#  the Free Software Foundation; either version 2.1 of the License, or</span></span><br><span class="line"><span class="comment">#  (at your option) any later version.</span></span><br><span class="line"></span><br><span class="line"><span class="section">[Unit]</span></span><br><span class="line"><span class="attr">Description</span>=System Initialization</span><br><span class="line"><span class="attr">Documentation</span>=man:systemd.special(<span class="number">7</span>)</span><br><span class="line"><span class="attr">Conflicts</span>=emergency.service emergency.target</span><br><span class="line"><span class="attr">Wants</span>=local-fs.target swap.target</span><br><span class="line"><span class="attr">After</span>=local-fs.target swap.target emergency.service emergency.target</span><br></pre></td></tr></table></figure>
+<h3 id="进程树"><a href="#进程树" class="headerlink" title="进程树"></a>进程树</h3><p>我们使用 pstree 命令来看一哈进程树的状态，用户空间的进程都挂在  PID 为 1 的 systemd 下。由 systemd 来管理进程优点多多 😂</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line">╭─root@sg-02 ~</span><br><span class="line">╰─# pstree -p</span><br><span class="line">systemd(1)─┬─accounts-daemon(661)─┬─&#123;accounts-daemon&#125;(689)</span><br><span class="line">           │                      └─&#123;accounts-daemon&#125;(729)</span><br><span class="line">           ├─agetty(971)</span><br><span class="line">           ├─agetty(992)</span><br><span class="line">           ├─aria2c(1010)</span><br><span class="line">           ├─atd(653)</span><br><span class="line">           ├─containerd(2915)─┬─&#123;containerd&#125;(2928)</span><br><span class="line">           │                  ├─&#123;containerd&#125;(2929)</span><br><span class="line">           │                  ├─&#123;containerd&#125;(2930)</span><br><span class="line">           │                  ├─&#123;containerd&#125;(2934)</span><br><span class="line">           │                  ├─&#123;containerd&#125;(2935)</span><br><span class="line">           │                  ├─&#123;containerd&#125;(2950)</span><br><span class="line">           │                  ├─&#123;containerd&#125;(2951)</span><br><span class="line">           │                  ├─&#123;containerd&#125;(2978)</span><br><span class="line">           │                  ├─&#123;containerd&#125;(5360)</span><br><span class="line">           │                  └─&#123;containerd&#125;(8299)</span><br><span class="line">           ├─cron(639)───cron(20506)───sh(20507)───monitor.sh(20509)───ffmpeg(20514)</span><br><span class="line">           ├─dbus-daemon(664)</span><br><span class="line">           ├─dockerd(17771)─┬─&#123;dockerd&#125;(17783)</span><br><span class="line">           │                ├─&#123;dockerd&#125;(17784)</span><br><span class="line">           │                ├─&#123;dockerd&#125;(17785)</span><br><span class="line">           │                ├─&#123;dockerd&#125;(17791)</span><br><span class="line">           │                ├─&#123;dockerd&#125;(17793)</span><br><span class="line">           │                ├─&#123;dockerd&#125;(17800)</span><br><span class="line">           │                ├─&#123;dockerd&#125;(17803)</span><br><span class="line">           │                ├─&#123;dockerd&#125;(3030)</span><br><span class="line">           │                └─&#123;dockerd&#125;(3031)</span><br><span class="line">           ├─fail2ban-server(755)─┬─&#123;fail2ban-server&#125;(1059)</span><br><span class="line">           │                      └─&#123;fail2ban-server&#125;(1060)</span><br><span class="line">           ├─iscsid(896)</span><br><span class="line">           ├─iscsid(897)</span><br><span class="line">           ├─lvmetad(392)</span><br><span class="line">           ├─networkd-dispat(622)───&#123;networkd-dispat&#125;(982)</span><br><span class="line">           ├─nginx(3305)───nginx(17700)</span><br><span class="line">           ├─php-fpm7.2(7497)─┬─php-fpm7.2(1295)</span><br><span class="line">           │                  ├─php-fpm7.2(1296)</span><br><span class="line">           │                  └─php-fpm7.2(5611)</span><br><span class="line">           ├─polkitd(808)─┬─&#123;polkitd&#125;(820)</span><br><span class="line">           │              └─&#123;polkitd&#125;(822)</span><br><span class="line">           ├─rngd(981)</span><br><span class="line">           ├─rpcbind(7125)</span><br><span class="line">           ├─rsyslogd(11567)─┬─&#123;rsyslogd&#125;(11598)</span><br><span class="line">           │                 ├─&#123;rsyslogd&#125;(11599)</span><br><span class="line">           │                 └─&#123;rsyslogd&#125;(11600)</span><br><span class="line">           ├─ss-server(17126)───obfs-server(17138)</span><br><span class="line">             ├─sshd(5357)─┬─sshd(15490)───sshd(15598)───zsh(15619)───pstree(20539)</span><br><span class="line">           │            ├─sshd(20413)───sshd(20414)</span><br><span class="line">           │            └─sshd(20517)</span><br><span class="line">           ├─systemd(5715)───(sd-pam)(5718)</span><br><span class="line">           ├─systemd-journal(12866)</span><br><span class="line">           ├─systemd-logind(652)</span><br><span class="line">           ├─systemd-network(12827)</span><br><span class="line">           ├─systemd-resolve(12839)</span><br><span class="line">           ├─systemd-timesyn(12852)───&#123;systemd-timesyn&#125;(12861)</span><br><span class="line">           └─systemd-udevd(8171)</span><br></pre></td></tr></table></figure>
+<h2 id="管理-systemd"><a href="#管理-systemd" class="headerlink" title="管理 systemd"></a>管理 systemd</h2><p>讲完了 systemd 的基础知识，接下来就开始动手实践，控制 systemd 的主要命令主要有以下几种：</p>
+<ul>
+<li><p>systemctl(1) 命令控制 <code>systemd</code> 的管理系统和服务的命令行工具</p>
+</li>
+<li><p>systemsdm(1) 命令控制 <code>systemd</code> 的管理和服务的图形化工具</p>
+</li>
+<li><p>journalctl(1) 命令查詢 <code>systemd</code> 日志系统</p>
+</li>
+<li><p>loginctl(1) 命令控制 <code>systemd</code> 登入管理器</p>
+</li>
+<li><p>systemd-analyze(1) 分析系统启动效能（类似开机时间？</p>
+</li>
+</ul>
+<h3 id="systemctl-基本用法"><a href="#systemctl-基本用法" class="headerlink" title="systemctl 基本用法"></a>systemctl 基本用法</h3><h4 id="启动-重启-停止服务"><a href="#启动-重启-停止服务" class="headerlink" title="启动/重启/停止服务"></a>启动/重启/停止服务</h4><ul>
+<li><code>systemctl start NAME</code></li>
+<li><code>systemctl restart NAME</code></li>
+<li><code>systemctl stop NAME</code></li>
+</ul>
+<h4 id="查看服务状态"><a href="#查看服务状态" class="headerlink" title="查看服务状态"></a>查看服务状态</h4><p>就如文章开头所提到的，需要注意的是最下面那种带时间戳的是输出的日志</p>
+<ul>
+<li><code>systemctl status NAME</code></li>
+</ul>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">╭─root@blog /home/ubuntu</span><br><span class="line">╰─# systemctl status webps                                                                                    130 ↵</span><br><span class="line">● webps.service - WebP Server</span><br><span class="line">   Loaded: loaded (/opt/webps/webps.service; enabled; vendor preset: enabled)</span><br><span class="line">   Active: active (running) since Wed 2020-03-18 13:58:00 UTC; 22h ago</span><br><span class="line">     Docs: https://github.com/n0vad3v/webp_server_go</span><br><span class="line"> Main PID: 5732 (webp-server)</span><br><span class="line">    Tasks: 52 (limit: 684)</span><br><span class="line">   Memory: 185.2M</span><br><span class="line">      CPU: 1min 30.092s</span><br><span class="line">   CGroup: /system.slice/webps.service</span><br><span class="line">           └─5732 /opt/webps/webp-server --config /opt/webps/config.json</span><br><span class="line"></span><br><span class="line">Mar 19 05:23:20 blog webp-server[5732]: Save to exhaust/img/image-20200109192923891.png.1584538399.webp ok</span><br></pre></td></tr></table></figure>
+<h4 id="列出所有单元："><a href="#列出所有单元：" class="headerlink" title="列出所有单元："></a>列出所有单元：</h4><ul>
+<li><code>systemctl list-unit-files</code></li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">╭─root@docker-230 ~</span><br><span class="line">╰─<span class="comment"># systemctl list-unit-files</span></span><br><span class="line">UNIT FILE                                     STATE</span><br><span class="line">proc-sys-fs-binfmt_misc.automount             static</span><br><span class="line">dev-hugepages.mount                           static</span><br><span class="line">dev-mqueue.mount                              static</span><br></pre></td></tr></table></figure>
+<h4 id="列出激活的单元"><a href="#列出激活的单元" class="headerlink" title="列出激活的单元"></a>列出激活的单元</h4><ul>
+<li><code>systemctl list-units</code> 等同于 <code>systemctl</code></li>
+</ul>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">╭─root@docker-230 ~</span><br><span class="line">╰─# systemctl list-units                                                                                      127 ↵</span><br><span class="line">  UNIT                                         LOAD   ACTIVE SUB       DESCRIPTION</span><br><span class="line">  proc-sys-fs-binfmt_misc.automount            loaded active waiting   Arbitrary Executable File Formats File System</span><br><span class="line">  sys-devices-pci0000:00-0000:00:15.0-0000:03:00.0-host2-target2:0:0-2:0:0:0-block-sda-sda1.device loaded active plu</span><br><span class="line">  sys-devices-pci0000:00-0000:00:15.0-0000:03:00.0-host2-target2:0:0-2:0:0:0-block-sda-sda2.device loaded active plu</span><br></pre></td></tr></table></figure>
+<h4 id="重新载入-systemd，扫描新的或有变动的单元："><a href="#重新载入-systemd，扫描新的或有变动的单元：" class="headerlink" title="重新载入 systemd，扫描新的或有变动的单元："></a>重新载入 systemd，扫描新的或有变动的单元：</h4><p>当向 systemd 的目录中添加显得 unit 文件后需要 reload 一下才能生效</p>
+<ul>
+<li><code>systemctl daemon-reload</code></li>
+</ul>
+<h4 id="查询服务是否开机启动"><a href="#查询服务是否开机启动" class="headerlink" title="查询服务是否开机启动"></a>查询服务是否开机启动</h4><ul>
+<li><code>systemctl is-enabled crond</code></li>
+</ul>
+<h4 id="设置-取消服务开机自启"><a href="#设置-取消服务开机自启" class="headerlink" title="设置/取消服务开机自启"></a>设置/取消服务开机自启</h4><ul>
+<li><code>systemctl enable NAME</code></li>
+<li><code>systemctl disable NAME</code></li>
+</ul>
+<h4 id="远程控制其他服务器的-systemd"><a href="#远程控制其他服务器的-systemd" class="headerlink" title="远程控制其他服务器的 systemd"></a>远程控制其他服务器的 systemd</h4><p> <code>systemctl</code> 参数中添加 <code>-H &lt;用户名&gt;@&lt;主机名&gt;</code> 可以实现对其他机器的远程控制，该功能使用 <a href="https://wiki.archlinux.org/index.php/SSH_(简体中文)" target="_blank" rel="noopener">SSH</a> 连接。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">╭─root@blog /home/ubuntu</span><br><span class="line">╰─# systemctl status nginx -H sg2</span><br><span class="line">● nginx.service - A high performance web server and a reverse proxy server</span><br><span class="line">   Loaded: loaded (/lib/systemd/system/nginx.service; enabled; vendor preset: enabled)</span><br><span class="line">   Active: active (running) since Mon 2020-02-17 08:41:11 UTC; 1 months 0 days ago</span><br><span class="line">     Docs: man:nginx(8)</span><br><span class="line"> Main PID: 3305</span><br><span class="line">    Tasks: 2 (limit: 1152)</span><br><span class="line">   CGroup: /system.slice/nginx.service</span><br><span class="line">           ├─ 3305 nginx: master process /usr/sbin/nginx -g daemon on; master_process on;</span><br><span class="line">           └─17700 nginx: worker process</span><br></pre></td></tr></table></figure>
+<h4 id="使用systemctl命令杀死服务"><a href="#使用systemctl命令杀死服务" class="headerlink" title="使用systemctl命令杀死服务"></a>使用systemctl命令杀死服务</h4><ul>
+<li><code>systemctl kill NAME</code></li>
+</ul>
+<h3 id="journal"><a href="#journal" class="headerlink" title="journal"></a>journal</h3><p>systemd 的第二个主要部分是 journal 日志系统，类似于 syslog 但也有些显著区别。如果你喜欢用 <code>sed 、grep 、awk</code> 三剑客来处理日志，那么当你面对 journal 日志系统的时候你就准备<strong>掀桌儿</strong>吧！因为这是个二进制日志，无法使用常规的命令行文本处理工具来解析它😂</p>
+<h3 id="systemd-analyze"><a href="#systemd-analyze" class="headerlink" title="systemd-analyze"></a>systemd-analyze</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">╭─root@docker-230 ~</span><br><span class="line">╰─<span class="comment"># systemd-analyze</span></span><br><span class="line">Startup finished <span class="keyword">in</span> 489ms (kernel) + 1.547s (initrd) + 10.333s (userspace) = 12.369s</span><br></pre></td></tr></table></figure>
+<h2 id="推荐阅读"><a href="#推荐阅读" class="headerlink" title="推荐阅读"></a>推荐阅读</h2><p>放心吧，咱木子推荐的博客和文章绝对是质量相当高的，不像 CSDN 、博客园 、简书等等这些抄来抄去的 <strong>国产</strong> 博客平台。咱一向喜欢读的博客就是 <code>个人独立博客</code> 这也是咱在 <a href="https://blog.502.li/link/">友链</a> 中所强调的，对于国产博客平台一向屑之，对微信公众号这种删帖封号、言论审查的平台也只有一个 <code>呸</code> 字屑之 ：）。</p>
+<p>咱无论是工作还是学习技术参考的来源一般是：</p>
+<ul>
+<li>1.英文官方文档/社区翻译文档；</li>
+<li>2.StackOverflow/wiki/READDME；</li>
+<li>3.个人独立博客。</li>
+<li>只有这三种，别无其它，远离国产博客平台这些抄来抄去的垃圾玩意儿。</li>
+</ul>
+<h3 id="源码"><a href="#源码" class="headerlink" title="源码"></a>源码</h3><ul>
+<li><a href="https://github.com/systemd/systemd" target="_blank" rel="noopener">github.com/systemd/systemd</a></li>
+<li><a href="https://systemd.io/" target="_blank" rel="noopener">systemd.io</a></li>
+</ul>
+<h3 id="文档"><a href="#文档" class="headerlink" title="文档"></a>文档</h3><ul>
+<li><p><a href="http://www.jinbuguo.com/systemd/systemd.exec.html" target="_blank" rel="noopener">systemd.exec 中文手册</a></p>
+</li>
+<li><p><a href="https://wiki.archlinux.org/index.php/systemd_(%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87)" target="_blank" rel="noopener">systemd (简体中文)</a></p>
+</li>
+<li><p><a href="https://wiki.debian.org/systemd" target="_blank" rel="noopener">wiki.debian.org/systemd</a></p>
+</li>
+<li><p><a href="https://www.debian.org/doc/manuals/debian-reference/ch03.zh-tw.html" target="_blank" rel="noopener">第 3 章 系統初始化</a></p>
+</li>
+<li><p><a href="https://openwrt.org/docs/techref/architecture" target="_blank" rel="noopener">OpenWrt – operating system architecture</a></p>
+</li>
+<li><p><a href="http://manpages.ubuntu.com/manpages/cosmic/zh_CN/man7/bootup.7.html" target="_blank" rel="noopener">bootup - 系统启动流程</a></p>
+</li>
+<li><p><a href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/system_administrators_guide/chap-managing_services_with_systemd" target="_blank" rel="noopener">CHAPTER 10. MANAGING SERVICES WITH SYSTEMD</a></p>
+</li>
+</ul>
+<h3 id="博客"><a href="#博客" class="headerlink" title="博客"></a>博客</h3><ul>
+<li><p><a href="https://coolshell.cn/articles/17998.html" target="_blank" rel="noopener">LINUX PID 1 和 SYSTEMD</a> 耗子的博客，必须墙裂推荐阅读哈，其他的可以不读，但这一篇博客必须要读哦 ：）</p>
+</li>
+<li><p><a href="https://lp007819.wordpress.com/2015/01/11/systemd%E7%9A%84%E4%B8%80%E4%BA%9B%E6%80%BB%E7%BB%93/" target="_blank" rel="noopener">systemd的一些总结</a></p>
+</li>
+<li><p><a href="https://linux.cn/article-5457-1.html" target="_blank" rel="noopener">走进Linux之systemd启动过程</a></p>
+</li>
+<li><p><a href="https://hotttao.github.io/2018/08/03/linux_mt/14-Linux%E7%B3%BB%E7%BB%9F%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B%E5%8F%8A%E5%86%85%E6%A0%B8%E6%A8%A1%E5%9D%97%E7%AE%A1%E7%90%86/CentOS7-Systemd%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B/" target="_blank" rel="noopener">13.3 Centos7 Systemd 启动流程</a></p>
+</li>
+<li><p><a href="https://www.itwire.com/business-it-news/open-source/65402-torvalds-says-he-has-no-strong-opinions-on-systemd" target="_blank" rel="noopener">Torvalds says he has no strong opinions on systemd</a></p>
+</li>
+<li><p><a href="http://0pointer.de/blog/projects/systemd.html" target="_blank" rel="noopener">Rethinking PID 1</a></p>
+</li>
+<li><p><a href="http://0pointer.de/blog/projects/the-biggest-myths.html" target="_blank" rel="noopener">The Biggest Myths</a></p>
+</li>
+<li><p><a href="https://www.bennythink.com/linux-keep-running.html" target="_blank" rel="noopener">Linux 怎么让程序持续运行：简单说说几种好玩的办法</a></p>
+</li>
+<li><p><a href="https://www.bennythink.com/systemd-accounting.html" target="_blank" rel="noopener">systemd – systemctl 不显示内存 CPU 信息</a></p>
+</li>
+<li><p><a href="https://lp007819.wordpress.com/2015/01/17/systemd-journal-%e4%bb%8b%e7%bb%8d/" target="_blank" rel="noopener">systemd journal 介绍</a></p>
+</li>
+<li><p><a href="http://blog.lujun9972.win/blog/2018/08/08/%E4%BD%BF%E7%94%A8journalctl%E6%9F%A5%E7%9C%8Bsystemd%E6%97%A5%E5%BF%97/index.html" target="_blank" rel="noopener">使用journalctl查看systemd日志</a></p>
+</li>
+<li><p><a href="http://blog.lujun9972.win/blog/2019/11/30/%E5%A6%82%E4%BD%95%E9%98%B2%E6%AD%A2%E6%84%8F%E5%A4%96%E9%87%8D%E5%90%AFlinux(%E5%9F%BA%E4%BA%8Esystemd)/index.html" target="_blank" rel="noopener">如何防止意外重启Linux(基于systemd)</a></p>
+</li>
+</ul>
+    </div>
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/blog/" rel="tag"><i class="fa fa-tag"></i> blog</a>
+              <a href="/tags/Linux/" rel="tag"><i class="fa fa-tag"></i> Linux</a>
+              <a href="/tags/%E7%AC%94%E8%AE%B0/" rel="tag"><i class="fa fa-tag"></i> 笔记</a>
+          </div>
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/N1-openwrt.html" rel="prev" title="N1 盒子刷入 OpenWrt 并部署 K3s">
+      <i class="fa fa-chevron-left"></i> N1 盒子刷入 OpenWrt 并部署 K3s
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+  </article>
+  </div>
+          </div>
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+        </div>
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#小插曲"><span class="nav-number">1.</span> <span class="nav-text">小插曲</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Linux-启动流程"><span class="nav-number">2.</span> <span class="nav-text">Linux 启动流程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#BIOS-EFI-阶段"><span class="nav-number">2.1.</span> <span class="nav-text">BIOS&#x2F;EFI 阶段</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#BootLoader-阶段"><span class="nav-number">2.2.</span> <span class="nav-text">BootLoader 阶段</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#kernel-阶段"><span class="nav-number">2.3.</span> <span class="nav-text">kernel 阶段</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#init-初始化阶段"><span class="nav-number">2.4.</span> <span class="nav-text">init 初始化阶段</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#主角-systemd"><span class="nav-number">3.</span> <span class="nav-text">主角 systemd</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#systemd-简介"><span class="nav-number">3.1.</span> <span class="nav-text">systemd 简介</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#systemd-设计目标"><span class="nav-number">3.2.</span> <span class="nav-text">systemd 设计目标</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#systemd-体系架构"><span class="nav-number">3.3.</span> <span class="nav-text">systemd 体系架构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#systemd-unit"><span class="nav-number">3.4.</span> <span class="nav-text">systemd unit</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#systemd-unit-配置文件"><span class="nav-number">3.5.</span> <span class="nav-text">systemd unit 配置文件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#链接文件"><span class="nav-number">3.6.</span> <span class="nav-text">链接文件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#systemd-启动流程"><span class="nav-number">3.7.</span> <span class="nav-text">systemd 启动流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#进程树"><span class="nav-number">3.8.</span> <span class="nav-text">进程树</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#管理-systemd"><span class="nav-number">4.</span> <span class="nav-text">管理 systemd</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#systemctl-基本用法"><span class="nav-number">4.1.</span> <span class="nav-text">systemctl 基本用法</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#启动-重启-停止服务"><span class="nav-number">4.1.1.</span> <span class="nav-text">启动&#x2F;重启&#x2F;停止服务</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#查看服务状态"><span class="nav-number">4.1.2.</span> <span class="nav-text">查看服务状态</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#列出所有单元："><span class="nav-number">4.1.3.</span> <span class="nav-text">列出所有单元：</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#列出激活的单元"><span class="nav-number">4.1.4.</span> <span class="nav-text">列出激活的单元</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#重新载入-systemd，扫描新的或有变动的单元："><span class="nav-number">4.1.5.</span> <span class="nav-text">重新载入 systemd，扫描新的或有变动的单元：</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#查询服务是否开机启动"><span class="nav-number">4.1.6.</span> <span class="nav-text">查询服务是否开机启动</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#设置-取消服务开机自启"><span class="nav-number">4.1.7.</span> <span class="nav-text">设置&#x2F;取消服务开机自启</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#远程控制其他服务器的-systemd"><span class="nav-number">4.1.8.</span> <span class="nav-text">远程控制其他服务器的 systemd</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#使用systemctl命令杀死服务"><span class="nav-number">4.1.9.</span> <span class="nav-text">使用systemctl命令杀死服务</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#journal"><span class="nav-number">4.2.</span> <span class="nav-text">journal</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#systemd-analyze"><span class="nav-number">4.3.</span> <span class="nav-text">systemd-analyze</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#推荐阅读"><span class="nav-number">5.</span> <span class="nav-text">推荐阅读</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#源码"><span class="nav-number">5.1.</span> <span class="nav-text">源码</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#文档"><span class="nav-number">5.2.</span> <span class="nav-text">文档</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#博客"><span class="nav-number">5.3.</span> <span class="nav-text">博客</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木子"
+      src="https://blog.502.li/avatar.png">
+  <p class="site-author-name" itemprop="name">木子</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">70</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">87</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/muzi502" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;muzi502" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:blog@502.li" title="E-Mail → mailto:blog@502.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://twitter.com/muzi_ii" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;muzi_ii" rel="noopener" target="_blank"><i class="fa fa-fw fa-twitter"></i>Twitter</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://t.me/muzi_ii" title="Telegram → https:&#x2F;&#x2F;t.me&#x2F;muzi_ii" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Telegram</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://kindle.502.li/" title="Kindle → https:&#x2F;&#x2F;kindle.502.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-book"></i>Kindle</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://https//t.me/rss_kubernetes" title="Channel → https:&#x2F;&#x2F;https:&#x2F;&#x2F;t.me&#x2F;rss_kubernetes" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Channel</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-fw fa-rss"></i>RSS</a>
+      </span>
+  </div>
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+      </div>
+    </main>
+    <footer class="footer">
+      <div class="footer-inner">
+<div class="copyright">
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木子</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">945k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">26:15</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">主题 – <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a>
+  </div>
+      </div>
+    </footer>
+  </div>
+  <script src="/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script>
+<script src="/js/schemes/pisces.js"></script>
+<script src="/js/next-boot.js"></script>
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://muzi.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: {page: {
+            url: "https://blog.502.li/systemd.html",
+            identifier: "systemd.html",
+            title: "Linux 的小伙伴 systemd 详解"
+          }
+        }
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://muzi.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+</body>
+</html>
