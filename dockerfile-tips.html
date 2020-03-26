@@ -15,7 +15,7 @@
 <script id="hexo-configurations">
   var NexT = window.NexT || {};
   var CONFIG = {
-    hostname: new URL('https://blog.502.li').hostname,
+    hostname: new URL('https://blog.k8s.li').hostname,
     root: '/',
     scheme: 'Gemini',
     version: '7.7.0',
@@ -44,16 +44,16 @@
   <meta name="description" content="Dockerfile 最佳实践关于 Dockerfile 最佳实践的博客，网上已经有很多很多啦，咱在这里就不赘述啦。在这里分享几个搓镜像的小技巧，尤其是针对于咱大陆的用户😂。  Best practices for writing Dockerfiles 推荐看一下官方博客上写的 Dockerfile 最佳实践  docker-library&#x2F;docs 官方示例  几个搓镜像的小技巧构建上下文执">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Dockerfile 搓镜像的小技巧">
-<meta property="og:url" content="https://blog.502.li/dockerfile-tips.html">
+<meta property="og:url" content="https://blog.k8s.li/dockerfile-tips.html">
 <meta property="og:site_name" content="木子">
 <meta property="og:description" content="Dockerfile 最佳实践关于 Dockerfile 最佳实践的博客，网上已经有很多很多啦，咱在这里就不赘述啦。在这里分享几个搓镜像的小技巧，尤其是针对于咱大陆的用户😂。  Best practices for writing Dockerfiles 推荐看一下官方博客上写的 Dockerfile 最佳实践  docker-library&#x2F;docs 官方示例  几个搓镜像的小技巧构建上下文执">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2020-01-01T16:00:00.000Z">
-<meta property="article:modified_time" content="2020-03-24T13:55:16.454Z">
+<meta property="article:modified_time" content="2020-03-24T14:11:25.460Z">
 <meta property="article:author" content="木子">
 <meta property="article:tag" content="docker">
 <meta name="twitter:card" content="summary">
-<link rel="canonical" href="https://blog.502.li/dockerfile-tips.html">
+<link rel="canonical" href="https://blog.k8s.li/dockerfile-tips.html">
 <script id="page-configurations">
   // https://hexo.io/docs/variables.html
   CONFIG.page = {
@@ -135,7 +135,7 @@
           <div class="content">
   <div class="posts-expand">
   <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://blog.502.li/dockerfile-tips.html">
+    <link itemprop="mainEntityOfPage" href="https://blog.k8s.li/dockerfile-tips.html">
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="https://blog.502.li/avatar.png">
       <meta itemprop="name" content="木子">
@@ -161,7 +161,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-03-24 2020-03-24T21:55:16+08:00" itemprop="dateModified" datetime="2020-03-24T21:55:16+08:00">2020-03-24</time>
+                <time title="修改时间：2020-03-24 2020-03-24T22:11:25+08:00" itemprop="dateModified" datetime="2020-03-24T22:11:25+08:00">2020-03-24</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -216,7 +216,7 @@
 <h4 id="基础镜像"><a href="#基础镜像" class="headerlink" title="基础镜像"></a>基础镜像</h4><p>使用体积较小的基础镜像，比如 <code>alpine</code> 或者  <code>debian:buster-slim</code>，像 openjdk 可以选用<code>openjdk:xxx-slim</code> ，由于 openjdk 是基于 debian 的基础镜像构建的，所以向 debian 基础镜像一样，后面带个 <code>slim</code> 就是基于 <code>debian:xxx-slim</code> 镜像构建的。</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">REPOSITORY                  TAG                 IMAGE ID            CREATED             SIZE</span><br><span class="line">debian                      buster-slim         e1af56d072b8        4 days ago          69.2MB</span><br><span class="line">alpine                      latest              cc0abc535e36        8 days ago          5.59MB</span><br></pre></td></tr></table></figure>
 <p>不过需要注意的是，alpine 的 c 库是 <code>musl libc</code> ，而不是正统的 <code>glibc</code> ，另外对于一些依赖 <code>glibc</code> 的大型项目，像 openjdk 、tomcat、rabbitmq 等都不建议使用 alpine 基础镜像，因为 <code>musl libc</code> 可能会导致 jvm 一些奇怪的问题。这也是为什么 tomcat 官方没有给出基础镜像是 alpine 的 Dockerfile 的原因。</p>
-<h4 id="国内软件源"><a href="#国内软件源" class="headerlink" title="国内软件源"></a>国内软件源</h4><p>使用默认的软件源安装构建时所需的依赖，对于绝大多数基础镜像来说，在国内网络环境构建时的速度较慢，可以通过修改软件源的方式更换为国内的软件源镜像站。目前国内稳定可靠的镜像站主要有，华为云、阿里云、腾讯云、163等。对于咱的网络环境，华为云的镜像站速度最快，平均 10MB/s，峰值可达到 20MB/s，极大的能加快构建镜像的速度。可以参考我曾经写过的一篇 <a href="https://blog.502.li/archives/mirrors-test.html">国内软件源镜像站伪评测</a></p>
+<h4 id="国内软件源"><a href="#国内软件源" class="headerlink" title="国内软件源"></a>国内软件源</h4><p>使用默认的软件源安装构建时所需的依赖，对于绝大多数基础镜像来说，在国内网络环境构建时的速度较慢，可以通过修改软件源的方式更换为国内的软件源镜像站。目前国内稳定可靠的镜像站主要有，华为云、阿里云、腾讯云、163等。对于咱的网络环境，华为云的镜像站速度最快，平均 10MB/s，峰值可达到 20MB/s，极大的能加快构建镜像的速度。可以参考我曾经写过的一篇 <a href="https://blog.502.li/archives/mirrors-test.html" target="_blank" rel="noopener">国内软件源镜像站伪评测</a></p>
 <ul>
 <li>对于  alpine 基础镜像修改软件源</li>
 </ul>
@@ -401,7 +401,7 @@
         <a href="https://kindle.502.li/" title="Kindle → https:&#x2F;&#x2F;kindle.502.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-book"></i>Kindle</a>
       </span>
       <span class="links-of-author-item">
-        <a href="https://https//t.me/rss_kubernetes" title="Channel → https:&#x2F;&#x2F;https:&#x2F;&#x2F;t.me&#x2F;rss_kubernetes" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Channel</a>
+        <a href="https://t.me/rss_kubernetes" title="Channel → https:&#x2F;&#x2F;t.me&#x2F;rss_kubernetes" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Channel</a>
       </span>
       <span class="links-of-author-item">
         <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-fw fa-rss"></i>RSS</a>
@@ -467,7 +467,7 @@
       DISQUS.reset({
         reload: true,
         config: {page: {
-            url: "https://blog.502.li/dockerfile-tips.html",
+            url: "https://blog.k8s.li/dockerfile-tips.html",
             identifier: "dockerfile-tips.html",
             title: "Dockerfile 搓镜像的小技巧"
           }

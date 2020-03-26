@@ -15,7 +15,7 @@
 <script id="hexo-configurations">
   var NexT = window.NexT || {};
   var CONFIG = {
-    hostname: new URL('https://blog.502.li').hostname,
+    hostname: new URL('https://blog.k8s.li').hostname,
     root: '/',
     scheme: 'Gemini',
     version: '7.7.0',
@@ -44,7 +44,7 @@
   <meta name="description" content="ESXi 透明代理虚拟机弃坑了，太鸡儿难用了😡，还是使用了 LEDE软路由 0. 项目背景由于工作的环境是 ESXi ，上面运行着一堆虚拟机，用来做部署方案测试使用。因为要经常访问 GitHub 以及要去 gcr.k8s.io  上拉去镜像；而且在写 Dockerfile build 镜像的时候，也需要去 GitHub 下载 release 包；使用helm初始化时需要的docker 镜像无法p">
 <meta property="og:type" content="article">
 <meta property="og:title" content="搓一个 Debian 透明代理&#x2F;旁路网关 虚拟机">
-<meta property="og:url" content="https://blog.502.li/debian-gateway.html">
+<meta property="og:url" content="https://blog.k8s.li/debian-gateway.html">
 <meta property="og:site_name" content="木子">
 <meta property="og:description" content="ESXi 透明代理虚拟机弃坑了，太鸡儿难用了😡，还是使用了 LEDE软路由 0. 项目背景由于工作的环境是 ESXi ，上面运行着一堆虚拟机，用来做部署方案测试使用。因为要经常访问 GitHub 以及要去 gcr.k8s.io  上拉去镜像；而且在写 Dockerfile build 镜像的时候，也需要去 GitHub 下载 release 包；使用helm初始化时需要的docker 镜像无法p">
 <meta property="og:locale" content="zh_CN">
@@ -55,7 +55,7 @@
 <meta property="og:image" content="https://cdn.jsdelivr.net/gh/muzi502/blog/source/img/1566565577328.png">
 <meta property="og:image" content="https://cdn.jsdelivr.net/gh/muzi502/blog/source/img/1566565631398.png">
 <meta property="article:published_time" content="2019-06-29T16:00:00.000Z">
-<meta property="article:modified_time" content="2020-03-24T13:55:16.406Z">
+<meta property="article:modified_time" content="2020-03-24T14:11:25.436Z">
 <meta property="article:author" content="木子">
 <meta property="article:tag" content="科学上网">
 <meta property="article:tag" content="Linux">
@@ -63,7 +63,7 @@
 <meta property="article:tag" content="proxy">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="https://cdn.jsdelivr.net/gh/muzi502/blog/source/img/1566567341680.png">
-<link rel="canonical" href="https://blog.502.li/debian-gateway.html">
+<link rel="canonical" href="https://blog.k8s.li/debian-gateway.html">
 <script id="page-configurations">
   // https://hexo.io/docs/variables.html
   CONFIG.page = {
@@ -145,7 +145,7 @@
           <div class="content">
   <div class="posts-expand">
   <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://blog.502.li/debian-gateway.html">
+    <link itemprop="mainEntityOfPage" href="https://blog.k8s.li/debian-gateway.html">
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="https://blog.502.li/avatar.png">
       <meta itemprop="name" content="木子">
@@ -171,7 +171,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-03-24 2020-03-24T21:55:16+08:00" itemprop="dateModified" datetime="2020-03-24T21:55:16+08:00">2020-03-24</time>
+                <time title="修改时间：2020-03-24 2020-03-24T22:11:25+08:00" itemprop="dateModified" datetime="2020-03-24T22:11:25+08:00">2020-03-24</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -211,7 +211,7 @@
         </div>
       </header>
     <div class="post-body" itemprop="articleBody">
-        <h2 id="ESXi-透明代理虚拟机"><a href="#ESXi-透明代理虚拟机" class="headerlink" title="ESXi 透明代理虚拟机"></a>ESXi 透明代理虚拟机</h2><p>弃坑了，太鸡儿难用了😡，还是使用了 <a href="https://blog.502.li/esxi-lede">LEDE软路由</a></p>
+        <h2 id="ESXi-透明代理虚拟机"><a href="#ESXi-透明代理虚拟机" class="headerlink" title="ESXi 透明代理虚拟机"></a>ESXi 透明代理虚拟机</h2><p>弃坑了，太鸡儿难用了😡，还是使用了 <a href="https://blog.502.li/esxi-lede" target="_blank" rel="noopener">LEDE软路由</a></p>
 <h2 id="0-项目背景"><a href="#0-项目背景" class="headerlink" title="0. 项目背景"></a>0. 项目背景</h2><p>由于工作的环境是 ESXi ，上面运行着一堆虚拟机，用来做部署方案测试使用。因为要经常访问 GitHub 以及要去 gcr.k8s.io  上拉去镜像；而且在写 Dockerfile build 镜像的时候，也需要去 GitHub 下载 release 包；使用helm初始化时需要的docker 镜像无法pull那个速度比百度网盘还慢啊啊啊啊，气死人。我觉着 GFW 的存在严重第影响了我的工作效率，遂决定搓一个虚拟机来当代理网关，或者叫旁路网关。被需要代理的机器仅仅需要修改网关和 DNS 为透明代理服务器 IP 即可。</p>
 <p>题外话：其实用软路由 LEDE/OpenWrt 实现最合适，而且占用资源也极低，但因为使用软路由发生了一次事故，所以就不再用软路由了。那时候刚入职实习，在 ESXi 上装了个 LEDE 软路由，然后办公室的网络就瘫痪了。。</p>
 <h2 id="1-实现功能"><a href="#1-实现功能" class="headerlink" title="1.实现功能"></a>1.实现功能</h2><ol>
@@ -363,7 +363,7 @@
         <a href="https://kindle.502.li/" title="Kindle → https:&#x2F;&#x2F;kindle.502.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-book"></i>Kindle</a>
       </span>
       <span class="links-of-author-item">
-        <a href="https://https//t.me/rss_kubernetes" title="Channel → https:&#x2F;&#x2F;https:&#x2F;&#x2F;t.me&#x2F;rss_kubernetes" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Channel</a>
+        <a href="https://t.me/rss_kubernetes" title="Channel → https:&#x2F;&#x2F;t.me&#x2F;rss_kubernetes" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Channel</a>
       </span>
       <span class="links-of-author-item">
         <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-fw fa-rss"></i>RSS</a>
@@ -429,7 +429,7 @@
       DISQUS.reset({
         reload: true,
         config: {page: {
-            url: "https://blog.502.li/debian-gateway.html",
+            url: "https://blog.k8s.li/debian-gateway.html",
             identifier: "debian-gateway.html",
             title: "搓一个 Debian 透明代理/旁路网关 虚拟机"
           }
