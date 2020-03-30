@@ -48,10 +48,10 @@
 <meta property="og:site_name" content="木子">
 <meta property="og:description" content="俗话说文档写得好，同行抄到老😂。  在前期的技术选型调研过程中，对 K8s 密切相关的解决方案：网络插件、存储解决方案、监控告警系统、日志收集和处理、持续集成和交付系统等做了充分的调研和测试工作，现如今总结一下调研过程中的记录。 参考俗话说文档写得好，同行抄到老😂。不过咱木子还是有点原则的，最起码标注引用来源，尊重原作者的版权。所以就在此罗列了本文 剽窃 引用的来源。由于是技术调研，文中提到">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://cdn.jsdelivr.net/gh/muzi502/blog/source/img/image-20191227151129673.png">
-<meta property="og:image" content="https://cdn.jsdelivr.net/gh/muzi502/blog/source/img/Picture1.png">
-<meta property="og:image" content="https://cdn.jsdelivr.net/gh/muzi502/blog/source/img/Picture2.png">
-<meta property="og:image" content="https://cdn.jsdelivr.net/gh/muzi502/blog/source/img/Picture3.png">
+<meta property="og:image" content="https://blog.k8s.li/img/image-20191227151129673.png">
+<meta property="og:image" content="https://blog.k8s.li/img/Picture1.png">
+<meta property="og:image" content="https://blog.k8s.li/img/Picture2.png">
+<meta property="og:image" content="https://blog.k8s.li/img/Picture3.png">
 <meta property="article:published_time" content="2020-02-29T16:00:00.000Z">
 <meta property="article:modified_time" content="2020-02-29T16:00:00.000Z">
 <meta property="article:author" content="木子">
@@ -59,7 +59,7 @@
 <meta property="article:tag" content="K8s">
 <meta property="article:tag" content="调研">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://cdn.jsdelivr.net/gh/muzi502/blog/source/img/image-20191227151129673.png">
+<meta name="twitter:image" content="https://blog.k8s.li/img/image-20191227151129673.png">
 <link rel="canonical" href="https://blog.k8s.li/k8s-01.html">
 <script id="page-configurations">
   // https://hexo.io/docs/variables.html
@@ -640,7 +640,7 @@
 <li><a href="https://jishu.io/kubernetes/kubernetes-master-ha/" target="_blank" rel="noopener">关于Kubernetes Master高可用的一些策略</a></li>
 </ul>
 <p>这张图从管理平面、执行平面和数据平面 三个部分来简单说明一下该高可用架构方案以及各个组件的功能。</p>
-<p><img src="https://cdn.jsdelivr.net/gh/muzi502/blog/source/img/image-20191227151129673.png" alt="image-20191227151129673"></p>
+<p><img src="./img/image-20191227151129673.png" alt="image-20191227151129673"></p>
 <h3 id="etcd-高可用"><a href="#etcd-高可用" class="headerlink" title="etcd 高可用"></a>etcd 高可用</h3><p>etcd 是 Kubernetes 当中唯一带状态的服务，也是高可用的难点。Kubernetes 选用 etcd 作为它的后端数据存储仓库正是看重了其使用分布式架构，没有单点故障的特性。etcd 的高可用基本有三种思路：</p>
 <h4 id="独立的-etcd-集群"><a href="#独立的-etcd-集群" class="headerlink" title="独立的 etcd 集群"></a>独立的 etcd 集群</h4><p>使用 3 台或者 5 台服务器只运行 etcd，独立维护和升级。甚至可以使用 CoreOS 的<code>update-engine</code>和<code>locksmith</code>，让服务器完全自主的完成升级。这个 etcd 集群将作为基石用于构建整个集群。 采用这项策略的主要动机是 etcd 集群的节点增减都需要显式的通知集群，保证 etcd 集群节点稳定可以更方便的用程序完成集群滚动升级，减轻维护负担。</p>
 <h4 id="Master-节点-static-pod-形式"><a href="#Master-节点-static-pod-形式" class="headerlink" title="Master 节点 static pod 形式"></a>Master 节点 static pod 形式</h4><p>二是在 Kubernetes Master上用 static pod 的形式来运行 etcd，并将多台 Kubernetes Master上的 etcd 组成集群。 在这一模式下，各个服务器的 etcd 实例被注册进了 Kubernetes 当中，虽然无法直接使用<code>kubectl</code>来管理这部分实例，但是监控以及日志搜集组件均可正常工作。在这一模式运行下的 etcd 可管理性更强。</p>
@@ -887,7 +887,7 @@
 </ul>
 <p>为了说明问题，我们运行一个微服务作为客户端，这个微服务以 Pod 的形式运行在一个独立的节点上，每秒钟发出 1000 个请求，请求的目标是一个 Kubernetes 服务，这个服务由 10 个 Pod 作为后端，运行在其它的节点上。接下来我们在客户端节点上进行了测量，包括 iptables 以及 IPVS 模式，运行了数量不等的 Kubernetes 服务，每个服务都有 10 个 Pod，最大有 10,000 个服务（也就是 100,000 个 Pod）。我们用 golang 编写了一个简单的测试工具作为客户端，用标准的 NGINX 作为后端服务。</p>
 <h4 id="响应时间"><a href="#响应时间" class="headerlink" title="响应时间"></a>响应时间</h4><p>响应时间很重要，有助于我们理解连接和请求的差异。典型情况下，多数微服务都会使用持久或者 <code>keepalive</code> 连接，这意味着每个连接都会被多个请求复用，而不是每个请求一次连接。这很重要，因为多数连接的新建过程都需要完成三次 TCP 握手的过程，这需要消耗时间，也需要在 Linux 网络栈中进行更多操作，也就会消耗更多 CPU 和时间。</p>
-<p><img src="https://cdn.jsdelivr.net/gh/muzi502/blog/source/img/Picture1.png" alt="Round-Trip Response TIme vs Number of Services"></p>
+<p><img src="./img/Picture1.png" alt="Round-Trip Response TIme vs Number of Services"></p>
 <p>这张图展示了两个关键点：</p>
 <ul>
 <li>iptables 和 IPVS 的平均响应时间在 1000 个服务（10000 个 Pod）以上时，会开始观察到差异。</li>
@@ -897,7 +897,7 @@
 <p>值得注意的是，例子中的服务端微服务使用 NGINX 提供一个静态小页面。多数微服务要做更多操作，因此会产生更高的响应时间，也就是 kube-proxy 处理过程在总体时间中的占比会减少。</p>
 <p>还有个需要解释的古怪问题：既然 IPVS 的连接过程复杂度是 O(1)，为什么在 10,000 服务的情况下，非 Keepalive 的响应时间还是提高了？我们需要深入挖掘更多内容才能解释这一问题，但是其中一个因素就是因为上升的 CPU 用量拖慢了整个系统。这就是下一个主题需要探究的内容。</p>
 <h4 id="CPU-用量"><a href="#CPU-用量" class="headerlink" title="CPU 用量"></a>CPU 用量</h4><p>为了描述 CPU 用量，下图关注的是最差情况：不使用持久/keepalive 连接的情况下，kube-proxy 会有最大的处理开销。</p>
-<p><img src="https://cdn.jsdelivr.net/gh/muzi502/blog/source/img/Picture2.png" alt="Total CPU"></p>
+<p><img src="./img/Picture2.png" alt="Total CPU"></p>
 <p>上图说明了两件事：</p>
 <ul>
 <li>在超过 1000 个服务（也就是 10,000 个 Pod）的情况下，CPU 用量差异才开始明显。</li>
@@ -912,7 +912,7 @@
 <p>如果你还不确定 IPVS 是否合适，那就继续使用 iptables 模式好了。这种传统模式有大量的生产案例支撑，他是一个不完美的缺省选项。</p>
 <h4 id="补充：Calico-和-kube-proxy-的-iptables-比较"><a href="#补充：Calico-和-kube-proxy-的-iptables-比较" class="headerlink" title="补充：Calico 和 kube-proxy 的 iptables 比较"></a>补充：Calico 和 kube-proxy 的 iptables 比较</h4><p>本文中我们看到，kube-proxy 中的 iptables 用法在大规模集群中可能会产生性能问题。有人问我 Calico 为什么没有类似的问题。答案是 Calico 中 kube-proxy 的用法是不同的。kube-proxy 使用了一个很长的规则链条，链条长度会随着集群规模而增长，Calico 使用的是一个很短的优化过的规则链，经由 ipsets 的加持，也具备了 O(1) 复杂度的查询能力。</p>
 <p>下图证明了这一观点，其中展示了每次连接过程中，kube-proxy 和 Calico 中 iptables 规则数量的平均值。这里假设集群中的节点平均有 30 个 Pod，每个 Pod 具有 3 个网络规则。</p>
-<p><img src="https://cdn.jsdelivr.net/gh/muzi502/blog/source/img/Picture3.png" alt="calico vs kube-proxy"></p>
+<p><img src="./img/Picture3.png" alt="calico vs kube-proxy"></p>
 <p>即使是使用 10,000 个服务和 100,000 个 Pod 的情况下，Calico 每连接执行的 iptables 规则也只是和 kube-proxy 在 20 服务 200 个 Pod 的情况基本一致。</p>
 <h2 id="安全加固"><a href="#安全加固" class="headerlink" title="安全加固"></a>安全加固</h2><h3 id="简介：CIS-Kubernetes-安全基准指南"><a href="#简介：CIS-Kubernetes-安全基准指南" class="headerlink" title="简介：CIS Kubernetes 安全基准指南"></a><a href="https://blog.fleeto.us/post/cis-benchmark-brief/" target="_blank" rel="noopener">简介：CIS Kubernetes 安全基准指南</a></h3><h3 id="33-个-Kubernetes-安全工具"><a href="#33-个-Kubernetes-安全工具" class="headerlink" title="33 个 Kubernetes 安全工具"></a><a href="https://blog.fleeto.us/post/33-kubernetes-security-tools/" target="_blank" rel="noopener">33 个 Kubernetes 安全工具</a></h3><h3 id="工具"><a href="#工具" class="headerlink" title="工具"></a>工具</h3><h4 id="TUF"><a href="#TUF" class="headerlink" title="TUF"></a><a href="https://theupdateframework.github.io/" target="_blank" rel="noopener">TUF</a></h4><p>TUF 是一项用于保护软件更新系统的开源安全技术，也是从云原生计算基金会毕业的第一个以规范与安全性为重点的项目。与此同时，TUF 还是首个源自高校的 CNCF 毕业项目。</p>
 <h4 id="kube-score"><a href="#kube-score" class="headerlink" title="kube-score"></a><a href="https://github.com/zegl/kube-score" target="_blank" rel="noopener">kube-score</a></h4><p>kube-score 是 K8s 对象静态检查工具，通过分析 K8s 对象的 Yaml 文件做一些推荐，以提升可靠性和安全性。</p>
@@ -1218,7 +1218,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
           <a href="/archives">
-          <span class="site-state-item-count">71</span>
+          <span class="site-state-item-count">72</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1229,7 +1229,7 @@
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
-        <span class="site-state-item-count">89</span>
+        <span class="site-state-item-count">90</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -1281,13 +1281,13 @@
       <i class="fa fa-area-chart"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">955k</span>
+    <span title="站点总字数">970k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">26:31</span>
+    <span title="站点阅读时长">26:57</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动
   </div>
