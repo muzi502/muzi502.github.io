@@ -9,6 +9,8 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon.ico">
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon.ico">
   <link rel="mask-icon" href="/favicon.ico" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
 <link rel="stylesheet" href="/css/main.css">
 <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Roboto Mono:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
 <link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
@@ -149,7 +151,7 @@
   <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://blog.k8s.li/N1-openwrt.html">
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="https://blog.502.li/avatar.png">
+      <meta itemprop="image" content="https://blog.k8s.li/avatar.png">
       <meta itemprop="name" content="木子">
       <meta itemprop="description" content="">
     </span>
@@ -157,9 +159,9 @@
       <meta itemprop="name" content="木子">
     </span>
       <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
+        <h2 class="post-title" itemprop="name headline">
           N1 盒子刷入 OpenWrt 并部署 K3s
-        </h1>
+        </h2>
         <div class="post-meta">
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -389,13 +391,13 @@
       </ul>
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#K3s"><span class="nav-number">1.</span> <span class="nav-text">K3s</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#开箱"><span class="nav-number">2.</span> <span class="nav-text">开箱</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#外包装"><span class="nav-number">2.1.</span> <span class="nav-text">外包装</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#接口"><span class="nav-number">2.2.</span> <span class="nav-text">接口</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#开机画面"><span class="nav-number">2.3.</span> <span class="nav-text">开机画面</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#电视系统"><span class="nav-number">2.4.</span> <span class="nav-text">电视系统</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#配置"><span class="nav-number">2.5.</span> <span class="nav-text">配置</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#拆机"><span class="nav-number">2.5.1.</span> <span class="nav-text">拆机</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#CPU"><span class="nav-number">2.5.2.</span> <span class="nav-text">CPU</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#RAM"><span class="nav-number">2.5.3.</span> <span class="nav-text">RAM</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#ROM"><span class="nav-number">2.5.4.</span> <span class="nav-text">ROM</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#net"><span class="nav-number">2.5.5.</span> <span class="nav-text">net</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#htop"><span class="nav-number">2.5.6.</span> <span class="nav-text">htop</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#准备"><span class="nav-number">3.</span> <span class="nav-text">准备</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#推荐资源"><span class="nav-number">3.1.</span> <span class="nav-text">推荐资源</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#刷机"><span class="nav-number">4.</span> <span class="nav-text">刷机</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#开启-ADB"><span class="nav-number">4.1.</span> <span class="nav-text">开启 ADB</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#PC-上连接-ADB-进入-fastboot-模式"><span class="nav-number">4.2.</span> <span class="nav-text">PC 上连接 ADB 进入 fastboot 模式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#刷入降级镜像"><span class="nav-number">4.3.</span> <span class="nav-text">刷入降级镜像</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#校验镜像"><span class="nav-number">4.3.1.</span> <span class="nav-text">校验镜像</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#输入降级包镜像"><span class="nav-number">4.3.2.</span> <span class="nav-text">输入降级包镜像</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#将-OpenWrt-刷入-EMMC"><span class="nav-number">4.4.</span> <span class="nav-text">将 OpenWrt 刷入 EMMC</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#写入-U-盘镜像"><span class="nav-number">4.4.1.</span> <span class="nav-text">写入 U 盘镜像</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#从-update-模式启动-Armbian"><span class="nav-number">4.4.2.</span> <span class="nav-text">从 update 模式启动 Armbian</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#将-OpenWrt-写入到-EMMC-存储中"><span class="nav-number">4.4.3.</span> <span class="nav-text">将 OpenWrt 写入到 EMMC 存储中</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#OpenWrt-上的一些小优化"><span class="nav-number">5.</span> <span class="nav-text">OpenWrt 上的一些小优化</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#修改-IP"><span class="nav-number">5.1.</span> <span class="nav-text">修改 IP</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#安装必备工具"><span class="nav-number">5.2.</span> <span class="nav-text">安装必备工具</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#zsh-踩坑"><span class="nav-number">5.2.1.</span> <span class="nav-text">zsh 踩坑</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#部署一下-K3s"><span class="nav-number">5.3.</span> <span class="nav-text">部署一下 K3s</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#官方脚本"><span class="nav-number">5.3.1.</span> <span class="nav-text">官方脚本</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#二进制部署"><span class="nav-number">5.3.2.</span> <span class="nav-text">二进制部署</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#usage"><span class="nav-number">5.3.3.</span> <span class="nav-text">usage</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#check-config"><span class="nav-number">5.3.4.</span> <span class="nav-text">check-config</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#创建-K3s-集群"><span class="nav-number">5.3.5.</span> <span class="nav-text">创建 K3s 集群</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#集群状态"><span class="nav-number">5.3.6.</span> <span class="nav-text">集群状态</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#结束啦"><span class="nav-number">6.</span> <span class="nav-text">结束啦</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#K3s"><span class="nav-number">1.</span> <span class="nav-text">K3s</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#开箱"><span class="nav-number">2.</span> <span class="nav-text">开箱</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#外包装"><span class="nav-number">2.1.</span> <span class="nav-text">外包装</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#接口"><span class="nav-number">2.2.</span> <span class="nav-text">接口</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#开机画面"><span class="nav-number">2.3.</span> <span class="nav-text">开机画面</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#电视系统"><span class="nav-number">2.4.</span> <span class="nav-text">电视系统</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#配置"><span class="nav-number">2.5.</span> <span class="nav-text">配置</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#准备"><span class="nav-number">3.</span> <span class="nav-text">准备</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#推荐资源"><span class="nav-number">3.1.</span> <span class="nav-text">推荐资源</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#刷机"><span class="nav-number">4.</span> <span class="nav-text">刷机</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#开启-ADB"><span class="nav-number">4.1.</span> <span class="nav-text">开启 ADB</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#PC-上连接-ADB-进入-fastboot-模式"><span class="nav-number">4.2.</span> <span class="nav-text">PC 上连接 ADB 进入 fastboot 模式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#刷入降级镜像"><span class="nav-number">4.3.</span> <span class="nav-text">刷入降级镜像</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#将-OpenWrt-刷入-EMMC"><span class="nav-number">4.4.</span> <span class="nav-text">将 OpenWrt 刷入 EMMC</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#OpenWrt-上的一些小优化"><span class="nav-number">5.</span> <span class="nav-text">OpenWrt 上的一些小优化</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#修改-IP"><span class="nav-number">5.1.</span> <span class="nav-text">修改 IP</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#安装必备工具"><span class="nav-number">5.2.</span> <span class="nav-text">安装必备工具</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#部署一下-K3s"><span class="nav-number">5.3.</span> <span class="nav-text">部署一下 K3s</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#结束啦"><span class="nav-number">6.</span> <span class="nav-text">结束啦</span></a></li></ol></div>
       </div>
       <!--/noindex-->
       <div class="site-overview-wrap sidebar-panel">
         <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
     <img class="site-author-image" itemprop="image" alt="木子"
-      src="https://blog.502.li/avatar.png">
+      src="https://blog.k8s.li/avatar.png">
   <p class="site-author-name" itemprop="name">木子</p>
   <div class="site-description" itemprop="description"></div>
 </div>
@@ -436,7 +438,7 @@
         <a href="https://kindle.502.li/" title="Kindle → https:&#x2F;&#x2F;kindle.502.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-book"></i>Kindle</a>
       </span>
       <span class="links-of-author-item">
-        <a href="https://t.me/rss_kubernetes" title="Channel → https:&#x2F;&#x2F;t.me&#x2F;rss_kubernetes" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Channel</a>
+        <a href="https://tg.k8s.li/" title="Channel → https:&#x2F;&#x2F;tg.k8s.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Channel</a>
       </span>
       <span class="links-of-author-item">
         <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-fw fa-rss"></i>RSS</a>
@@ -466,13 +468,13 @@
       <i class="fa fa-area-chart"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">970k</span>
+    <span title="站点总字数">971k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">26:57</span>
+    <span title="站点阅读时长">26:59</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动
   </div>

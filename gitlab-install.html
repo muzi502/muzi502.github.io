@@ -9,6 +9,8 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon.ico">
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon.ico">
   <link rel="mask-icon" href="/favicon.ico" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
 <link rel="stylesheet" href="/css/main.css">
 <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Roboto Mono:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
 <link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
@@ -140,7 +142,7 @@
   <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://blog.k8s.li/gitlab-install.html">
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="https://blog.502.li/avatar.png">
+      <meta itemprop="image" content="https://blog.k8s.li/avatar.png">
       <meta itemprop="name" content="木子">
       <meta itemprop="description" content="">
     </span>
@@ -148,9 +150,9 @@
       <meta itemprop="name" content="木子">
     </span>
       <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
+        <h2 class="post-title" itemprop="name headline">
           部署 Gitlab 及 gitlab-runner
-        </h1>
+        </h2>
         <div class="post-meta">
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -252,8 +254,8 @@
           </div>
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/install-k8s-ubuntu18-04.html" rel="prev" title="ubuntu 1804 使用 kubeadm 部署 kubernetes">
-      <i class="fa fa-chevron-left"></i> ubuntu 1804 使用 kubeadm 部署 kubernetes
+    <a href="/fuch-rush-app-dir.html" rel="prev" title="清理毒瘤app在sdcard目录下拉屎产生的文件夹">
+      <i class="fa fa-chevron-left"></i> 清理毒瘤app在sdcard目录下拉屎产生的文件夹
     </a></div>
       <div class="post-nav-item">
     <a href="/dashboard.html" rel="next" title="deploy kubernets dashborad with https">
@@ -308,13 +310,13 @@
       </ul>
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-Omnibus包安装，也就是rpm包、deb包安装😂"><span class="nav-number">1.</span> <span class="nav-text">1.Omnibus包安装，也就是rpm包、deb包安装😂</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#CentOS7"><span class="nav-number">1.1.</span> <span class="nav-text">CentOS7</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Ubuntu-1804"><span class="nav-number">1.2.</span> <span class="nav-text">Ubuntu 1804</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-打补丁，补充汉化的补丁"><span class="nav-number">2.</span> <span class="nav-text">2.打补丁，补充汉化的补丁</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#reconfigure-失败"><span class="nav-number">2.1.</span> <span class="nav-text">reconfigure 失败</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-进行一些配置，gitlab的配置文件在-etc-gitlab-gitlab-rb"><span class="nav-number">3.</span> <span class="nav-text">3.进行一些配置，gitlab的配置文件在&#x2F;etc&#x2F;gitlab&#x2F;gitlab.rb</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#安装-gitlab-runner"><span class="nav-number">4.</span> <span class="nav-text">安装 gitlab-runner</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#CentOS-RHEL"><span class="nav-number">4.1.</span> <span class="nav-text">CentOS&#x2F;RHEL</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Debian-Ubuntu"><span class="nav-number">4.2.</span> <span class="nav-text">Debian&#x2F;Ubuntu</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Debian"><span class="nav-number">4.2.1.</span> <span class="nav-text">Debian</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Ubuntu"><span class="nav-number">4.2.2.</span> <span class="nav-text">Ubuntu</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#注册-gitlab-runner"><span class="nav-number">5.</span> <span class="nav-text">注册 gitlab-runner</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#修改-gitlab-默认网络设置"><span class="nav-number">5.1.</span> <span class="nav-text">修改 gitlab 默认网络设置</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#500-错误"><span class="nav-number">5.1.1.</span> <span class="nav-text">500 错误</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#注册"><span class="nav-number">5.2.</span> <span class="nav-text">注册</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-Omnibus包安装，也就是rpm包、deb包安装😂"><span class="nav-number">1.</span> <span class="nav-text">1.Omnibus包安装，也就是rpm包、deb包安装😂</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#CentOS7"><span class="nav-number">1.1.</span> <span class="nav-text">CentOS7</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Ubuntu-1804"><span class="nav-number">1.2.</span> <span class="nav-text">Ubuntu 1804</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-打补丁，补充汉化的补丁"><span class="nav-number">2.</span> <span class="nav-text">2.打补丁，补充汉化的补丁</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#reconfigure-失败"><span class="nav-number">2.1.</span> <span class="nav-text">reconfigure 失败</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-进行一些配置，gitlab的配置文件在-etc-gitlab-gitlab-rb"><span class="nav-number">3.</span> <span class="nav-text">3.进行一些配置，gitlab的配置文件在&#x2F;etc&#x2F;gitlab&#x2F;gitlab.rb</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#安装-gitlab-runner"><span class="nav-number">4.</span> <span class="nav-text">安装 gitlab-runner</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#CentOS-RHEL"><span class="nav-number">4.1.</span> <span class="nav-text">CentOS&#x2F;RHEL</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Debian-Ubuntu"><span class="nav-number">4.2.</span> <span class="nav-text">Debian&#x2F;Ubuntu</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#注册-gitlab-runner"><span class="nav-number">5.</span> <span class="nav-text">注册 gitlab-runner</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#修改-gitlab-默认网络设置"><span class="nav-number">5.1.</span> <span class="nav-text">修改 gitlab 默认网络设置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#注册"><span class="nav-number">5.2.</span> <span class="nav-text">注册</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
       <div class="site-overview-wrap sidebar-panel">
         <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
     <img class="site-author-image" itemprop="image" alt="木子"
-      src="https://blog.502.li/avatar.png">
+      src="https://blog.k8s.li/avatar.png">
   <p class="site-author-name" itemprop="name">木子</p>
   <div class="site-description" itemprop="description"></div>
 </div>
@@ -355,7 +357,7 @@
         <a href="https://kindle.502.li/" title="Kindle → https:&#x2F;&#x2F;kindle.502.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-book"></i>Kindle</a>
       </span>
       <span class="links-of-author-item">
-        <a href="https://t.me/rss_kubernetes" title="Channel → https:&#x2F;&#x2F;t.me&#x2F;rss_kubernetes" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Channel</a>
+        <a href="https://tg.k8s.li/" title="Channel → https:&#x2F;&#x2F;tg.k8s.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Channel</a>
       </span>
       <span class="links-of-author-item">
         <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-fw fa-rss"></i>RSS</a>
@@ -385,13 +387,13 @@
       <i class="fa fa-area-chart"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">970k</span>
+    <span title="站点总字数">971k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">26:57</span>
+    <span title="站点阅读时长">26:59</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动
   </div>
