@@ -51,7 +51,7 @@
 <meta property="og:description" content="注意: 这个部署在了 digital ocean 的 VPS 上，国内的机器需要代理。 1.主机要求0.硬件要求 2CPU 2GB RAM 1.临时关闭 swap swapoff -a 2.打开bridge-nf-call-iptables 123456cat &gt; &#x2F;etc&#x2F;sysctl.d&#x2F;99-kubernetes-cri.conf &lt;&lt;EOFnet.bridge.bridg">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2019-05-15T16:00:00.000Z">
-<meta property="article:modified_time" content="2020-03-31T00:36:28.827Z">
+<meta property="article:modified_time" content="2020-04-04T08:25:49.019Z">
 <meta property="article:author" content="木子">
 <meta property="article:tag" content="kubernetes">
 <meta property="article:tag" content="k8s">
@@ -165,7 +165,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-03-31 2020-03-31T08:36:28+08:00" itemprop="dateModified" datetime="2020-03-31T08:36:28+08:00">2020-03-31</time>
+                <time title="修改时间：2020-04-04 2020-04-04T16:25:49+08:00" itemprop="dateModified" datetime="2020-04-04T16:25:49+08:00">2020-04-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -226,7 +226,7 @@
 <p>最后将docker加入开机自启，并重启一下docker</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">mkdir -p /etc/systemd/system/docker.service.d</span><br><span class="line">systemctl daemon-reload</span><br><span class="line">systemctl restart docker</span><br></pre></td></tr></table></figure>
 <p>3.(可选)CRI-O 容器运行时</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#Prerequisites</span></span><br><span class="line">modprobe overlay</span><br><span class="line">modprobe br_netfilter</span><br><span class="line"></span><br><span class="line"><span class="comment"># Setup required sysctl params, these persist across reboots.</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># Install prerequisites</span></span><br><span class="line">apt-get update</span><br><span class="line">apt-get install software-properties-common</span><br><span class="line"></span><br><span class="line">add-apt-repository ppa:projectatomic/ppa</span><br><span class="line">apt-get update</span><br><span class="line"></span><br><span class="line"><span class="comment"># Install CRI-O</span></span><br><span class="line">apt-get install cri-o-1.11</span><br><span class="line"></span><br><span class="line"><span class="comment"># Start CRI-O</span></span><br><span class="line">systemctl start crio</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#Prerequisites</span></span><br><span class="line">modprobe overlay</span><br><span class="line">modprobe br_netfilter</span><br><span class="line"></span><br><span class="line"><span class="comment"># Setup required sysctl params, these persist across reboots.</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Install prerequisites</span></span><br><span class="line">apt-get update</span><br><span class="line">apt-get install software-properties-common</span><br><span class="line"></span><br><span class="line">add-apt-repository ppa:projectatomic/ppa</span><br><span class="line">apt-get update</span><br><span class="line"></span><br><span class="line"><span class="comment"># Install CRI-O</span></span><br><span class="line">apt-get install cri-o-1.11</span><br><span class="line"></span><br><span class="line"><span class="comment"># Start CRI-O</span></span><br><span class="line">systemctl start crio</span><br></pre></td></tr></table></figure>
 <p>4.(可选)Containerd</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Prerequisites</span></span><br><span class="line">modprobe overlay</span><br><span class="line">modprobe br_netfilter</span><br><span class="line"></span><br><span class="line"><span class="comment"># Setup required sysctl params, these persist across reboots.</span></span><br><span class="line">cat &gt; /etc/sysctl.d/99-kubernetes-cri.conf &lt;&lt;EOF</span><br><span class="line">net.bridge.bridge-nf-call-iptables  = 1</span><br><span class="line">net.ipv4.ip_forward                 = 1</span><br><span class="line">net.bridge.bridge-nf-call-ip6tables = 1</span><br><span class="line">EOF</span><br><span class="line"></span><br><span class="line">sysctl --system</span><br><span class="line"></span><br><span class="line"><span class="comment"># Install containerd</span></span><br><span class="line"><span class="comment">## Set up the repository</span></span><br><span class="line"><span class="comment">### Install packages to allow apt to use a repository over HTTPS</span></span><br><span class="line">apt-get update &amp;&amp; apt-get install -y apt-transport-https ca-certificates curl software-properties-common</span><br><span class="line"></span><br><span class="line"><span class="comment">### Add Docker’s official GPG key</span></span><br><span class="line">curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -</span><br><span class="line"></span><br><span class="line"><span class="comment">### Add Docker apt repository.</span></span><br><span class="line">add-apt-repository \</span><br><span class="line">    <span class="string">"deb [arch=amd64] https://download.docker.com/linux/ubuntu \</span></span><br><span class="line"><span class="string">    <span class="variable">$(lsb_release -cs)</span> \</span></span><br><span class="line"><span class="string">    stable"</span></span><br><span class="line"></span><br><span class="line"><span class="comment">## Install containerd</span></span><br><span class="line">apt-get update &amp;&amp; apt-get install -y containerd.io</span><br><span class="line"></span><br><span class="line"><span class="comment"># Configure containerd</span></span><br><span class="line">mkdir -p /etc/containerd</span><br><span class="line">containerd config default &gt; /etc/containerd/config.toml</span><br><span class="line"></span><br><span class="line"><span class="comment"># Restart containerd</span></span><br><span class="line">systemctl restart containerd</span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用systemd</span></span><br><span class="line">systemd</span><br><span class="line">To use the systemd cgroup driver, <span class="built_in">set</span> plugins.cri.systemd_cgroup = <span class="literal">true</span> <span class="keyword">in</span> /etc/containerd/config.toml. When using kubeadm, manually configure the cgroup driver <span class="keyword">for</span> kubelet as well</span><br></pre></td></tr></table></figure>
 <hr>
@@ -270,8 +270,8 @@
       <i class="fa fa-chevron-left"></i> zabbix 监控服务
     </a></div>
       <div class="post-nav-item">
-    <a href="/CentOS7-install-k8s.html" rel="next" title="CentOS7 使用 kubeadm 部署 kubernetes">
-      CentOS7 使用 kubeadm 部署 kubernetes <i class="fa fa-chevron-right"></i>
+    <a href="/fuch-rush-app-dir.html" rel="next" title="清理毒瘤app在sdcard目录下拉屎产生的文件夹">
+      清理毒瘤app在sdcard目录下拉屎产生的文件夹 <i class="fa fa-chevron-right"></i>
     </a></div>
     </div>
       </footer>
@@ -336,7 +336,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
           <a href="/archives">
-          <span class="site-state-item-count">72</span>
+          <span class="site-state-item-count">73</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -347,7 +347,7 @@
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
-        <span class="site-state-item-count">90</span>
+        <span class="site-state-item-count">92</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -399,13 +399,13 @@
       <i class="fa fa-area-chart"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">971k</span>
+    <span title="站点总字数">1m</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">26:59</span>
+    <span title="站点阅读时长">27:52</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动
   </div>

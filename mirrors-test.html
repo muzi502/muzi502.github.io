@@ -51,7 +51,7 @@
 <meta property="og:description" content="根据自己的网络，如何选择一个适合自己的镜像源呢？可能大家使用的发行版不同，还好有了 docker 这个玩具，能使用不同的发行版镜像启动容器来测试。那么就选定国内知名的镜像源来个测试，供大家参考选择一个合适的发行版。如果是公有云服务器的话，肯定是选择厂商的镜像源啦，内网传输速度超快，所以这次的测试对公有云服务器毫无意义，仅仅针对于办公或家用网络哈。 国内知名镜像源   所属 官网 评价    清华">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2019-09-17T16:00:00.000Z">
-<meta property="article:modified_time" content="2020-03-31T00:36:28.835Z">
+<meta property="article:modified_time" content="2020-04-04T08:25:49.043Z">
 <meta property="article:author" content="木子">
 <meta property="article:tag" content="Linux">
 <meta name="twitter:card" content="summary">
@@ -163,7 +163,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-03-31 2020-03-31T08:36:28+08:00" itemprop="dateModified" datetime="2020-03-31T08:36:28+08:00">2020-03-31</time>
+                <time title="修改时间：2020-04-04 2020-04-04T16:25:49+08:00" itemprop="dateModified" datetime="2020-04-04T16:25:49+08:00">2020-04-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -253,7 +253,7 @@
 <h3 id="阿里云"><a href="#阿里云" class="headerlink" title="阿里云"></a>阿里云</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">sed -i <span class="string">'s/deb.debian.org/mirrors.aliyun.com/g'</span> /etc/apt/sources.list</span><br><span class="line">sed -i <span class="string">'s|security.debian.org/debian-security|mirrors.aliyun.com/debian-security|g'</span> /etc/apt/sources.list</span><br><span class="line">root@e4b82e40b6c6:/<span class="comment"># apt update</span></span><br><span class="line">Get:1 http://mirrors.aliyun.com/debian buster InRelease [122 kB]</span><br><span class="line">Get:2 http://mirrors.aliyun.com/debian-security buster/updates InRelease [39.1 kB]</span><br><span class="line">Get:3 http://mirrors.aliyun.com/debian buster-updates InRelease [49.3 kB]</span><br><span class="line">Get:4 http://mirrors.aliyun.com/debian buster/main amd64 Packages [7899 kB]</span><br><span class="line">Get:5 http://mirrors.aliyun.com/debian-security buster/updates/main amd64 Packages [85.3 kB]</span><br><span class="line">Get:6 http://mirrors.aliyun.com/debian buster-updates/main amd64 Packages [884 B]</span><br><span class="line">Fetched 8195 kB <span class="keyword">in</span> 1s (6489 kB/s)</span><br><span class="line">Reading package lists... Done</span><br><span class="line">Building dependency tree</span><br><span class="line">Reading state information... Done</span><br><span class="line">All packages are up to date.</span><br><span class="line"></span><br><span class="line">apt install xfce4 gnome libreoffice  vlc -d -y</span><br><span class="line">0 upgraded, 1574 newly installed, 0 to remove and 0 not upgraded.</span><br><span class="line">Need to get 1014 MB of archives.</span><br><span class="line">After this operation, 3471 MB of additional disk space will be used.</span><br><span class="line">Fetched 1014 MB <span class="keyword">in</span> 2min 54s (5815 kB/s)</span><br><span class="line">Download complete and <span class="keyword">in</span> download only mode</span><br></pre></td></tr></table></figure>
 <p>测试结果 <code>Fetched 1014 MB in 2min 54s (5815 kB/s)</code></p>
 <h3 id="华为"><a href="#华为" class="headerlink" title="华为"></a>华为</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">sed -i <span class="string">'s/deb.debian.org/mirrors.huaweicloud.com/g'</span> /etc/apt/sources.list</span><br><span class="line">sed -i <span class="string">'s|security.debian.org/debian-security|mirrors.huaweicloud.com/debian-security|g'</span> /etc/apt/sources.list</span><br><span class="line">apt update</span><br><span class="line"></span><br><span class="line">root@659549fb7f12:/<span class="comment"># apt update</span></span><br><span class="line">Get:1 http://mirrors.huaweicloud.com/debian buster InRelease [122 kB]</span><br><span class="line">Get:2 http://mirrors.huaweicloud.com/debian-security buster/updates InRelease [39.1 kB]</span><br><span class="line">Get:3 http://mirrors.huaweicloud.com/debian buster-updates InRelease [49.3 kB]</span><br><span class="line">Get:4 http://mirrors.huaweicloud.com/debian buster/main amd64 Packages [7899 kB]</span><br><span class="line">Get:5 http://mirrors.huaweicloud.com/debian-security buster/updates/main amd64 Packages [85.0 kB]</span><br><span class="line">Get:6 http://mirrors.huaweicloud.com/debian buster-updates/main amd64 Packages [884 B]</span><br><span class="line">Fetched 8194 kB <span class="keyword">in</span> 2s (4766 kB/s)</span><br><span class="line">Reading package lists... Done</span><br><span class="line">Building dependency tree</span><br><span class="line">Reading state information... Done</span><br><span class="line">All packages are up to date.</span><br><span class="line"></span><br><span class="line">apt install xfce4 gnome libreoffice  vlc -d -y</span><br><span class="line">0 upgraded, 1574 newly installed, 0 to remove and 0 not upgraded.</span><br><span class="line">Need to get 1014 MB of archives.</span><br><span class="line">After this operation, 3471 MB of additional disk space will be used.</span><br><span class="line">Fetched 1014 MB <span class="keyword">in</span> 1min 25s (12.0 MB/s)</span><br><span class="line">Download complete and <span class="keyword">in</span> download only mode</span><br></pre></td></tr></table></figure>
-<p>测试结果 <code>Fetched 1014 MB in 1min 25s (12.0 MB/s)</code> </p>
+<p>测试结果 <code>Fetched 1014 MB in 1min 25s (12.0 MB/s)</code></p>
 <p>不得不说华为云镜像站真香啊。进度条上基本上都是 10MB/s 以上，从没出现低于 10MB/s 的，甚至峰值能达到 20MB/s</p>
 <h2 id="附录—测试数据表格"><a href="#附录—测试数据表格" class="headerlink" title="附录—测试数据表格"></a>附录—测试数据表格</h2><p><code>xfce4 、gnome 、libreoffice 、 vlc</code>  1574 个包，总大小 <code>1014 MB</code> 测试时间为白天工作时间</p>
 <table>
@@ -379,7 +379,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
           <a href="/archives">
-          <span class="site-state-item-count">72</span>
+          <span class="site-state-item-count">73</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -390,7 +390,7 @@
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
-        <span class="site-state-item-count">90</span>
+        <span class="site-state-item-count">92</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -442,13 +442,13 @@
       <i class="fa fa-area-chart"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">971k</span>
+    <span title="站点总字数">1m</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">26:59</span>
+    <span title="站点阅读时长">27:52</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动
   </div>
