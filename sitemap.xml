@@ -2,331 +2,338 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>https://blog.k8s.li/link/index.html</loc>
+    
+    <lastmod>2020-04-10T01:36:57.040Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>https://blog.k8s.li/about.html</loc>
+    
+    <lastmod>2020-04-10T01:36:57.036Z</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>https://blog.k8s.li/wd-hc310-dc-hdd.html</loc>
     
-    <lastmod>2020-04-04T08:29:57.937Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://blog.k8s.li/kindle-note.html</loc>
-    
-    <lastmod>2020-04-04T08:29:57.929Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://blog.k8s.li/telegram-tips.html</loc>
-    
-    <lastmod>2020-04-04T08:29:57.929Z</lastmod>
+    <lastmod>2020-04-04T08:31:31.965Z</lastmod>
     
   </url>
   
   <url>
     <loc>https://blog.k8s.li/merge-bilibili-flv-video.html</loc>
     
-    <lastmod>2020-04-04T08:29:57.929Z</lastmod>
+    <lastmod>2020-04-04T08:31:31.961Z</lastmod>
     
   </url>
   
   <url>
-    <loc>https://blog.k8s.li/make-e-book-from-html.html</loc>
+    <loc>https://blog.k8s.li/telegram-tips.html</loc>
     
-    <lastmod>2020-04-04T08:29:57.929Z</lastmod>
+    <lastmod>2020-04-04T08:31:31.961Z</lastmod>
     
   </url>
   
   <url>
-    <loc>https://blog.k8s.li/container-linux-os.html</loc>
+    <loc>https://blog.k8s.li/kindle-note.html</loc>
     
-    <lastmod>2020-04-04T08:29:57.925Z</lastmod>
+    <lastmod>2020-04-04T08:31:31.961Z</lastmod>
     
   </url>
   
   <url>
     <loc>https://blog.k8s.li/dockerfile-tips.html</loc>
     
-    <lastmod>2020-04-04T08:29:57.925Z</lastmod>
+    <lastmod>2020-04-04T08:31:31.957Z</lastmod>
     
   </url>
   
   <url>
     <loc>https://blog.k8s.li/linux-login-alarm-telegram.html</loc>
     
-    <lastmod>2020-04-04T08:29:57.925Z</lastmod>
+    <lastmod>2020-04-04T08:31:31.957Z</lastmod>
     
   </url>
   
   <url>
-    <loc>https://blog.k8s.li/2019-review.html</loc>
+    <loc>https://blog.k8s.li/make-e-book-from-html.html</loc>
     
-    <lastmod>2020-04-04T08:29:57.921Z</lastmod>
+    <lastmod>2020-04-04T08:31:31.957Z</lastmod>
     
   </url>
   
   <url>
-    <loc>https://blog.k8s.li/Kubernetes-Introduction-for-VMware-Users-zh.html</loc>
+    <loc>https://blog.k8s.li/container-linux-os.html</loc>
     
-    <lastmod>2020-04-04T08:29:57.917Z</lastmod>
+    <lastmod>2020-04-04T08:31:31.957Z</lastmod>
     
   </url>
   
   <url>
     <loc>https://blog.k8s.li/pc-e5v3-e3v3-amd2600.html</loc>
     
-    <lastmod>2020-04-04T08:29:57.917Z</lastmod>
+    <lastmod>2020-04-04T08:31:31.953Z</lastmod>
     
   </url>
   
   <url>
-    <loc>https://blog.k8s.li/Internet-related-foundations-and-organizations.html</loc>
+    <loc>https://blog.k8s.li/2019-review.html</loc>
     
-    <lastmod>2020-04-04T08:29:57.869Z</lastmod>
+    <lastmod>2020-04-04T08:31:31.953Z</lastmod>
     
   </url>
   
   <url>
-    <loc>https://blog.k8s.li/blog-typecho-to-hexo.html</loc>
+    <loc>https://blog.k8s.li/Kubernetes-Introduction-for-VMware-Users-zh.html</loc>
     
-    <lastmod>2020-04-04T08:29:57.869Z</lastmod>
+    <lastmod>2020-04-04T08:31:31.949Z</lastmod>
     
   </url>
   
   <url>
     <loc>https://blog.k8s.li/wndr3700v4-openwrt.html</loc>
     
-    <lastmod>2020-04-04T08:29:57.861Z</lastmod>
+    <lastmod>2020-04-04T08:31:31.937Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>https://blog.k8s.li/blog-typecho-to-hexo.html</loc>
+    
+    <lastmod>2020-04-04T08:31:31.937Z</lastmod>
     
   </url>
   
   <url>
     <loc>https://blog.k8s.li/life-sciences.html</loc>
     
-    <lastmod>2020-04-04T08:29:57.861Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://blog.k8s.li/ffmepg-rtsp.html</loc>
-    
-    <lastmod>2020-04-04T08:29:57.861Z</lastmod>
+    <lastmod>2020-04-04T08:31:31.937Z</lastmod>
     
   </url>
   
   <url>
     <loc>https://blog.k8s.li/A-History-of-Protecting-Freedom-Where-Law-and-Technology-Collide.html</loc>
     
-    <lastmod>2020-04-04T08:29:57.861Z</lastmod>
+    <lastmod>2020-04-04T08:31:31.937Z</lastmod>
     
   </url>
   
   <url>
-    <loc>https://blog.k8s.li/frps-prot-monitor.html</loc>
+    <loc>https://blog.k8s.li/Internet-related-foundations-and-organizations.html</loc>
     
-    <lastmod>2020-04-04T08:29:57.849Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://blog.k8s.li/fastdfs-lua-redis.html</loc>
-    
-    <lastmod>2020-04-04T08:29:57.849Z</lastmod>
+    <lastmod>2020-04-04T08:31:31.937Z</lastmod>
     
   </url>
   
   <url>
-    <loc>https://blog.k8s.li/docker-deploy-fastdfs.html</loc>
+    <loc>https://blog.k8s.li/ffmepg-rtsp.html</loc>
     
-    <lastmod>2020-04-04T08:29:57.845Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://blog.k8s.li/ovf-to-ova.html</loc>
-    
-    <lastmod>2020-04-04T08:29:57.829Z</lastmod>
+    <lastmod>2020-04-04T08:31:31.937Z</lastmod>
     
   </url>
   
   <url>
     <loc>https://blog.k8s.li/esp8266-pc-switch.html</loc>
     
-    <lastmod>2020-04-04T08:29:57.829Z</lastmod>
+    <lastmod>2020-04-04T08:31:31.933Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>https://blog.k8s.li/ovf-to-ova.html</loc>
+    
+    <lastmod>2020-04-04T08:31:31.933Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>https://blog.k8s.li/fastdfs-lua-redis.html</loc>
+    
+    <lastmod>2020-04-04T08:31:31.933Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>https://blog.k8s.li/docker-deploy-fastdfs.html</loc>
+    
+    <lastmod>2020-04-04T08:31:31.933Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>https://blog.k8s.li/frps-prot-monitor.html</loc>
+    
+    <lastmod>2020-04-04T08:31:31.933Z</lastmod>
     
   </url>
   
   <url>
     <loc>https://blog.k8s.li/The-Dictator%E2%80%99s-Handbook.html</loc>
     
-    <lastmod>2020-04-04T08:29:57.825Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://blog.k8s.li/esxi-openwrt.html</loc>
-    
-    <lastmod>2020-04-04T08:29:57.825Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://blog.k8s.li/esxi-vmbase.html</loc>
-    
-    <lastmod>2020-04-04T08:29:57.825Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://blog.k8s.li/mirrors-test.html</loc>
-    
-    <lastmod>2020-04-04T08:29:57.821Z</lastmod>
+    <lastmod>2020-04-04T08:31:31.929Z</lastmod>
     
   </url>
   
   <url>
     <loc>https://blog.k8s.li/debian-gateway.html</loc>
     
-    <lastmod>2020-04-04T08:29:57.821Z</lastmod>
+    <lastmod>2020-04-04T08:31:31.929Z</lastmod>
     
   </url>
   
   <url>
-    <loc>https://blog.k8s.li/centos7-offline-install-docker.html</loc>
+    <loc>https://blog.k8s.li/esxi-openwrt.html</loc>
     
-    <lastmod>2020-04-04T08:29:57.805Z</lastmod>
+    <lastmod>2020-04-04T08:31:31.929Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>https://blog.k8s.li/esxi-vmbase.html</loc>
+    
+    <lastmod>2020-04-04T08:31:31.929Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>https://blog.k8s.li/mirrors-test.html</loc>
+    
+    <lastmod>2020-04-04T08:31:31.929Z</lastmod>
     
   </url>
   
   <url>
     <loc>https://blog.k8s.li/amd-yes.html</loc>
     
-    <lastmod>2020-04-04T08:29:57.801Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://blog.k8s.li/Asking-the-right-questions.html</loc>
-    
-    <lastmod>2020-04-04T08:29:57.801Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://blog.k8s.li/get-someone-info.html</loc>
-    
-    <lastmod>2020-04-04T08:29:57.785Z</lastmod>
+    <lastmod>2020-04-04T08:31:31.925Z</lastmod>
     
   </url>
   
   <url>
     <loc>https://blog.k8s.li/oh-my-pink.html</loc>
     
-    <lastmod>2020-04-04T08:29:57.785Z</lastmod>
+    <lastmod>2020-04-04T08:31:31.925Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>https://blog.k8s.li/centos7-offline-install-docker.html</loc>
+    
+    <lastmod>2020-04-04T08:31:31.925Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>https://blog.k8s.li/Asking-the-right-questions.html</loc>
+    
+    <lastmod>2020-04-04T08:31:31.925Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>https://blog.k8s.li/get-someone-info.html</loc>
+    
+    <lastmod>2020-04-04T08:31:31.921Z</lastmod>
     
   </url>
   
   <url>
     <loc>https://blog.k8s.li/CentOS7-install-k8s.html</loc>
     
-    <lastmod>2020-04-04T08:29:57.781Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://blog.k8s.li/fuch-rush-app-dir.html</loc>
-    
-    <lastmod>2020-04-04T08:29:57.781Z</lastmod>
+    <lastmod>2020-04-04T08:31:31.921Z</lastmod>
     
   </url>
   
   <url>
     <loc>https://blog.k8s.li/dashboard.html</loc>
     
-    <lastmod>2020-04-04T08:29:57.781Z</lastmod>
+    <lastmod>2020-04-04T08:31:31.921Z</lastmod>
     
   </url>
   
   <url>
-    <loc>https://blog.k8s.li/oracle-rips-redhat.html</loc>
+    <loc>https://blog.k8s.li/fuch-rush-app-dir.html</loc>
     
-    <lastmod>2020-04-04T08:29:57.777Z</lastmod>
+    <lastmod>2020-04-04T08:31:31.921Z</lastmod>
     
   </url>
   
   <url>
     <loc>https://blog.k8s.li/zabbix-compose.html</loc>
     
-    <lastmod>2020-04-04T08:29:57.777Z</lastmod>
+    <lastmod>2020-04-04T08:31:31.917Z</lastmod>
     
   </url>
   
   <url>
     <loc>https://blog.k8s.li/install-k8s-ubuntu18-04.html</loc>
     
-    <lastmod>2020-04-04T08:29:57.777Z</lastmod>
+    <lastmod>2020-04-04T08:31:31.917Z</lastmod>
     
   </url>
   
   <url>
-    <loc>https://blog.k8s.li/Code-It-s-Trivial.html</loc>
+    <loc>https://blog.k8s.li/oracle-rips-redhat.html</loc>
     
-    <lastmod>2020-04-04T08:29:57.769Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://blog.k8s.li/RMS.html</loc>
-    
-    <lastmod>2020-04-04T08:29:57.769Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://blog.k8s.li/play-with-docker.html</loc>
-    
-    <lastmod>2020-04-04T08:29:57.769Z</lastmod>
+    <lastmod>2020-04-04T08:31:31.917Z</lastmod>
     
   </url>
   
   <url>
     <loc>https://blog.k8s.li/networktools.html</loc>
     
-    <lastmod>2020-04-04T08:29:57.769Z</lastmod>
+    <lastmod>2020-04-04T08:31:31.913Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>https://blog.k8s.li/play-with-docker.html</loc>
+    
+    <lastmod>2020-04-04T08:31:31.913Z</lastmod>
     
   </url>
   
   <url>
     <loc>https://blog.k8s.li/android-taibackup.html</loc>
     
-    <lastmod>2020-04-04T08:29:57.769Z</lastmod>
+    <lastmod>2020-04-04T08:31:31.913Z</lastmod>
     
   </url>
   
   <url>
-    <loc>https://blog.k8s.li/buffon.html</loc>
+    <loc>https://blog.k8s.li/Code-It-s-Trivial.html</loc>
     
-    <lastmod>2020-04-04T08:29:57.765Z</lastmod>
+    <lastmod>2020-04-04T08:31:31.909Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>https://blog.k8s.li/RMS.html</loc>
+    
+    <lastmod>2020-04-04T08:31:31.909Z</lastmod>
     
   </url>
   
   <url>
     <loc>https://blog.k8s.li/kernel-note-book.html</loc>
     
-    <lastmod>2020-04-04T08:29:57.765Z</lastmod>
+    <lastmod>2020-04-04T08:31:31.909Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>https://blog.k8s.li/buffon.html</loc>
+    
+    <lastmod>2020-04-04T08:31:31.909Z</lastmod>
     
   </url>
   
   <url>
     <loc>https://blog.k8s.li/python-cnni.html</loc>
     
-    <lastmod>2020-04-04T08:29:57.761Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://blog.k8s.li/link/index.html</loc>
-    
-    <lastmod>2020-04-04T08:25:19.131Z</lastmod>
+    <lastmod>2020-04-04T08:31:31.905Z</lastmod>
     
   </url>
   
@@ -339,13 +346,6 @@
   
   <url>
     <loc>https://blog.k8s.li/categories/index.html</loc>
-    
-    <lastmod>2020-04-03T00:34:47.521Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://blog.k8s.li/about.html</loc>
     
     <lastmod>2020-04-03T00:34:47.521Z</lastmod>
     
@@ -380,14 +380,14 @@
   </url>
   
   <url>
-    <loc>https://blog.k8s.li/booklist.html</loc>
+    <loc>https://blog.k8s.li/K8s-QA.html</loc>
     
     <lastmod>2020-03-15T16:00:00.000Z</lastmod>
     
   </url>
   
   <url>
-    <loc>https://blog.k8s.li/K8s-QA.html</loc>
+    <loc>https://blog.k8s.li/booklist.html</loc>
     
     <lastmod>2020-03-15T16:00:00.000Z</lastmod>
     
@@ -429,21 +429,7 @@
   </url>
   
   <url>
-    <loc>https://blog.k8s.li/k8s-01.html</loc>
-    
-    <lastmod>2020-02-29T16:00:00.000Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://blog.k8s.li/privacy-protections.html</loc>
-    
-    <lastmod>2020-02-29T16:00:00.000Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://blog.k8s.li/nonprofit-foundation-overview.html</loc>
+    <loc>https://blog.k8s.li/ops36.html</loc>
     
     <lastmod>2020-02-29T16:00:00.000Z</lastmod>
     
@@ -464,35 +450,14 @@
   </url>
   
   <url>
-    <loc>https://blog.k8s.li/How-to-choose-the-right-version-of-kubernetes.html</loc>
+    <loc>https://blog.k8s.li/privacy-protections.html</loc>
     
     <lastmod>2020-02-29T16:00:00.000Z</lastmod>
     
   </url>
   
   <url>
-    <loc>https://blog.k8s.li/android-tools.html</loc>
-    
-    <lastmod>2020-02-29T16:00:00.000Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://blog.k8s.li/Kindle-Oasis2-vs-Paperwhite3.html</loc>
-    
-    <lastmod>2020-02-29T16:00:00.000Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://blog.k8s.li/ops36.html</loc>
-    
-    <lastmod>2020-02-29T16:00:00.000Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://blog.k8s.li/thinking-2019.html</loc>
+    <loc>https://blog.k8s.li/used-devices.html</loc>
     
     <lastmod>2020-02-29T16:00:00.000Z</lastmod>
     
@@ -506,6 +471,34 @@
   </url>
   
   <url>
+    <loc>https://blog.k8s.li/Kindle-Oasis2-vs-Paperwhite3.html</loc>
+    
+    <lastmod>2020-02-29T16:00:00.000Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>https://blog.k8s.li/android-tools.html</loc>
+    
+    <lastmod>2020-02-29T16:00:00.000Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>https://blog.k8s.li/k8s-01.html</loc>
+    
+    <lastmod>2020-02-29T16:00:00.000Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>https://blog.k8s.li/thinking-2019.html</loc>
+    
+    <lastmod>2020-02-29T16:00:00.000Z</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>https://blog.k8s.li/justic.html</loc>
     
     <lastmod>2020-02-29T16:00:00.000Z</lastmod>
@@ -513,7 +506,14 @@
   </url>
   
   <url>
-    <loc>https://blog.k8s.li/used-devices.html</loc>
+    <loc>https://blog.k8s.li/nonprofit-foundation-overview.html</loc>
+    
+    <lastmod>2020-02-29T16:00:00.000Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>https://blog.k8s.li/How-to-choose-the-right-version-of-kubernetes.html</loc>
     
     <lastmod>2020-02-29T16:00:00.000Z</lastmod>
     
