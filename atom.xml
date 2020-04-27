@@ -79,9 +79,9 @@
       <category term="技术" scheme="https://blog.k8s.li/categories/%E6%8A%80%E6%9C%AF/"/>
     
     
-      <category term="kubeadm" scheme="https://blog.k8s.li/tags/kubeadm/"/>
-    
       <category term="kubernetes" scheme="https://blog.k8s.li/tags/kubernetes/"/>
+    
+      <category term="kubeadm" scheme="https://blog.k8s.li/tags/kubeadm/"/>
     
       <category term="从零开始学习 K8s" scheme="https://blog.k8s.li/tags/%E4%BB%8E%E9%9B%B6%E5%BC%80%E5%A7%8B%E5%AD%A6%E4%B9%A0-K8s/"/>
     
