@@ -51,7 +51,7 @@
 <meta property="og:description" content="今天收到一份面试题，内容看似很简单：   CentOS7，nginx 最新版，php 7.x，mysql 不做要求 + wordpress  以文件的方式创建并挂载2G的swap分区 请把学习记录以 URL，截图等方式保留。最终。我在手机上可以看到wordpress站点就好。时间1小时以内，方法方式不限    虽然看起来和简单，比如用 docker-compose 一键就能完成部署完成，不过为了把">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2020-04-15T16:00:00.000Z">
-<meta property="article:modified_time" content="2020-04-16T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-04-27T16:00:00.000Z">
 <meta property="article:author" content="木子">
 <meta property="article:tag" content="nginx">
 <meta property="article:tag" content="WordPress">
@@ -167,7 +167,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-04-17 2020-04-17T00:00:00+08:00" itemprop="dateModified" datetime="2020-04-17T00:00:00+08:00">2020-04-17</time>
+                <time title="修改时间：2020-04-28 2020-04-28T00:00:00+08:00" itemprop="dateModified" datetime="2020-04-28T00:00:00+08:00">2020-04-28</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -226,14 +226,14 @@
 <h2 id="任务2-以文件的方式创建并挂载2G的swap分区"><a href="#任务2-以文件的方式创建并挂载2G的swap分区" class="headerlink" title="任务2 以文件的方式创建并挂载2G的swap分区"></a>任务2 以文件的方式创建并挂载2G的swap分区</h2><p>这个任务与 WordPress 不太相关，所以就先完成这个。拿到机器后 ssh 登录到系统，先使用常用的命令看一下服务器的信息，另外在自己的域名上添加了 A  记录<code>wordpress.k8s.li</code> 到这台服务器  IP ，并开启 HTTPS ，防止被 DDOS 攻击，毕竟有 CloudFlare 的 Anycast CDN 给我们在前头扛一把😂还是不错滴。</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">[root@interview ~]# uname -a</span><br><span class="line">Linux interview 3.10.0-1062.12.1.el7.x86_64 #1 SMP Tue Feb 4 23:02:59 UTC 2020 x86_64 x86_64 x86_64 GNU/Linux</span><br><span class="line">[root@interview ~]# cat /proc/cpuinfo</span><br><span class="line">processor       : 0</span><br><span class="line">vendor_id       : GenuineIntel</span><br><span class="line">cpu family      : 6</span><br><span class="line">model           : 45</span><br><span class="line">model name      : Intel(R) Xeon(R) CPU E5-2670 0 @ 2.60GHz</span><br><span class="line">stepping        : 7</span><br><span class="line">microcode       : 0x710</span><br><span class="line">cpu MHz         : 2594.123</span><br><span class="line">cache size      : 20480 KB</span><br><span class="line">physical id     : 0</span><br><span class="line">siblings        : 1</span><br><span class="line">core id         : 0</span><br><span class="line">cpu cores       : 1</span><br><span class="line">apicid          : 0</span><br><span class="line">initial apicid  : 0</span><br><span class="line">fpu             : yes</span><br><span class="line">fpu_exception   : yes</span><br><span class="line">cpuid level     : 13</span><br><span class="line">wp              : yes</span><br><span class="line">flags           : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat clflush mmx fxsr sse sse2 syscall nx rdtscp lm constant_tsc rep_good nopl eagerfpu pni pclmulqdq ssse3 cx16 sse4_1 sse4_2 x2apic popcnt tsc_deadline_timer aes hypervisor lahf_lm</span><br><span class="line">bogomips        : 5187.68</span><br><span class="line">clflush size    : 64</span><br><span class="line">cache_alignment : 64</span><br><span class="line">address sizes   : 46 bits physical, 48 bits virtual</span><br><span class="line">power management:</span><br><span class="line"></span><br><span class="line">[root@interview ~]# free -h</span><br><span class="line">              total        used        free      shared  buff/cache   available</span><br><span class="line">Mem:           985M        150M        451M         12M        382M        680M</span><br><span class="line">Swap:            0B          0B          0B</span><br></pre></td></tr></table></figure>
 <ul>
-<li><code>uanme -a</code> 查看一下系统的内核版本 ，<code>3.10.0-1062</code> 的内核看样子是 CentOS7.7</li>
+<li><code>unanme -a</code> 查看一下系统的内核版本 ，<code>3.10.0-1062</code> 的内核看样子是 CentOS7.7</li>
 <li><code>cat /proc/cpuinfo</code> 查看一下 CPU 的信息，E5-2670 的 CPU ，属于 Intel 第六代 CPU 系列。</li>
 <li><code>free</code> 查看一下内存的情况，1GB 的小内存😂</li>
 </ul>
 <blockquote>
 <p>Q2 以文件的方式创建并挂载2G的swap分区</p>
 </blockquote>
-<p>这个问题比较简单，之前自己的 GCE 小鸡 512M 内存上也是使用文件的方式创建 1GB 的交换分区😂。所以对这个步骤早就熟记于心，并不需要搜索就能搞定😋。使用 dd 命令即可生成一个 2GB 大小的文件。</p>
+<p>这个问题比较简单，之前自己的 GCE 小鸡 512M 内存上也是使用文件的方式创建 2GB 的交换分区😂。所以对这个步骤早就熟记于心，并不需要搜索就能搞定😋。使用 dd 命令即可生成一个 2GB 大小的文件。</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">[root@interview ~]# dd if&#x3D;&#x2F;dev&#x2F;zero of&#x3D;&#x2F;swapfile bs&#x3D;4M count&#x3D;500</span><br><span class="line">500+0 records in</span><br><span class="line">500+0 records out</span><br><span class="line">2097152000 bytes (2.1 GB) copied, 11.0648 s, 190 MB&#x2F;s</span><br></pre></td></tr></table></figure>
 <p><code>2097152000 bytes (2.1 GB) copied, 11.0648 s, 190 MB/s</code> 怎么会是 2.1 GB 呢？，多出来 0.1GB ，强迫症受不了。想起来了，可能是 <code>bs=4M</code> 参数的问题。于是我在我的 debian 机器上测试了一下</p>
 <p>顺带 man 一下 dd 看看 bs 参数是怎么定义的</p>
@@ -321,7 +321,10 @@
     <a href="/kubeadm-deploy-k8s-v1.17.4.html" rel="prev" title="使用 kubeadm 快速部署体验 K8s">
       <i class="fa fa-chevron-left"></i> 使用 kubeadm 快速部署体验 K8s
     </a></div>
-      <div class="post-nav-item"></div>
+      <div class="post-nav-item">
+    <a href="/kubelet-mount-volumes-analysis.html" rel="next" title="kubelet 挂载 volume 原理分析">
+      kubelet 挂载 volume 原理分析 <i class="fa fa-chevron-right"></i>
+    </a></div>
     </div>
       </footer>
   </article>
@@ -385,7 +388,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
           <a href="/archives">
-          <span class="site-state-item-count">76</span>
+          <span class="site-state-item-count">78</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -396,7 +399,7 @@
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
-        <span class="site-state-item-count">98</span>
+        <span class="site-state-item-count">101</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -454,7 +457,7 @@
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">29:21</span>
+    <span title="站点阅读时长">30:06</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动
   </div>

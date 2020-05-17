@@ -245,7 +245,7 @@
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">╭─root@gitlab ~</span><br><span class="line">╰─<span class="comment"># gitlab-rails console</span></span><br><span class="line">--------------------------------------------------------------------------------</span><br><span class="line"> GitLab:       12.3.5 (2417d5becc7)</span><br><span class="line"> GitLab Shell: 10.0.0</span><br><span class="line"> PostgreSQL:   10.9</span><br><span class="line">--------------------------------------------------------------------------------</span><br><span class="line">Loading production environment (Rails 5.2.3)</span><br><span class="line">irb(main):001:0&gt; ApplicationSetting.current.reset_runners_registration_token!</span><br><span class="line">=&gt; <span class="literal">true</span></span><br><span class="line">irb(main):002:0&gt; <span class="built_in">exit</span></span><br></pre></td></tr></table></figure>
 <h3 id="注册"><a href="#注册" class="headerlink" title="注册"></a>注册</h3><p>以上已经安装好并修改默认的网络设置允许 runner 所在的 IP 向 gitlab 发起外部请求。运行 <code>gitlab-runner register</code> 根据相应的提示输入 <code>URL</code> 和 <code>token</code> 即可。最后根据机器的类型选择好 runner 的类型，这个也是跑 CI 任务时的环境，到时候可以在项目的设置中选择启动相应的 runner 。</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">╭─root@runner ~</span><br><span class="line">╰─<span class="comment"># gitlab-runner register                                                                                    128 ↵</span></span><br><span class="line">Runtime platform                                    arch=amd64 os=linux pid=7501 revision=1b659122 version=12.8.0</span><br><span class="line">Running <span class="keyword">in</span> system-mode.</span><br><span class="line"></span><br><span class="line">Please enter the gitlab-ci coordinator URL (e.g. https://gitlab.com/):</span><br><span class="line">http://10.10.107.216/</span><br><span class="line">Please enter the gitlab-ci token <span class="keyword">for</span> this runner:</span><br><span class="line">4hjjA7meRGuxEm3LyMjq</span><br><span class="line">Please enter the gitlab-ci description <span class="keyword">for</span> this runner:</span><br><span class="line">[runner]:</span><br><span class="line">Please enter the gitlab-ci tags <span class="keyword">for</span> this runner (comma separated):</span><br><span class="line">centos</span><br><span class="line">Registering runner... succeeded                     runner=4hjjA7me</span><br><span class="line">Please enter the executor: shell, ssh, virtualbox, docker-ssh+machine, kubernetes, docker, docker-ssh, parallels, docker+machine, custom:</span><br><span class="line">[shell]: shell</span><br><span class="line">Runner registered successfully. Feel free to start it, but <span class="keyword">if</span> it<span class="string">'s running already the config should be automatically reloaded!</span></span><br></pre></td></tr></table></figure>
-<p>提示成功之后然后在 <code>管理中心</code>–&gt; <code>概览</code> –&gt; <code>Runner</code> 可以查看到相应的 runner </p>
+<p>提示成功之后然后在 <code>管理中心</code>–&gt; <code>概览</code> –&gt; <code>Runner</code> 可以查看到相应的 runner</p>
     </div>
       <footer class="post-footer">
           <div class="post-tags">
@@ -324,7 +324,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
           <a href="/archives">
-          <span class="site-state-item-count">76</span>
+          <span class="site-state-item-count">78</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -335,7 +335,7 @@
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
-        <span class="site-state-item-count">98</span>
+        <span class="site-state-item-count">101</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -393,7 +393,7 @@
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">29:21</span>
+    <span title="站点阅读时长">30:06</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动
   </div>

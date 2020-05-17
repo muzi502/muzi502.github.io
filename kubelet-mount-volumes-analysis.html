@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon.ico">
+  <link rel="mask-icon" href="/favicon.ico" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+<link rel="stylesheet" href="/css/main.css">
+<link rel="stylesheet" href="//fonts.loli.net/css?family=Lato:300,300italic,400,400italic,700,700italic|Roboto Mono:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://blog.k8s.li').hostname,
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":true,"scrollpercent":true},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"buttons","active":null,"storage":true,"lazyload":true,"nav":{"disqus":{"text":"Load Disqus","order":-1}}},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":false,"async":true,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+  <meta name="description" content="最近在 kubernetes 中使用 NFS 存储的时候遇到了一个小问题，也找到了解决办法，不过还是想深入地了解一下 kubelet 挂载存储的原理和过程，于是就水了这篇博客 😂。虽然平时也知道 PV 、PVC 、存储类等怎么使用，但背后的过程和原理却没有深究过，有点一知半解的感觉。唉，太菜了 😑 （流下了没有技术的眼泪.jpg 疑惑 当使用 NFS 存储的 Pod 调度到没有安装 NFS c">
+<meta property="og:type" content="article">
+<meta property="og:title" content="kubelet 挂载 volume 原理分析">
+<meta property="og:url" content="https://blog.k8s.li/kubelet-mount-volumes-analysis.html">
+<meta property="og:site_name" content="木子">
+<meta property="og:description" content="最近在 kubernetes 中使用 NFS 存储的时候遇到了一个小问题，也找到了解决办法，不过还是想深入地了解一下 kubelet 挂载存储的原理和过程，于是就水了这篇博客 😂。虽然平时也知道 PV 、PVC 、存储类等怎么使用，但背后的过程和原理却没有深究过，有点一知半解的感觉。唉，太菜了 😑 （流下了没有技术的眼泪.jpg 疑惑 当使用 NFS 存储的 Pod 调度到没有安装 NFS c">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://blog.k8s.lhttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/source/img/types-of-mounts.png">
+<meta property="article:published_time" content="2020-04-30T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-04-30T16:00:00.000Z">
+<meta property="article:author" content="木子">
+<meta property="article:tag" content="kubernetes">
+<meta property="article:tag" content="docker">
+<meta property="article:tag" content="容器">
+<meta property="article:tag" content="存储">
+<meta property="article:tag" content="volumes">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog.k8s.lhttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/source/img/types-of-mounts.png">
+<link rel="canonical" href="https://blog.k8s.li/kubelet-mount-volumes-analysis.html">
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+  <title>kubelet 挂载 volume 原理分析 | 木子</title>
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+<link rel="alternate" href="/atom.xml" title="木子" type="application/atom+xml">
+</head>
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">木子</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+    <a href="/" rel="section"><i class="fa fa-fw fa-desktop"></i>Home</a>
+  </li>
+        <li class="menu-item menu-item-books">
+    <a href="/booklist.html" rel="section"><i class="fa fa-fw fa-book"></i>Books</a>
+  </li>
+        <li class="menu-item menu-item-kindle">
+    <a href="https://kindle.502.li/" rel="noopener" target="_blank"><i class="fa fa-fw fa-book"></i>Kindle</a>
+  </li>
+        <li class="menu-item menu-item-friend">
+    <a href="/link/" rel="section"><i class="fa fa-fw fa-link"></i>Friend</a>
+  </li>
+        <li class="menu-item menu-item-about">
+    <a href="/about.html" rel="section"><i class="fa fa-fw fa-user-circle-o"></i>About</a>
+  </li>
+  </ul>
+</nav>
+</div>
+    </header>
+  <div class="reading-progress-bar"></div>
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div class="content">
+  <div class="posts-expand">
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.k8s.li/kubelet-mount-volumes-analysis.html">
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://blog.k8s.li/avatar.png">
+      <meta itemprop="name" content="木子">
+      <meta itemprop="description" content="">
+    </span>
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木子">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          kubelet 挂载 volume 原理分析
+        </h2>
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              <time title="创建时间：2020-05-01 2020-05-01T00:00:00+08:00" itemprop="dateCreated datePublished" datetime="2020-05-01T00:00:00+08:00">2020-05-01</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%8A%80%E6%9C%AF/" itemprop="url" rel="index">
+                    <span itemprop="name">技术</span>
+                  </a>
+                </span>
+            </span>
+  <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-comment-o"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    <a title="disqus" href="/kubelet-mount-volumes-analysis.html#comments" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="kubelet-mount-volumes-analysis.html" itemprop="commentCount"></span>
+    </a>
+  </span>
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>25k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>42 分钟</span>
+            </span>
+        </div>
+      </header>
+    <div class="post-body" itemprop="articleBody">
+        <p>最近在 kubernetes 中使用 NFS 存储的时候遇到了一个小问题，也找到了解决办法，不过还是想深入地了解一下 kubelet 挂载存储的原理和过程，于是就水了这篇博客 😂。虽然平时也知道 PV 、PVC 、存储类等怎么使用，但背后的过程和原理却没有深究过，有点一知半解的感觉。唉，太菜了 😑 （<code>流下了没有技术的眼泪.jpg</code></p>
+<h2 id="疑惑"><a href="#疑惑" class="headerlink" title="疑惑"></a>疑惑</h2><blockquote>
+<p>当使用 NFS 存储的 Pod 调度到没有安装 NFS client (nfs-utils 、nfs-common) Node 节点上的时候，会提示 NFS volume 挂载失败，Node 宿主机安装上 NFS client 后就可以正常挂载了，我想是不是 kubelet 在启动容器之前是不是调用 system-run 去挂载 NFS ，如果 Node 宿主机没有安装 NFS client 就无法挂载。</p>
+<p>翻了一下源码 <a href="https://github.com/kubernetes/kubernetes/blob/master/vendor/k8s.io/utils/mount/mount_linux.go#L115" target="_blank" rel="noopener">mount_linux.go</a> 和 <a href="https://github.com/kubernetes/kubernetes/pull/49640" target="_blank" rel="noopener">49640</a> 这个 PR。里面提到的是 kubelet 挂载存储卷的时候使用 system-run 挂载，这样一来，即便 kubelet 挂掉或者重启的时候也不会影响到容器使用 kubelet 挂载的存储卷。</p>
+</blockquote>
+<p>请教了一下两个大佬 <a href="https://zdyxry.github.io/" target="_blank" rel="noopener">Yiran</a> 和 <a href="http://gaocegege.com/Blog/about/" target="_blank" rel="noopener">高策</a>，他们也不太熟悉😂，不过也找到了解决思路。在使用 GlusterFS 的时候，Node 节点也需要安装 GlusterFS 的客户端，不然 kubelet 也是无法挂载 Pod 的 volume。由此可以确认的是： kubelet 在为 Pod 挂载 volume 的时候，根据 volume 的类型（NFS、GlusterFS、Ceph 等），Pod 所在的 Node 节点宿主机也需要安装好对应的客户端程序。</p>
+<h2 id="问题复现"><a href="#问题复现" class="headerlink" title="问题复现"></a>问题复现</h2><p>集群信息：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[root@k8s-master-01 opt]# kubectl get node</span><br><span class="line">NAME            STATUS   ROLES    AGE    VERSION</span><br><span class="line">k8s-master-01   Ready    master   8d     v1.17.4</span><br><span class="line">k8s-master-02   Ready    master   8d     v1.17.4</span><br><span class="line">k8s-master-03   Ready    master   8d     v1.17.4</span><br><span class="line">k8s-node-02     Ready    &lt;none&gt; 8d     v1.17.4</span><br><span class="line">k8s-node-3      Ready    &lt;none&gt; 3d3h   v1.17.4</span><br><span class="line">node1           Ready    &lt;none&gt; 108s   v1.17.4</span><br></pre></td></tr></table></figure>
+<p>为了方便复现问题还是在 Rancher 上创建了 PV 和 PVC，以及包含两个 Pod 的一个 <code>Deploment</code>，在创建 Deploment 的时候，指定将 Pod 调度到新加入的节点上，即这个节点上并没有安装 NFS 客户端。</p>
+<p><strong>PV 信息如下：</strong></p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">[root@k8s-master-01 opt]# kubectl describe pv nfs211</span><br><span class="line">Name:            nfs211</span><br><span class="line">Labels:          cattle.io/creator=norman</span><br><span class="line">Annotations:     field.cattle.io/creatorId: user-gwgpp</span><br><span class="line">                 pv.kubernetes.io/bound-by-controller: yes</span><br><span class="line">Finalizers:      [kubernetes.io/pv-protection]</span><br><span class="line">StorageClass:    nfs216</span><br><span class="line">Status:          Bound</span><br><span class="line">Claim:           ops-test/nfs-211</span><br><span class="line">Reclaim Policy:  Retain</span><br><span class="line">Access Modes:    RWX</span><br><span class="line">VolumeMode:      Filesystem</span><br><span class="line">Capacity:        10Gi</span><br><span class="line">Node Affinity:   &lt;none&gt;</span><br><span class="line">Message:</span><br><span class="line">Source:</span><br><span class="line">    Type:      NFS (an NFS mount that lasts the lifetime of a pod)</span><br><span class="line">    Server:    10.20.172.211</span><br><span class="line">    Path:      /nfs</span><br><span class="line">    ReadOnly:  false</span><br><span class="line">Events:        &lt;none&gt;</span><br></pre></td></tr></table></figure>
+<p><strong>PVC 信息如下</strong></p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">"accessModes"</span>: [</span><br><span class="line">        <span class="string">"ReadWriteMany"</span></span><br><span class="line">    ],</span><br><span class="line">    <span class="attr">"annotations"</span>: &#123;</span><br><span class="line">        <span class="attr">"pv.kubernetes.io/bind-completed"</span>: <span class="string">"yes"</span></span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="attr">"baseType"</span>: <span class="string">"persistentVolumeClaim"</span>,</span><br><span class="line">    <span class="attr">"created"</span>: <span class="string">"2020-04-30T08:59:15Z"</span>,</span><br><span class="line">    <span class="attr">"createdTS"</span>: <span class="number">1588237155000</span>,</span><br><span class="line">    <span class="attr">"creatorId"</span>: <span class="string">"user-gwgpp"</span>,</span><br><span class="line">    <span class="attr">"id"</span>: <span class="string">"ops-test:nfs-211"</span>,</span><br><span class="line">    <span class="attr">"labels"</span>: &#123;</span><br><span class="line">        <span class="attr">"cattle.io/creator"</span>: <span class="string">"norman"</span></span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="attr">"links"</span>: &#123;</span><br><span class="line">        <span class="attr">"remove"</span>: <span class="string">"…/v3/project/c-rl5jz:p-knsxt/persistentVolumeClaims/ops-test:nfs-211"</span>,</span><br><span class="line">        <span class="attr">"self"</span>: <span class="string">"…/v3/project/c-rl5jz:p-knsxt/persistentVolumeClaims/ops-test:nfs-211"</span>,</span><br><span class="line">        <span class="attr">"update"</span>: <span class="string">"…/v3/project/c-rl5jz:p-knsxt/persistentVolumeClaims/ops-test:nfs-211"</span>,</span><br><span class="line">        <span class="attr">"yaml"</span>: <span class="string">"…/v3/project/c-rl5jz:p-knsxt/persistentVolumeClaims/ops-test:nfs-211/yaml"</span></span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="attr">"name"</span>: <span class="string">"nfs-211"</span>,</span><br><span class="line">    <span class="attr">"namespaceId"</span>: <span class="string">"ops-test"</span>,</span><br><span class="line">    <span class="attr">"projectId"</span>: <span class="string">"c-rl5jz:p-knsxt"</span>,</span><br><span class="line">    <span class="attr">"resources"</span>: &#123;</span><br><span class="line">        <span class="attr">"requests"</span>: &#123;</span><br><span class="line">            <span class="attr">"storage"</span>: <span class="string">"10Gi"</span></span><br><span class="line">        &#125;,</span><br><span class="line">        <span class="attr">"type"</span>: <span class="string">"/v3/project/schemas/resourceRequirements"</span></span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="attr">"state"</span>: <span class="string">"bound"</span>,</span><br><span class="line">    <span class="attr">"status"</span>: &#123;</span><br><span class="line">        <span class="attr">"accessModes"</span>: [</span><br><span class="line">            <span class="string">"ReadWriteMany"</span></span><br><span class="line">        ],</span><br><span class="line">        <span class="attr">"capacity"</span>: &#123;</span><br><span class="line">            <span class="attr">"storage"</span>: <span class="string">"10Gi"</span></span><br><span class="line">        &#125;,</span><br><span class="line">        <span class="attr">"phase"</span>: <span class="string">"Bound"</span>,</span><br><span class="line">        <span class="attr">"type"</span>: <span class="string">"/v3/project/schemas/persistentVolumeClaimStatus"</span></span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="attr">"storageClassId"</span>: <span class="string">"nfs216"</span>,</span><br><span class="line">    <span class="attr">"transitioning"</span>: <span class="string">"no"</span>,</span><br><span class="line">    <span class="attr">"transitioningMessage"</span>: <span class="string">""</span>,</span><br><span class="line">    <span class="attr">"type"</span>: <span class="string">"persistentVolumeClaim"</span>,</span><br><span class="line">    <span class="attr">"uuid"</span>: <span class="string">"660dc8d1-7911-4d30-b575-b54990de8667"</span>,</span><br><span class="line">    <span class="attr">"volumeId"</span>: <span class="string">"nfs211"</span>,</span><br><span class="line">    <span class="attr">"volumeMode"</span>: <span class="string">"Filesystem"</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><strong>Deploment 信息如下：</strong></p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">apps/v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Deployment</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">annotations:</span></span><br><span class="line">    <span class="attr">deployment.kubernetes.io/revision:</span> <span class="string">"1"</span></span><br><span class="line">    <span class="attr">field.cattle.io/creatorId:</span> <span class="string">user-gwgpp</span></span><br><span class="line">  <span class="attr">creationTimestamp:</span> <span class="string">"2020-04-30T09:00:19Z"</span></span><br><span class="line">  <span class="attr">generation:</span> <span class="number">1</span></span><br><span class="line">  <span class="attr">labels:</span></span><br><span class="line">    <span class="attr">cattle.io/creator:</span> <span class="string">norman</span></span><br><span class="line">    <span class="attr">workload.user.cattle.io/workloadselector:</span> <span class="string">deployment-ops-test-node1-nfs-test</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">node1-nfs-test</span></span><br><span class="line">  <span class="attr">namespace:</span> <span class="string">ops-test</span></span><br><span class="line">  <span class="attr">resourceVersion:</span> <span class="string">"1940561"</span></span><br><span class="line">  <span class="attr">selfLink:</span> <span class="string">/apis/apps/v1/namespaces/ops-test/deployments/node1-nfs-test</span></span><br><span class="line">  <span class="attr">uid:</span> <span class="string">5d14a158-1eef-4a94-8433-15ad002ee55c</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">progressDeadlineSeconds:</span> <span class="number">600</span></span><br><span class="line">  <span class="attr">replicas:</span> <span class="number">2</span></span><br><span class="line">  <span class="attr">revisionHistoryLimit:</span> <span class="number">10</span></span><br><span class="line">  <span class="attr">selector:</span></span><br><span class="line">    <span class="attr">matchLabels:</span></span><br><span class="line">      <span class="attr">workload.user.cattle.io/workloadselector:</span> <span class="string">deployment-ops-test-node1-nfs-test</span></span><br><span class="line">  <span class="attr">strategy:</span></span><br><span class="line">    <span class="attr">rollingUpdate:</span></span><br><span class="line">      <span class="attr">maxSurge:</span> <span class="number">1</span></span><br><span class="line">      <span class="attr">maxUnavailable:</span> <span class="number">0</span></span><br><span class="line">    <span class="attr">type:</span> <span class="string">RollingUpdate</span></span><br><span class="line">  <span class="attr">template:</span></span><br><span class="line">    <span class="attr">metadata:</span></span><br><span class="line">      <span class="attr">annotations:</span></span><br><span class="line">        <span class="attr">cattle.io/timestamp:</span> <span class="string">"2020-04-30T09:01:05Z"</span></span><br><span class="line">        <span class="attr">workload.cattle.io/state:</span> <span class="string">'&#123;"bm9kZTE=":"c-rl5jz:machine-wbs6r"&#125;'</span></span><br><span class="line">      <span class="attr">creationTimestamp:</span> <span class="literal">null</span></span><br><span class="line">      <span class="attr">labels:</span></span><br><span class="line">        <span class="attr">workload.user.cattle.io/workloadselector:</span> <span class="string">deployment-ops-test-node1-nfs-test</span></span><br><span class="line">    <span class="attr">spec:</span></span><br><span class="line">      <span class="attr">containers:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="attr">image:</span> <span class="string">alpine</span></span><br><span class="line">        <span class="attr">imagePullPolicy:</span> <span class="string">Always</span></span><br><span class="line">        <span class="attr">name:</span> <span class="string">node1-nfs-test</span></span><br><span class="line">        <span class="attr">resources:</span> <span class="string">&#123;&#125;</span></span><br><span class="line">        <span class="attr">securityContext:</span></span><br><span class="line">          <span class="attr">allowPrivilegeEscalation:</span> <span class="literal">false</span></span><br><span class="line">          <span class="attr">capabilities:</span> <span class="string">&#123;&#125;</span></span><br><span class="line">          <span class="attr">privileged:</span> <span class="literal">false</span></span><br><span class="line">          <span class="attr">readOnlyRootFilesystem:</span> <span class="literal">false</span></span><br><span class="line">          <span class="attr">runAsNonRoot:</span> <span class="literal">false</span></span><br><span class="line">        <span class="attr">stdin:</span> <span class="literal">true</span></span><br><span class="line">        <span class="attr">terminationMessagePath:</span> <span class="string">/dev/termination-log</span></span><br><span class="line">        <span class="attr">terminationMessagePolicy:</span> <span class="string">File</span></span><br><span class="line">        <span class="attr">tty:</span> <span class="literal">true</span></span><br><span class="line">        <span class="attr">volumeMounts:</span></span><br><span class="line">        <span class="bullet">-</span> <span class="attr">mountPath:</span> <span class="string">/tmp</span></span><br><span class="line">          <span class="attr">name:</span> <span class="string">vol1</span></span><br><span class="line">      <span class="attr">dnsPolicy:</span> <span class="string">ClusterFirst</span></span><br><span class="line">      <span class="attr">nodeName:</span> <span class="string">node1</span></span><br><span class="line">      <span class="attr">restartPolicy:</span> <span class="string">Always</span></span><br><span class="line">      <span class="attr">schedulerName:</span> <span class="string">default-scheduler</span></span><br><span class="line">      <span class="attr">securityContext:</span> <span class="string">&#123;&#125;</span></span><br><span class="line">      <span class="attr">terminationGracePeriodSeconds:</span> <span class="number">30</span></span><br><span class="line">      <span class="attr">volumes:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">vol1</span></span><br><span class="line">        <span class="attr">persistentVolumeClaim:</span></span><br><span class="line">          <span class="attr">claimName:</span> <span class="string">nfs-211</span></span><br></pre></td></tr></table></figure>
+<p>创建完 Deploment 之后，使用 kubectl get pod 命令查看 Pod 创建的进度，发现一直卡在 <code>ContainerCreating</code> 状态</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">[root@k8s-master-01 opt]# kubectl get pod -n ops-test</span><br><span class="line">NAME                              READY   STATUS              RESTARTS   AGE</span><br><span class="line">node1-nfs-test-547c4d7678-j6kwv   0/1     ContainerCreating   0          2m12s</span><br><span class="line">node1-nfs-test-547c4d7678-vwdqg   0/1     ContainerCreating   0          2m12s</span><br></pre></td></tr></table></figure>
+<p>kubectl describe pod 的日志如下：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br></pre></td><td class="code"><pre><span class="line">[root@k8s-master-01 opt]# kubectl describe pod node1-nfs-test-547c4d7678-j6kwv -n ops-test</span><br><span class="line">Name:           node1-nfs-test-547c4d7678-j6kwv</span><br><span class="line">Namespace:      ops-test</span><br><span class="line">Priority:       0</span><br><span class="line">Node:           node1/10.10.107.214</span><br><span class="line">Start Time:     Thu, 30 Apr 2020 17:00:33 +0800</span><br><span class="line">Labels:         pod-template-hash=547c4d7678</span><br><span class="line">                workload.user.cattle.io/workloadselector=deployment-ops-test-node1-nfs-test</span><br><span class="line">Annotations:    cattle.io/timestamp: 2020-04-30T09:01:05Z</span><br><span class="line">                workload.cattle.io/state: &#123;"bm9kZTE=":"c-rl5jz:machine-wbs6r"&#125;</span><br><span class="line">Status:         Pending</span><br><span class="line">IP:</span><br><span class="line">IPs:            &lt;none&gt;</span><br><span class="line">Controlled By:  ReplicaSet/node1-nfs-test-547c4d7678</span><br><span class="line">Containers:</span><br><span class="line">  node1-nfs-test:</span><br><span class="line">    Container ID:</span><br><span class="line">    Image:          alpine</span><br><span class="line">    Image ID:</span><br><span class="line">    Port:           &lt;none&gt;</span><br><span class="line">    Host Port:      &lt;none&gt;</span><br><span class="line">    State:          Waiting</span><br><span class="line">      Reason:       ContainerCreating</span><br><span class="line">    Ready:          False</span><br><span class="line">    Restart Count:  0</span><br><span class="line">    Environment:    &lt;none&gt;</span><br><span class="line">    Mounts:</span><br><span class="line">      /tmp from vol1 (rw)</span><br><span class="line">      /var/run/secrets/kubernetes.io/serviceaccount from default-token-f6wjj (ro)</span><br><span class="line">Conditions:</span><br><span class="line">  Type              Status</span><br><span class="line">  Initialized       True</span><br><span class="line">  Ready             False</span><br><span class="line">  ContainersReady   False</span><br><span class="line">  PodScheduled      True</span><br><span class="line">Volumes:</span><br><span class="line">  vol1:</span><br><span class="line">    Type:       PersistentVolumeClaim (a reference to a PersistentVolumeClaim in the same namespace)</span><br><span class="line">    ClaimName:  nfs-211</span><br><span class="line">    ReadOnly:   false</span><br><span class="line">  default-token-f6wjj:</span><br><span class="line">    Type:        Secret (a volume populated by a Secret)</span><br><span class="line">    SecretName:  default-token-f6wjj</span><br><span class="line">    Optional:    false</span><br><span class="line">QoS Class:       BestEffort</span><br><span class="line">Node-Selectors:  &lt;none&gt;</span><br><span class="line">Tolerations:     node.kubernetes.io/not-ready:NoExecute for 300s</span><br><span class="line">                 node.kubernetes.io/unreachable:NoExecute for 300s</span><br><span class="line">Events:</span><br><span class="line">  Type     Reason       Age    From            Message</span><br><span class="line">  ----  ------  ---- ----     -------</span><br><span class="line">  Warning  FailedMount  8m49s  kubelet, node1  MountVolume.SetUp failed for volume "nfs211" : mount failed: exit status 32</span><br><span class="line">Mounting command: systemd-run</span><br><span class="line">Mounting arguments: --description=Kubernetes transient mount for /var/lib/kubelet/pods/cddc94e7-8033-4150-bed5-d141e3b71e49/volumes/kubernetes.io~nfs/nfs211 --scope -- mount -t nfs 10.20.172.211:/nfs /var/lib/kubelet/pods/cddc94e7-8033-4150-bed5-d141e3b71e49/volumes/kubernetes.io~nfs/nfs211</span><br><span class="line">Output: Running scope as unit run-38284.scope.</span><br><span class="line">mount: wrong fs type, bad option, bad superblock on 10.20.172.211:/nfs,</span><br><span class="line">       missing codepage or helper program, or other error</span><br><span class="line">       (for several filesystems (e.g. nfs, cifs) you might</span><br><span class="line">       need a /sbin/mount.&lt;type&gt; helper program)</span><br><span class="line"></span><br><span class="line">       In some cases useful info is found in syslog - try</span><br><span class="line">       dmesg | tail or so.</span><br><span class="line">  Warning  FailedMount  8m48s  kubelet, node1  MountVolume.SetUp failed for volume "nfs211" : mount failed: exit status 32</span><br></pre></td></tr></table></figure>
+<p>在 一台没有安装 NFS 客户端的节点尝试挂载一下 NFS 存储，发现报错的日志和 kubelet 的日志相同🤔</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[root@k8s-master-03 ~]# mount -t nfs 10.20.172.211:/nfs /tmp</span><br><span class="line">mount: wrong fs type, bad option, bad superblock on 10.20.172.211:/nfs,</span><br><span class="line">       missing codepage or helper program, or other error</span><br><span class="line">       (for several filesystems (e.g. nfs, cifs) you might</span><br><span class="line">       need a /sbin/mount.&lt;type&gt; helper program)</span><br><span class="line"></span><br><span class="line">       In some cases useful info is found in syslog - try</span><br><span class="line">       dmesg | tail or so.</span><br></pre></td></tr></table></figure>
+<h2 id="解决问题"><a href="#解决问题" class="headerlink" title="解决问题"></a>解决问题</h2><p>看到 kubelet 报错的日志和我们在宿主机上使用 mount 名挂载 NFS 存储时的错误一样就可以断定为是宿主机的问题。搜了一下报错日志，在 <a href="https://askubuntu.com/questions/525243/why-do-i-get-wrong-fs-type-bad-option-bad-superblock-error" target="_blank" rel="noopener">Why do I get “wrong fs type, bad option, bad superblock” error?</a> 得到提示说需要安装一下 NFS 客户端 (nfs-common、nfs-utils) 😂。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">╭─root@node1 ~</span><br><span class="line">╰─# yum install nfs-utils</span><br><span class="line">………………</span><br><span class="line">Install  1 Package (+15 Dependent packages)</span><br><span class="line"></span><br><span class="line">Total download size: 1.5 M</span><br><span class="line">Installed size: 4.3 M</span><br><span class="line">Is this ok [y/d/N]:</span><br></pre></td></tr></table></figure>
+<p>yum 一把梭后发现 <code>nfs-utils</code> 还真没有安装😂。</p>
+<p>安装完时候使用 kubectl 删除掉之前的 Pod，Deploment 控制器会自动帮我们将 Pod 数量调和到指定的数量。可以发现 Pod 所在宿主机安装 NFS 客户端之后 kubelet 就能正常为 Pod 挂载 volume 了 而且 Pod 也正常运行了。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">[root@k8s-master-01 ~]# kubectl delete pod node1-nfs-test-547c4d7678-j6kwv node1-nfs-test-547c4d7678-vwdqg -n ops-test</span><br><span class="line">pod "node1-nfs-test-547c4d7678-j6kwv" deleted</span><br><span class="line">pod "node1-nfs-test-547c4d7678-vwdqg" deleted</span><br><span class="line">[root@k8s-master-01 ~]# kubectl get pod -n ops-test</span><br><span class="line">NAME                              READY   STATUS    RESTARTS   AGE</span><br><span class="line">node1-nfs-test-7589fb4787-cknz4   1/1     Running   0          18s</span><br><span class="line">node1-nfs-test-7589fb4787-l9bt2   1/1     Running   0          22s</span><br></pre></td></tr></table></figure>
+<p>进入容器内查看一下容器内挂载点的信息：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">[root@k8s-master-01 ~]# kubectl exec -it node1-nfs-test-7589fb4787-cknz4 -n ops-test sh</span><br><span class="line">/ # df -h</span><br><span class="line">Filesystem                Size      Used Available Use% Mounted on</span><br><span class="line">overlay                  28.9G      4.1G     23.3G  15% /</span><br><span class="line">10.20.172.211:/nfs       28.9G     14.5G     12.9G  53% /tmp</span><br><span class="line">tmpfs                     1.8G         0      1.8G   0% /sys/firmware</span><br><span class="line">/ # mount</span><br><span class="line">rootfs on / type rootfs (rw)</span><br><span class="line">10.20.172.211:/nfs on /tmp type nfs (rw,relatime,vers=3,rsize=524288,wsize=524288,namlen=255,hard,proto=tcp,timeo=600,retrans=2,sec=sys,mountaddr=10.20.172.211,mountvers=3,mountport=20048,mountproto=udp,local_lock=none,addr=10.20.172.211)</span><br><span class="line"></span><br><span class="line">10.20.172.211:/nfs on /mnt/nfs type nfs (rw,relatime,vers=3,rsize=524288,wsize=524288,namlen=255,hard,proto=tcp,timeo=600,retrans=2,sec=sys,mountaddr=10.20.172.211,mountvers=3,mountport=20048,mountproto=udp,local_lock=none,addr=10.20.172.211)</span><br></pre></td></tr></table></figure>
+<p>至此问题已经解决了，接下来就到了正文：开始分析一下  kubelet 为 Pod 挂载 volume 的流程和原理😂</p>
+<h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><h3 id="容器存储"><a href="#容器存储" class="headerlink" title="容器存储"></a>容器存储</h3><p>在分析 Pod 的 volume 之前需要先了解一下 docker 容器的存储。当我们使用 <code>docker inspect</code> &lt;容器 ID&gt; 命令来查看容器详细信息时，在容器元数据信息的 <code>GraphDriver</code> 字段下包含着一个 <code>Mounts</code> ，而 <code>Mounts</code> 字段里的正是容器挂载的存储，其中里面的 <code>Type</code> 字段里有 <code>bind</code> 和 <code>volume</code> ，其实还有一个 <code>tmpfs</code>。</p>
+<p>另外其中的 <code>Data</code> 字段里的 <code>LowerDir</code> 正是容器的镜像层，关于容器镜像层的讲解建议阅读一下 <a href="https://arkingc.github.io/2018/01/15/2018-01-15-docker-storage-overlay2/" target="_blank" rel="noopener">Docker源码分析—存储驱动</a> ，这篇源码分析👍，在这里点到为止就不再细究了😂</p>
+<blockquote>
+<p>现在，我们已经知道了解了层的创建和删除过程。但是我们一直没有提到一个问题：<strong>我们在容器内看到的文件存在哪？</strong></p>
+<p>我们已经知道层目录下有diff，merged和work 3个目录。diff存储的是该层的文件，work是执行一些特定操作时所要用到的目录，所以实际上，<strong>在容器内看到的文件，就存在于merged目录下</strong></p>
+<p><strong>merged目录在容器未运行时，是一个空目录，当容器启动时会将该容器所有层的diff目录进行联合挂载，挂载到merged目录下，挂载时使用的文件系统就是内核OverlayFS文件系统</strong></p>
+<blockquote>
+<p>如果有看过我关于内核OverlayFS相关的博文，这里应该已经对Docker的overlay2存储驱动与内核OverlayFS的关系有了一个比较清晰的认识</p>
+</blockquote>
+<p><strong>当挂载完成后，容器处于一个子文件系统命名空间，只能看到merged目录下的文件，相当于chroot命令的效果</strong></p>
+<p>所以，在停止一个容器时，实际上就是对merged目录执行一个卸载命令</p>
+</blockquote>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line">"GraphDriver": &#123;</span><br><span class="line">            "Data": &#123;</span><br><span class="line">                "LowerDir": "/var/lib/docker/overlay2/2a846f62b759d87bf8b2731960c4031585fb4ee14bbf313f58e0374c4fee9ce0-init/diff:/var/lib/docker/overlay2/29f9a1e9523d4ec323402a3c2da8a5e288cfe0e6f3168a57dd2388b63775c20a/diff:/var/lib/docker/overlay2/015afa447ae2fcfa592d257644312b286173b9a00d0f2017a4c6ede448a87d47/diff:/var/lib/docker/overlay2/2f71b56cd5550bf299ed33a04e385ef5578511e3a17d35162148f4b84bda4b26/diff",</span><br><span class="line">                "MergedDir": "/var/lib/docker/overlay2/2a846f62b759d87bf8b2731960c4031585fb4ee14bbf313f58e0374c4fee9ce0/merged",</span><br><span class="line">                "UpperDir": "/var/lib/docker/overlay2/2a846f62b759d87bf8b2731960c4031585fb4ee14bbf313f58e0374c4fee9ce0/diff",</span><br><span class="line">                "WorkDir": "/var/lib/docker/overlay2/2a846f62b759d87bf8b2731960c4031585fb4ee14bbf313f58e0374c4fee9ce0/work"</span><br><span class="line">            &#125;,</span><br><span class="line">            "Name": "overlay2"</span><br><span class="line">        &#125;,</span><br><span class="line">        "Mounts": [</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="attr">"Type"</span>: <span class="string">"bind"</span>,</span><br><span class="line">                <span class="attr">"Source"</span>: <span class="string">"/opt/wordpress-nginx-docker/webp-server/config.json"</span>,</span><br><span class="line">                <span class="attr">"Destination"</span>: <span class="string">"/etc/config.json"</span>,</span><br><span class="line">                <span class="attr">"Mode"</span>: <span class="string">"rw"</span>,</span><br><span class="line">                <span class="attr">"RW"</span>: <span class="literal">true</span>,</span><br><span class="line">                <span class="attr">"Propagation"</span>: <span class="string">"rprivate"</span></span><br><span class="line">            &#125;,</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="attr">"Type"</span>: <span class="string">"bind"</span>,</span><br><span class="line">                <span class="attr">"Source"</span>: <span class="string">"/opt/wordpress-nginx-docker/wordpress"</span>,</span><br><span class="line">                <span class="attr">"Destination"</span>: <span class="string">"/var/www/html"</span>,</span><br><span class="line">                <span class="attr">"Mode"</span>: <span class="string">"rw"</span>,</span><br><span class="line">                <span class="attr">"RW"</span>: <span class="literal">true</span>,</span><br><span class="line">                <span class="attr">"Propagation"</span>: <span class="string">"rprivate"</span></span><br><span class="line">            &#125;,</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="attr">"Type"</span>: <span class="string">"volume"</span>,</span><br><span class="line">                <span class="attr">"Name"</span>: <span class="string">"36d087638f2e9ba8472c441bcf906320cfd80419874291f56e039e4f7d1278e7"</span>,</span><br><span class="line">                <span class="attr">"Source"</span>: <span class="string">"/var/lib/docker/volumes/36d087638f2e9ba8472c441bcf906320cfd80419874291f56e039e4f7d1278e7/_data"</span>,</span><br><span class="line">                <span class="attr">"Destination"</span>: <span class="string">"/opt/exhaust"</span>,</span><br><span class="line">                <span class="attr">"Driver"</span>: <span class="string">"local"</span>,</span><br><span class="line">                <span class="attr">"Mode"</span>: <span class="string">""</span>,</span><br><span class="line">                <span class="attr">"RW"</span>: <span class="literal">true</span>,</span><br><span class="line">                <span class="attr">"Propagation"</span>: <span class="string">""</span></span><br><span class="line">            &#125;</span><br><span class="line">        ]</span><br></pre></td></tr></table></figure>
+<p>根据 docker 的官方文档 <a href="https://docs.docker.com/storage/" target="_blank" rel="noopener">Manage data in Docker</a> ，docker 提供了 3 种方法将数据从 Docker 宿主机挂载（mount）到容器内，如下：</p>
+<p><img src="img/types-of-mounts.png" alt="docker-data"></p>
+<p><code>图片从 Docker 官方文档偷来的😂</code></p>
+<blockquote>
+<ul>
+<li><strong>Volumes</strong> are stored in a part of the host filesystem which is <em>managed by Docker</em> (<code>/var/lib/docker/volumes/</code> on Linux). Non-Docker processes should not modify this part of the filesystem. Volumes are the best way to persist data in Docker.</li>
+<li><strong>Bind mounts</strong> may be stored <em>anywhere</em> on the host system. They may even be important system files or directories. Non-Docker processes on the Docker host or a Docker container can modify them at any time.</li>
+<li><strong><code>tmpfs</code> mounts</strong> are stored in the host system’s memory only, and are never written to the host system’s filesystem.</li>
+</ul>
+</blockquote>
+<p>可以看到容器可以使用的存储有三种：</p>
+<ul>
+<li>Volumes：使用 Docker 来管理的存储，默认存放在 <code>/var/lib/docker/volumes/</code> 下，我们可以使用 <code>docker volume</code> 子命令来管理这些 volume ，可以创建、查看、列出、清空、删除等操作。非 docker 进程不应该去修改该目录下的文件，<strong>卷是 Docker 容器持久化数据的最好方式</strong>。</li>
+</ul>
+<blockquote>
+<p><code>-v</code>或<code>--volume</code>：由3个域组成，<code>&#39;:&#39;</code>分隔</p>
+<ul>
+<li>第一个域：对于命名卷，为卷名；匿名卷，则忽略，此时会创建匿名卷</li>
+<li>第二个域：容器中的挂载点</li>
+<li>第三个域：可选参数，由<code>&#39;,&#39;</code>隔开，如<code>ro</code></li>
+</ul>
+</blockquote>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">╭─root@sg-02 /home/ubuntu</span><br><span class="line">╰─# docker volume</span><br><span class="line">Usage:  docker volume COMMAND</span><br><span class="line">Manage volumes</span><br><span class="line">Commands:</span><br><span class="line">  create      Create a volume</span><br><span class="line">  inspect     Display detailed information on one or more volumes</span><br><span class="line">  ls          List volumes</span><br><span class="line">  prune       Remove all unused local volumes</span><br><span class="line">  rm          Remove one or more volumes</span><br><span class="line">Run 'docker volume COMMAND --help' for more information on a command.</span><br></pre></td></tr></table></figure>
+<p>假如在写 <code>Dockerfile</code> 的时候，使用 <code>VOLUME</code> 指令指定容器内的路径。在我们启动容器的时候 docker 会帮我们创建一个持久化存储的 volume。也可在 <code>docker run</code> 或者 <code>docker-compose.yaml</code> 指定 <code>volume</code> 。</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line">╭─root@sg-02 /home/ubuntu</span><br><span class="line">╰─# docker volume ls</span><br><span class="line">DRIVER              VOLUME NAME</span><br><span class="line">local               docker-elk_elasticsearch</span><br><span class="line">local               opt</span><br><span class="line">╭─root@sg-02 /home/ubuntu</span><br><span class="line">╰─# docker volume inspect opt</span><br><span class="line">[</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="attr">"CreatedAt"</span>: <span class="string">"2020-03-12T06:58:15Z"</span>,</span><br><span class="line">        <span class="attr">"Driver"</span>: <span class="string">"local"</span>,</span><br><span class="line">        <span class="attr">"Labels"</span>: <span class="literal">null</span>,</span><br><span class="line">        <span class="attr">"Mountpoint"</span>: <span class="string">"/var/lib/docker/volumes/opt/_data"</span>,</span><br><span class="line">        <span class="attr">"Name"</span>: <span class="string">"opt"</span>,</span><br><span class="line">        <span class="attr">"Options"</span>: <span class="literal">null</span>,</span><br><span class="line">        <span class="attr">"Scope"</span>: <span class="string">"local"</span></span><br><span class="line">    &#125;</span><br><span class="line">]</span><br><span class="line">╭─root@sg-02 /home/ubuntu</span><br><span class="line">╰─# docker inspect docker-elk_elasticsearch</span><br><span class="line">[</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="attr">"CreatedAt"</span>: <span class="string">"2020-04-24T01:37:07Z"</span>,</span><br><span class="line">        <span class="attr">"Driver"</span>: <span class="string">"local"</span>,</span><br><span class="line">        <span class="attr">"Labels"</span>: &#123;</span><br><span class="line">            <span class="attr">"com.docker.compose.project"</span>: <span class="string">"docker-elk"</span>,</span><br><span class="line">            <span class="attr">"com.docker.compose.version"</span>: <span class="string">"1.25.4"</span>,</span><br><span class="line">            <span class="attr">"com.docker.compose.volume"</span>: <span class="string">"elasticsearch"</span></span><br><span class="line">        &#125;,</span><br><span class="line">        <span class="attr">"Mountpoint"</span>: <span class="string">"/var/lib/docker/volumes/docker-elk_elasticsearch/_data"</span>,</span><br><span class="line">        <span class="attr">"Name"</span>: <span class="string">"docker-elk_elasticsearch"</span>,</span><br><span class="line">        <span class="attr">"Options"</span>: <span class="literal">null</span>,</span><br><span class="line">        <span class="attr">"Scope"</span>: <span class="string">"local"</span></span><br><span class="line">    &#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+<ul>
+<li>Bind mounts：</li>
+</ul>
+<p>使用 <code>Bind mounts</code> 将宿主机的目录或者文件挂载进容器内，这个文件和目录可以是宿主机文件系统上的任意位置，可以不受 docker 所管理，比如 kubelet 的 volumes 目录：<code>/var/lib/kubelet/pods/&lt;Pod的ID&gt;/volumes/</code> 。 kubelet 在为 Pod 挂载存储的时候也正是通过 <code>Bind mounts</code> 的方式将 Pod 的 volumes 挂载到容器内。所以当我们使用 docker inspect 命令去查看 Pod 内容器的 <code>Mounts</code> 信息是，<code>Type</code> 类型多为 <code>bind</code> 或者 <code>tmpfs</code> ，很少会用到 <code>volumes</code> 。可以理解为 kubelet 的 volumes 目录就像 docker 的 volumes 那样，是由 kubelet 自己来管理的，其他用户或进程不应该去修改它。</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line">╭─root@k8s-node-3 ~</span><br><span class="line">╰─# docker inspect f1111ee6ac84</span><br><span class="line">"Mounts": [</span><br><span class="line">  &#123;</span><br><span class="line">      <span class="attr">"Type"</span>: <span class="string">"bind"</span>,</span><br><span class="line">      <span class="attr">"Source"</span>: <span class="string">"/var/lib/kubelet/pods/73fed6f3-4cbe-46a7-af7b-6fd912e6ebd4/volumes/kubernetes.io~nfs/nfs211"</span>,</span><br><span class="line">      <span class="attr">"Destination"</span>: <span class="string">"/var/www/html"</span>,</span><br><span class="line">      <span class="attr">"Mode"</span>: <span class="string">""</span>,</span><br><span class="line">      <span class="attr">"RW"</span>: <span class="literal">true</span>,</span><br><span class="line">      <span class="attr">"Propagation"</span>: <span class="string">"rprivate"</span></span><br><span class="line">  &#125;,</span><br><span class="line">  &#123;</span><br><span class="line">      <span class="attr">"Type"</span>: <span class="string">"bind"</span>,</span><br><span class="line">      <span class="attr">"Source"</span>: <span class="string">"/var/lib/kubelet/pods/73fed6f3-4cbe-46a7-af7b-6fd912e6ebd4/volumes/kubernetes.io~secret/default-token-wgfd9"</span>,</span><br><span class="line">      <span class="attr">"Destination"</span>: <span class="string">"/var/run/secrets/kubernetes.io/serviceaccount"</span>,</span><br><span class="line">      <span class="attr">"Mode"</span>: <span class="string">"ro,Z"</span>,</span><br><span class="line">      <span class="attr">"RW"</span>: <span class="literal">false</span>,</span><br><span class="line">      <span class="attr">"Propagation"</span>: <span class="string">"rprivate"</span></span><br><span class="line">  &#125;,</span><br><span class="line">  &#123;</span><br><span class="line">      <span class="attr">"Type"</span>: <span class="string">"bind"</span>,</span><br><span class="line">      <span class="attr">"Source"</span>: <span class="string">"/var/lib/kubelet/pods/73fed6f3-4cbe-46a7-af7b-6fd912e6ebd4/etc-hosts"</span>,</span><br><span class="line">      <span class="attr">"Destination"</span>: <span class="string">"/etc/hosts"</span>,</span><br><span class="line">      <span class="attr">"Mode"</span>: <span class="string">"Z"</span>,</span><br><span class="line">      <span class="attr">"RW"</span>: <span class="literal">true</span>,</span><br><span class="line">      <span class="attr">"Propagation"</span>: <span class="string">"rprivate"</span></span><br><span class="line">  &#125;,</span><br><span class="line">  &#123;</span><br><span class="line">      <span class="attr">"Type"</span>: <span class="string">"bind"</span>,</span><br><span class="line">      <span class="attr">"Source"</span>: <span class="string">"/var/lib/kubelet/pods/73fed6f3-4cbe-46a7-af7b-6fd912e6ebd4/containers/nginx/f760f2be"</span>,</span><br><span class="line">      <span class="attr">"Destination"</span>: <span class="string">"/dev/termination-log"</span>,</span><br><span class="line">      <span class="attr">"Mode"</span>: <span class="string">"Z"</span>,</span><br><span class="line">      <span class="attr">"RW"</span>: <span class="literal">true</span>,</span><br><span class="line">      <span class="attr">"Propagation"</span>: <span class="string">"rprivate"</span></span><br><span class="line">  &#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+<p>使用<code>Bind mounts</code>可能会有安全问题：容器中运行的进程可以修改宿主机的文件系统，包括创建，修改，删除重要的系统文件或目录。不过可以加参数挂载为只读。</p>
+<blockquote>
+<p><code>--mount</code>：由多个<code>&#39;,&#39;</code>隔开的键值对<key>=<value>组成：</p>
+<ul>
+<li>挂载类型：key为<code>type</code>，value为<code>bind</code>、<code>volume</code>或<code>tmpfs</code></li>
+<li>挂载源：key为<code>source</code>或<code>src</code>，对于命名卷，value为卷名，对于匿名卷，则忽略</li>
+<li>容器中的挂载点：key为<code>destination</code>、<code>dst</code>或<code>target</code>，value为容器中的路径</li>
+<li>读写类型：value为<code>readonly</code>，没有key</li>
+<li>读写类型：value为<code>readonly</code>，没有key</li>
+<li>volume-opt选项，可以出现多次。比如<code>volume-driver=local,volume-opt=type=nfs,...</code></li>
+</ul>
+</blockquote>
+<ul>
+<li><p>tmps：</p>
+<p>  用来存储一些不需要持久化的状态或敏感数据，比如 <code>kubernetes</code> 中的各种 <code>secret</code> 。比如当我们使用 <code>kubectl exec -it POD</code> ，进入到 Pod 容器内，然后使用 mount 命令查看容器内的挂载点信息就会有很多 tmpfs 类型的挂载点。其中的 <code>/run/secrets/kubernetes.io/serviceaccount/</code> 目录下就有着比较敏感的信息。</p>
+  <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">tmpfs on /run/secrets/kubernetes.io/serviceaccount type tmpfs (ro,relatime)</span><br><span class="line">/ # tree /run/secrets/kubernetes.io/serviceaccount/</span><br><span class="line">/run/secrets/kubernetes.io/serviceaccount/</span><br><span class="line">├── ca.crt -&gt; ..data/ca.crt</span><br><span class="line">├── namespace -&gt; ..data/namespace</span><br><span class="line">└── token -&gt; ..data/token</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<blockquote>
+<ul>
+<li><p><code>--tmpfs</code>：直接指定容器中的挂载点。不允许指定任何配置选项</p>
+</li>
+<li><p>–mount：由多个’,’隔开的键值对<key>=<value>组成：</p>
+<p>  挂载类型：key为<code>type</code>，value为<code>bind</code>、<code>volume</code>或<code>tmpfs</code></p>
+<p>  容器中的挂载点：key为<code>destination</code>、<code>dst</code>或<code>target</code>，value为容器中的路径</p>
+<p>  <code>tmpfs-size</code>和<code>tmpfs-mode</code>选项</p>
+</li>
+</ul>
+</blockquote>
+<h3 id="kubelet-挂载存储"><a href="#kubelet-挂载存储" class="headerlink" title="kubelet 挂载存储"></a>kubelet 挂载存储</h3><p>当对容器存储的类型有了大致了解之后，我们再来看一下 Pod 是如何进行 volume 挂载的。</p>
+<p>当 Pod 被调度到一个 Node 节点上后，Node 节点上的 kubelet 组件就会为这个 Pod 创建它的 Volume 目录，默认情况下 kubelet 为 Volume 创建的目录在 kubelet 的工作目录（默认在 <code>/var/lib/kubelet</code> ），在 kubelet 启动的时候可以根据 <code>–root-dir</code> 参数来指定工作目录，不过一般没啥特殊要求还是使用默认的就好😂。Pod 的 volume 目录就在该目录下，路径格式如下：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">/var/lib/kubelet/pods/&lt;Pod的ID&gt;/volumes/kubernetes.io~&lt;Volume类型&gt;/&lt;Volume名字&gt;</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"> 比如:</span></span><br><span class="line">/var/lib/kubelet/pods/c4b1998b-f5c1-440a-b9bc-7fbf87f3c267/volumes/kubernetes.io~nfs/nfs211</span><br></pre></td></tr></table></figure>
+<p>在 Node 节点上可以使用 mount 命令来查看 kubelet 为 Pod 挂载的挂载点信息。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">10.10.107.216:/nfs on /var/lib/kubelet/pods/6750b756-d8e4-448a-93f9-8906f9c44788/volumes/kubernetes.io~nfs/nfs-test type nfs (rw,relatime,vers=3,rsize=1048576,wsize=1048576,namlen=255,hard,proto=tcp,timeo=600,retrans=2,sec=sys,mountaddr=10.10.107.216,mountvers=3,mountport=56389,mountproto=udp,local_lock=none,addr=10.10.107.216)</span><br></pre></td></tr></table></figure>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">╭─root@k8s-node-3 ~</span><br><span class="line">╰─# mount | grep kubelet</span><br><span class="line">tmpfs on /var/lib/kubelet/pods/45c55c5e-ce96-47fd-94b3-60a334e5a44d/volumes/kubernetes.io~secret/kube-proxy-token-h4dfb type tmpfs (rw,relatime,seclabel)</span><br><span class="line">tmpfs on /var/lib/kubelet/pods/3fb63baa-27ec-4d76-8028-39a0a8f91749/volumes/kubernetes.io~secret/calico-node-token-4hks6 type tmpfs (rw,relatime,seclabel)</span><br><span class="line">tmpfs on /var/lib/kubelet/pods/05c75313-f932-4913-b09f-d7bccdfb6e62/volumes/kubernetes.io~secret/nginx-ingress-token-5569x type tmpfs (rw,relatime,seclabel)</span><br><span class="line">10.20.172.211:/nfs on /var/lib/kubelet/pods/c4b1998b-f5c1-440a-b9bc-7fbf87f3c267/volumes/kubernetes.io~nfs/nfs211 type nfs (rw,relatime,vers=3,rsize=524288,wsize=524288,namlen=255,hard,proto=tcp,timeo=600,retrans=2,sec=sys,mountaddr=10.20.172.211,mountvers=3,mountport=20048,mountproto=udp,local_lock=none,addr=10.20.172.211)</span><br><span class="line">tmpfs on /var/lib/kubelet/pods/73fed6f3-4cbe-46a7-af7b-6fd912e6ebd4/volumes/kubernetes.io~secret/default-token-wgfd9 type tmpfs (rw,relatime,seclabel)</span><br></pre></td></tr></table></figure>
+<p>其中 kubernetes 目前支持的 Volume 的类型，可以使用 <code>kubectl explain pod.spec.volumes</code>  来查看。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">╭─root@k8s-master-01 ~</span><br><span class="line">╰─# kubectl explain pod.spec.volumes | grep Object | cut -d "&lt;" -f1</span><br><span class="line">RESOURCE: volumes</span><br><span class="line">awsElasticBlockStore</span><br><span class="line">azureDisk</span><br><span class="line">azureFile</span><br><span class="line">cephfs</span><br><span class="line">cinder</span><br><span class="line">configMap</span><br><span class="line">csi</span><br><span class="line">downwardAPI</span><br><span class="line">emptyDir</span><br><span class="line">fc</span><br><span class="line">flexVolume</span><br><span class="line">flocker</span><br><span class="line">gcePersistentDisk</span><br><span class="line">gitRepo</span><br><span class="line">glusterfs</span><br><span class="line">hostPath</span><br><span class="line">iscsi</span><br><span class="line">nfs</span><br><span class="line">persistentVolumeClaim</span><br><span class="line">photonPersistentDisk</span><br><span class="line">portworxVolume</span><br><span class="line">projected</span><br><span class="line">quobyte</span><br><span class="line">rbd</span><br><span class="line">scaleIO</span><br><span class="line">secret</span><br><span class="line">storageos</span><br><span class="line">vsphereVolume</span><br></pre></td></tr></table></figure>
+<h3 id="管-systemd-什么事儿？"><a href="#管-systemd-什么事儿？" class="headerlink" title="管 systemd 什么事儿？"></a>管 systemd 什么事儿？</h3><p>我们来回顾一下当初的错误日志：</p>
+<figure class="highlight verilog"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">Events:</span><br><span class="line">  Type     Reason       Age    From            Message</span><br><span class="line">  ----  ------  ---- ----     -------</span><br><span class="line">  Warning  FailedMount  <span class="number">8</span>m49s  kubelet, node1  MountVolume<span class="variable">.SetUp</span> failed <span class="keyword">for</span> volume <span class="string">"nfs211"</span> : mount failed: exit status <span class="number">32</span></span><br><span class="line">Mounting command: systemd-run</span><br><span class="line">Mounting arguments: --description=Kubernetes transient mount <span class="keyword">for</span> /<span class="keyword">var</span>/lib/kubelet/pods/cddc94e7-<span class="number">8033</span>-<span class="number">4150</span>-bed5-d141e3b71e49/volumes/kubernetes<span class="variable">.io</span>~nfs/nfs211 --scope -- mount -t nfs <span class="number">10</span><span class="variable">.20</span><span class="variable">.172</span><span class="variable">.211</span>:/nfs /<span class="keyword">var</span>/lib/kubelet/pods/cddc94e7-<span class="number">8033</span>-<span class="number">4150</span>-bed5-d141e3b71e49/volumes/kubernetes<span class="variable">.io</span>~nfs/nfs211</span><br><span class="line">Output: Running scope as unit run-<span class="number">38284</span><span class="variable">.scope</span>.</span><br><span class="line">mount: wrong fs <span class="keyword">type</span>, bad option, bad superblock on <span class="number">10</span><span class="variable">.20</span><span class="variable">.172</span><span class="variable">.211</span>:/nfs,</span><br><span class="line">       missing codepage <span class="keyword">or</span> helper <span class="keyword">program</span>, <span class="keyword">or</span> other error</span><br><span class="line">       (<span class="keyword">for</span> several filesystems (e<span class="variable">.g</span>. nfs, cifs) you might</span><br><span class="line">       need a /sbin/mount.&lt;<span class="keyword">type</span>&gt; helper <span class="keyword">program</span>)</span><br><span class="line"></span><br><span class="line">       In some cases useful info is found in syslog - try</span><br><span class="line">       dmesg | tail <span class="keyword">or</span> so.</span><br><span class="line">  Warning  FailedMount  <span class="number">8</span>m48s  kubelet, node1  MountVolume<span class="variable">.SetUp</span> failed <span class="keyword">for</span> volume <span class="string">"nfs211"</span> : mount failed: exit status <span class="number">32</span></span><br></pre></td></tr></table></figure>
+<p>咦？当时我还寻思着 kubelet 挂载 volumes 和 systemd 什么关系？<code>systemd</code> 这个大妈怎么又来管这事儿了😂（之前我写过一篇<a href="https://blog.k8s.li/systemd.html">《Linux 的小伙伴 systemd 详解》</a> ，戏称 systemd 是 Linux 的小伙伴，看来这个说法是不妥的。systemd 简直就是 Linux 里的物业大妈好嘛🤣，上管 service 下管 dev 、 mount 设备等。屑，简直就是个物业大妈管这管那的。回到正题，于是顺着这条报错日志顺藤摸瓜找到了 <a href="https://github.com/kubernetes/kubernetes/pull/49640" target="_blank" rel="noopener">Run mount in its own systemd scope.</a> 这个 PR。</p>
+<blockquote>
+<p>Kubelet needs to run /bin/mount in its own cgroup.</p>
+<ul>
+<li>When kubelet runs as a systemd service, “systemctl restart kubelet” may kill all processes in the same cgroup and thus terminate fuse daemons that are needed for gluster and cephfs mounts.</li>
+<li>When kubelet runs in a docker container, restart of the container kills all fuse daemons started in the container.</li>
+</ul>
+<p>Killing fuse daemons is bad, it basically unmounts volumes from running pods.</p>
+<p>This patch runs mount via “systemd-run –scope /bin/mount …”, which makes sure that any fuse daemons are forked in its own systemd scope (= cgroup) and they will survive restart of kubelet’s systemd service or docker container.</p>
+<p>This helps with <a href="https://github.com/kubernetes/kubernetes/issues/34965" target="_blank" rel="noopener">#34965</a></p>
+<p>As a downside, each new fuse daemon will run in its own transient systemd service and systemctl output may be cluttered.</p>
+</blockquote>
+<p>正如提这个 PR 的大佬讲的，（之前）kubelet 需要在它自己的 <code>cgroup</code> 里运行宿主机上的 <code>/bin/mount</code> 来为 Pod 挂载 volumes ，而当 kubelet 进程重启或者挂掉的时候，这些在 kubelet 的  <code>cgroup</code> 里运行的进程也将会挂掉，比如（gluster，ceph）。然后大佬的这个 patch 通过 <code>systemd-run --scope /bin/mount</code> 来去启动一个临时的 systemd 单元来为 Pod 挂载 volumes，这样一来这些 <code>fuse daemons</code>  进程（gluster，ceph）就会 forked 到它自己的 systemd scope 里，这样即便 kubelet 重启或者挂掉也不会影响正在运行的容器使用 volumes。</p>
+<p>这一点像 <a href="https://github.com/containerd/containerd" target="_blank" rel="noopener">containerd</a> 之于 dockerd ，即便 dockerd 重启也不会影响到容器的运行，因为，在运行时这一块，真正运行容器的是 containerd 下的各个 containerd-shim 子进程，可以使用 pstree 命令来看一下这种层级关系。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">├─containerd─┬─5*[containerd-shim─┬─pause]</span><br><span class="line">│            │                    └─9*[&#123;containerd-shim&#125;]]</span><br><span class="line">│            ├─containerd-shim─┬─pause</span><br><span class="line">│            │                 └─10*[&#123;containerd-shim&#125;]</span><br><span class="line">│            ├─containerd-shim─┬─etcd───15*[&#123;etcd&#125;]</span><br><span class="line">│            │                 └─9*[&#123;containerd-shim&#125;]</span><br><span class="line">│            ├─containerd-shim─┬─kube-controller───12*[&#123;kube-controller&#125;]</span><br><span class="line">│            │                 └─9*[&#123;containerd-shim&#125;]</span><br><span class="line">│            ├─containerd-shim─┬─kube-apiserver───14*[&#123;kube-apiserver&#125;]</span><br><span class="line">│            │                 └─9*[&#123;containerd-shim&#125;]</span><br><span class="line">│            ├─containerd-shim─┬─kube-scheduler───13*[&#123;kube-scheduler&#125;]</span><br><span class="line">│            │                 └─9*[&#123;containerd-shim&#125;]</span><br><span class="line">│            ├─containerd-shim─┬─kube-proxy───11*[&#123;kube-proxy&#125;]</span><br><span class="line">│            │                 └─9*[&#123;containerd-shim&#125;]</span><br><span class="line">│            ├─containerd-shim─┬─flanneld───15*[&#123;flanneld&#125;]</span><br><span class="line">│            │                 └─9*[&#123;containerd-shim&#125;]</span><br><span class="line">│            └─26*[&#123;containerd&#125;]</span><br></pre></td></tr></table></figure>
+<p>接着顺藤摸瓜翻到这个 PR 对应的源码文件  <a href="https://github.com/kubernetes/kubernetes/blob/master/vendor/k8s.io/utils/mount/mount_linux.go#L115" target="_blank" rel="noopener">mount_linux.go</a>，关键内容如下：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// doMount runs the mount command. mounterPath is the path to mounter binary if containerized mounter is used.</span></span><br><span class="line"><span class="comment">// sensitiveOptions is an extention of options except they will not be logged (because they may contain sensitive material)</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(mounter *Mounter)</span> <span class="title">doMount</span><span class="params">(mounterPath <span class="keyword">string</span>, mountCmd <span class="keyword">string</span>, source <span class="keyword">string</span>, target <span class="keyword">string</span>, fstype <span class="keyword">string</span>, options []<span class="keyword">string</span>, sensitiveOptions []<span class="keyword">string</span>)</span> <span class="title">error</span></span> &#123;</span><br><span class="line">	mountArgs, mountArgsLogStr := MakeMountArgsSensitive(source, target, fstype, options, sensitiveOptions)</span><br><span class="line">	<span class="keyword">if</span> <span class="built_in">len</span>(mounterPath) &gt; <span class="number">0</span> &#123;</span><br><span class="line">		mountArgs = <span class="built_in">append</span>([]<span class="keyword">string</span>&#123;mountCmd&#125;, mountArgs...)</span><br><span class="line">		mountArgsLogStr = mountCmd + <span class="string">" "</span> + mountArgsLogStr</span><br><span class="line">		mountCmd = mounterPath</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> mounter.withSystemd &#123;</span><br><span class="line">		<span class="comment">// Try to run mount via systemd-run --scope. This will escape the</span></span><br><span class="line">		<span class="comment">// service where kubelet runs and any fuse daemons will be started in a</span></span><br><span class="line">		<span class="comment">// specific scope. kubelet service than can be restarted without killing</span></span><br><span class="line">		<span class="comment">// these fuse daemons.</span></span><br><span class="line">		<span class="comment">//</span></span><br><span class="line">		<span class="comment">// Complete command line (when mounterPath is not used):</span></span><br><span class="line">		<span class="comment">// systemd-run --description=... --scope -- mount -t &lt;type&gt; &lt;what&gt; &lt;where&gt;</span></span><br><span class="line">		<span class="comment">//</span></span><br><span class="line">		<span class="comment">// Expected flow:</span></span><br><span class="line">		<span class="comment">// * systemd-run creates a transient scope (=~ cgroup) and executes its</span></span><br><span class="line">		<span class="comment">//   argument (/bin/mount) there.</span></span><br><span class="line">		<span class="comment">// * mount does its job, forks a fuse daemon if necessary and finishes.</span></span><br><span class="line">		<span class="comment">//   (systemd-run --scope finishes at this point, returning mount's exit</span></span><br><span class="line">		<span class="comment">//   code and stdout/stderr - thats one of --scope benefits).</span></span><br><span class="line">		<span class="comment">// * systemd keeps the fuse daemon running in the scope (i.e. in its own</span></span><br><span class="line">		<span class="comment">//   cgroup) until the fuse daemon dies (another --scope benefit).</span></span><br><span class="line">		<span class="comment">//   Kubelet service can be restarted and the fuse daemon survives.</span></span><br><span class="line">		<span class="comment">// * When the fuse daemon dies (e.g. during unmount) systemd removes the</span></span><br><span class="line">		<span class="comment">//   scope automatically.</span></span><br><span class="line">		<span class="comment">//</span></span><br><span class="line">		<span class="comment">// systemd-mount is not used because it's too new for older distros</span></span><br><span class="line">		<span class="comment">// (CentOS 7, Debian Jessie).</span></span><br><span class="line">		mountCmd, mountArgs, mountArgsLogStr = AddSystemdScopeSensitive(<span class="string">"systemd-run"</span>, target, mountCmd, mountArgs, mountArgsLogStr)</span><br><span class="line">	&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">		<span class="comment">// No systemd-run on the host (or we failed to check it), assume kubelet</span></span><br><span class="line">		<span class="comment">// does not run as a systemd service.</span></span><br><span class="line">		<span class="comment">// No code here, mountCmd and mountArgs are already populated.</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Logging with sensitive mount options removed.</span></span><br><span class="line">	klog.V(<span class="number">4</span>).Infof(<span class="string">"Mounting cmd (%s) with arguments (%s)"</span>, mountCmd, mountArgsLogStr)</span><br><span class="line">	command := exec.Command(mountCmd, mountArgs...)</span><br><span class="line">	output, err := command.CombinedOutput()</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		klog.Errorf(<span class="string">"Mount failed: %v\nMounting command: %s\nMounting arguments: %s\nOutput: %s\n"</span>, err, mountCmd, mountArgsLogStr, <span class="keyword">string</span>(output))</span><br><span class="line">		<span class="keyword">return</span> fmt.Errorf(<span class="string">"mount failed: %v\nMounting command: %s\nMounting arguments: %s\nOutput: %s"</span>,</span><br><span class="line">			err, mountCmd, mountArgsLogStr, <span class="keyword">string</span>(output))</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> err</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>来看一下 <code>doMount</code> 这个函数的几个形参：</p>
+<ul>
+<li>mounterPath ：</li>
+</ul>
+<p>就是我们宿主机上的挂载命令比如 <code>/sbin/mount.nfs</code> 、<code>/sbin/mount.glusterfs</code> 等。</p>
+<ul>
+<li><p>mountCmd：挂载命令就是 <code>systemd-run</code></p>
+</li>
+<li><p>source：挂载存储的源路径，比如 NFS 里的 <code>10.10.107.211:/nfs</code></p>
+</li>
+<li><p>target</p>
+</li>
+</ul>
+<p>就是我们的 Pod 的 volume ，在 <code>/var/lib/kubelet/pods/&lt;Pod的ID&gt;/volumes/kubernetes.io~&lt;Volume类型&gt;/&lt;Volume名字&gt;</code> ，着目录在容器启动的时候会 bind mount 到容器内的挂载点</p>
+<ul>
+<li><p>fstype：文件系统类型，NFS、ceph、GlusterFS</p>
+</li>
+<li><p>options []string：挂载的参数，比如 NFS 的</p>
+</li>
+</ul>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">(rw,relatime,vers=3,rsize=524288,wsize=524288,namlen=255,hard,proto=tcp,timeo=600,retrans=2,sec=sys,mountaddr=10.20.172.211,mountvers=3,mountport=20048,mountproto=udp,local_lock=none,addr=10.20.172.211)</span><br></pre></td></tr></table></figure>
+<ul>
+<li>sensitiveOptions []string，这个参数没去仔细看，就略过吧（</li>
+</ul>
+<p>至此 kubelet 为 Pod 挂载的原理和流程也一目了然，其实很简单的逻辑，大致可以氛围</p>
+<ul>
+<li>Attach 阶段：kubelet 使用 systemd-run 单独起一个临时的 systemd scope 来运行后端存储的客户端比如（ nfs 、gluster、ceph），将这些存储挂载到 <code>/var/lib/kubelet/pods/&lt;Pod的ID&gt;/volumes/kubernetes.io~&lt;Volume类型&gt;/&lt;Volume名字&gt;</code></li>
+<li>Mount 阶段：容器启动的时候通过 bind mount 的方式将  <code>/var/lib/kubelet/pods/&lt;Pod的ID&gt;/volumes/kubernetes.io~&lt;Volume类型&gt;/&lt;Volume名字&gt;</code> 这个目录挂载到容器内。这一步相当于使用<code>docker run -v /var/lib/kubelet/pods/&lt;Pod的ID&gt;/volumes/kubernetes.io~&lt;Volume类型&gt;/&lt;Volume名字&gt;:/&lt;容器内的目标目录&gt; 我的镜像</code> 启动一个容器。</li>
+</ul>
+<p>关于更详细的 CSI 存储可以参考下面提到的文章</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p>虽然是一篇很简单的分析，在这个过程中参考了很多的博客，没有这些大佬的分享就没有这篇文章：），这些大佬们的博客文章比我写的<code>不知道高到哪里去了</code>，所以如果你看了这篇文章还是没懂的话，不妨也看一下下面的这些文章就能豁然开朗了😂。</p>
+<h3 id="源码"><a href="#源码" class="headerlink" title="源码"></a>源码</h3><ul>
+<li><p><a href="https://github.com/kubernetes/kubernetes/blob/master/vendor/k8s.io/utils/mount/mount_linux.go#L115" target="_blank" rel="noopener">kubernetes/mount_linux.go at master · kubernetes/kubernetes</a></p>
+</li>
+<li><p><a href="https://github.com/kubernetes/kubernetes/pull/49640" target="_blank" rel="noopener">Run mount in its own systemd scope. by jsafrane · Pull Request #49640 · kubernetes/kubernetes</a></p>
+</li>
+</ul>
+<h3 id="源码分析"><a href="#源码分析" class="headerlink" title="源码分析"></a>源码分析</h3><ul>
+<li><p><a href="https://www.huweihuang.com/article/source-analysis/kubelet/create-pod-by-kubelet/#66-mount-volumes" target="_blank" rel="noopener">kubelet源码分析（四）之 Pod的创建 - 胡伟煌 | Blog</a></p>
+</li>
+<li><p><a href="http://ljchen.net/2018/10/28/kubelet%E6%BA%90%E7%A0%81%E6%9E%B6%E6%9E%84%E7%AE%80%E4%BB%8B/" target="_blank" rel="noopener">Kubelet源码架构简介 | ljchen’s Notes</a></p>
+</li>
+<li><p><a href="http://newgoo.org/2019/09/03/k8s/kubelet-%E6%BA%90%E7%A0%81/" target="_blank" rel="noopener">kubelet 源码分析 - Beantech | Newgoo | kubernates</a></p>
+</li>
+<li><p><a href="http://blog.xbblfz.site/2018/10/12/Kubelet%E5%90%AF%E5%8A%A8%E5%8F%8A%E5%AF%B9Docker%E5%AE%B9%E5%99%A8%E7%AE%A1%E7%90%86%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/" target="_blank" rel="noopener">“Kubelet启动源码分析” - 徐波的博客 | Xu Blog</a></p>
+</li>
+<li><p><a href="https://cizixs.com/2017/06/06/kubelet-source-code-analysis-part-1/" target="_blank" rel="noopener">kubelet 源码分析：启动流程 | Cizixs Write Here</a></p>
+</li>
+<li><p><a href="https://fankangbest.github.io/2017/12/17/kubelet%E5%88%86%E6%9E%90(%E4%B8%89)-volumeManager-v1-5-2/" target="_blank" rel="noopener">kubelet分析(三)-volumeManager-v1.5.2 | fankangbest</a></p>
+</li>
+<li><p><a href="https://wenfeng-gao.github.io/post/k8s-volume-manager-source-code-analysis/" target="_blank" rel="noopener">Kubernetes源码分析之VolumeManager - Je pense donc je suis</a></p>
+</li>
+<li><p><a href="https://www.huweihuang.com/kubernetes-notes/code-analysis/kubelet/startKubelet.html" target="_blank" rel="noopener">startKubelet · Kubernetes 学习笔记</a></p>
+</li>
+</ul>
+<h3 id="官方文档"><a href="#官方文档" class="headerlink" title="官方文档"></a>官方文档</h3><ul>
+<li><p><a href="https://docs.docker.com/storage/" target="_blank" rel="noopener">Manage data in Docker | Docker Documentation</a></p>
+</li>
+<li><p><a href="https://docs.docker.com/storage/bind-mounts/" target="_blank" rel="noopener">Use bind mounts | Docker Documentation</a></p>
+</li>
+<li><p><a href="https://docs.docker.com/storage/bind-mounts/" target="_blank" rel="noopener">Use bind mounts | Docker Documentation</a></p>
+</li>
+<li><p><a href="http://www.jinbuguo.com/man/mount.html" target="_blank" rel="noopener">mount 中文手册</a></p>
+</li>
+<li><p><a href="https://docs.docker.com/storage/storagedriver/overlayfs-driver/" target="_blank" rel="noopener">Use the OverlayFS storage driver</a></p>
+</li>
+</ul>
+<h3 id="相关博客"><a href="#相关博客" class="headerlink" title="相关博客"></a>相关博客</h3><ul>
+<li><p><a href="https://cizixs.com/2016/10/25/kubernetes-intro-kubelet/" target="_blank" rel="noopener">kubernetes 简介： kubelet 和 pod | Cizixs Write Here</a></p>
+</li>
+<li><p><a href="https://michaelyou.github.io/2017/09/17/Docker%E6%95%B0%E6%8D%AE%E7%AE%A1%E7%90%86-Volume%EF%BC%8C-bind-mount%E5%92%8Ctmpfs-mount/" target="_blank" rel="noopener">Docker数据管理-Volume， bind mount和tmpfs mount | Youmai の Blog</a></p>
+</li>
+<li><p><a href="https://www.qikqiak.com/k8strain/storage/csi/" target="_blank" rel="noopener">存储原理 - K8S训练营</a></p>
+</li>
+<li><p><a href="https://blog.fatedier.com/2020/04/17/pod-loopcrash-of-k8s-subpath/" target="_blank" rel="noopener">Kubernetes 挂载 subpath 的容器在 configmap 变更后重启时挂载失败</a></p>
+</li>
+<li><p><a href="https://www.infvie.com/ops-notes/kubernetes-storage.html" target="_blank" rel="noopener">理解kubernetes中的Storage | Infvie’s Blog</a></p>
+</li>
+<li><p><a href="https://arkingc.github.io/2018/12/11/2018-12-11-docker-storage-persist/" target="_blank" rel="noopener">Docker容器数据持久化</a></p>
+</li>
+<li><p><a href="https://arkingc.github.io/2018/01/19/2018-01-19-docker-imagestore/" target="_blank" rel="noopener">Docker源码分析—镜像存储</a></p>
+</li>
+<li><p><a href="https://arkingc.github.io/2018/01/15/2018-01-15-docker-storage-overlay2/" target="_blank" rel="noopener">Docker源码分析—存储驱动</a></p>
+</li>
+<li><p><a href="https://arkingc.github.io/2017/05/05/2017-05-05-docker-filesystem-overlay/" target="_blank" rel="noopener">Docker存储驱动—Overlay/Overlay2「译」</a></p>
+</li>
+<li><p><a href="https://blog.k8s.li/systemd.html">Linux 的小伙伴 systemd 详解</a></p>
+</li>
+</ul>
+<h2 id="结束"><a href="#结束" class="headerlink" title="结束"></a>结束</h2><p>最后祝各位还在<code>搬砖</code>的工人们节日快乐！</p>
+    </div>
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/kubernetes/" rel="tag"><i class="fa fa-tag"></i> kubernetes</a>
+              <a href="/tags/docker/" rel="tag"><i class="fa fa-tag"></i> docker</a>
+              <a href="/tags/%E5%AE%B9%E5%99%A8/" rel="tag"><i class="fa fa-tag"></i> 容器</a>
+              <a href="/tags/%E5%AD%98%E5%82%A8/" rel="tag"><i class="fa fa-tag"></i> 存储</a>
+              <a href="/tags/volumes/" rel="tag"><i class="fa fa-tag"></i> volumes</a>
+          </div>
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/interview-wordpress-install.html" rel="prev" title="一次有趣的面试：WordPress 部署">
+      <i class="fa fa-chevron-left"></i> 一次有趣的面试：WordPress 部署
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/Brick-removal-note.html" rel="next" title="无砖可搬的日子|换厂记">
+      无砖可搬的日子|换厂记 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+  </article>
+  </div>
+          </div>
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+        </div>
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#疑惑"><span class="nav-number">1.</span> <span class="nav-text">疑惑</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#问题复现"><span class="nav-number">2.</span> <span class="nav-text">问题复现</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#解决问题"><span class="nav-number">3.</span> <span class="nav-text">解决问题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#分析"><span class="nav-number">4.</span> <span class="nav-text">分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#容器存储"><span class="nav-number">4.1.</span> <span class="nav-text">容器存储</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#kubelet-挂载存储"><span class="nav-number">4.2.</span> <span class="nav-text">kubelet 挂载存储</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#管-systemd-什么事儿？"><span class="nav-number">4.3.</span> <span class="nav-text">管 systemd 什么事儿？</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考"><span class="nav-number">5.</span> <span class="nav-text">参考</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#源码"><span class="nav-number">5.1.</span> <span class="nav-text">源码</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#源码分析"><span class="nav-number">5.2.</span> <span class="nav-text">源码分析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#官方文档"><span class="nav-number">5.3.</span> <span class="nav-text">官方文档</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#相关博客"><span class="nav-number">5.4.</span> <span class="nav-text">相关博客</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#结束"><span class="nav-number">6.</span> <span class="nav-text">结束</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木子"
+      src="https://blog.k8s.li/avatar.png">
+  <p class="site-author-name" itemprop="name">木子</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">78</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">101</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/muzi502" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;muzi502" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:blog@502.li" title="E-Mail → mailto:blog@502.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://twitter.com/muzi_ii" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;muzi_ii" rel="noopener" target="_blank"><i class="fa fa-fw fa-twitter"></i>Twitter</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://t.me/muzi_ii" title="Telegram → https:&#x2F;&#x2F;t.me&#x2F;muzi_ii" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Telegram</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://kindle.502.li/" title="Kindle → https:&#x2F;&#x2F;kindle.502.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-book"></i>Kindle</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://tg.k8s.li/" title="Channel → https:&#x2F;&#x2F;tg.k8s.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Channel</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-fw fa-rss"></i>RSS</a>
+      </span>
+  </div>
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+      </div>
+    </main>
+    <footer class="footer">
+      <div class="footer-inner">
+<div class="copyright">
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木子</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">1.1m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">30:06</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">主题 – <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a>
+  </div>
+      </div>
+    </footer>
+  </div>
+  <script src="/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script>
+<script src="/js/schemes/pisces.js"></script>
+<script src="/js/next-boot.js"></script>
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://muzi.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: {page: {
+            url: "https://blog.k8s.li/kubelet-mount-volumes-analysis.html",
+            identifier: "kubelet-mount-volumes-analysis.html",
+            title: "kubelet 挂载 volume 原理分析"
+          }
+        }
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://muzi.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+</body>
+</html>
