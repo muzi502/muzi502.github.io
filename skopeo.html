@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon.ico">
+  <link rel="mask-icon" href="/favicon.ico" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+<link rel="stylesheet" href="/css/main.css">
+<link rel="stylesheet" href="//fonts.loli.net/css?family=Lato:300,300italic,400,400italic,700,700italic|Roboto Mono:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://blog.k8s.li').hostname,
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":true,"scrollpercent":true},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"buttons","active":null,"storage":true,"lazyload":true,"nav":{"disqus":{"text":"Load Disqus","order":-1}}},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":false,"async":true,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+  <meta name="description" content="搬砖工具上周末的时候更新完一篇《木子的搬砖工具😂》，最近因为项目需求又发现了个搬砖工具，所以来水篇博客分享给大家。    我司项目组中的一个需求就是：在一台机器上去 pull 一个镜像列表中的镜像，这些镜像存储在 registry A Harbor 上，pull 完这些镜像之后重新打上 tag 然后再 push 到另一个 registry B Harbor  上去。相当于一个同步镜像操作，但和">
+<meta property="og:type" content="article">
+<meta property="og:title" content="镜像搬运工 skopeo 初体验">
+<meta property="og:url" content="https://blog.k8s.li/skopeo.html">
+<meta property="og:site_name" content="木子">
+<meta property="og:description" content="搬砖工具上周末的时候更新完一篇《木子的搬砖工具😂》，最近因为项目需求又发现了个搬砖工具，所以来水篇博客分享给大家。    我司项目组中的一个需求就是：在一台机器上去 pull 一个镜像列表中的镜像，这些镜像存储在 registry A Harbor 上，pull 完这些镜像之后重新打上 tag 然后再 push 到另一个 registry B Harbor  上去。相当于一个同步镜像操作，但和">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2020-05-26T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-05-28T16:00:00.000Z">
+<meta property="article:author" content="木子">
+<meta property="article:tag" content="docker">
+<meta property="article:tag" content="registry">
+<meta property="article:tag" content="镜像">
+<meta property="article:tag" content="搬砖工具">
+<meta name="twitter:card" content="summary">
+<link rel="canonical" href="https://blog.k8s.li/skopeo.html">
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+  <title>镜像搬运工 skopeo 初体验 | 木子</title>
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+<link rel="alternate" href="/atom.xml" title="木子" type="application/atom+xml">
+</head>
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">木子</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+    <a href="/" rel="section"><i class="fa fa-fw fa-desktop"></i>Home</a>
+  </li>
+        <li class="menu-item menu-item-books">
+    <a href="/booklist.html" rel="section"><i class="fa fa-fw fa-book"></i>Books</a>
+  </li>
+        <li class="menu-item menu-item-kindle">
+    <a href="https://kindle.502.li/" rel="noopener" target="_blank"><i class="fa fa-fw fa-book"></i>Kindle</a>
+  </li>
+        <li class="menu-item menu-item-friend">
+    <a href="/link/" rel="section"><i class="fa fa-fw fa-link"></i>Friend</a>
+  </li>
+        <li class="menu-item menu-item-about">
+    <a href="/about.html" rel="section"><i class="fa fa-fw fa-user-circle-o"></i>About</a>
+  </li>
+  </ul>
+</nav>
+</div>
+    </header>
+  <div class="reading-progress-bar"></div>
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div class="content">
+  <div class="posts-expand">
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.k8s.li/skopeo.html">
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://blog.k8s.li/avatar.png">
+      <meta itemprop="name" content="木子">
+      <meta itemprop="description" content="">
+    </span>
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木子">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          镜像搬运工 skopeo 初体验
+        </h2>
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              <time title="创建时间：2020-05-27 2020-05-27T00:00:00+08:00" itemprop="dateCreated datePublished" datetime="2020-05-27T00:00:00+08:00">2020-05-27</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-05-29 2020-05-29T00:00:00+08:00" itemprop="dateModified" datetime="2020-05-29T00:00:00+08:00">2020-05-29</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%8A%80%E6%9C%AF/" itemprop="url" rel="index">
+                    <span itemprop="name">技术</span>
+                  </a>
+                </span>
+            </span>
+  <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-comment-o"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    <a title="disqus" href="/skopeo.html#comments" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="skopeo.html" itemprop="commentCount"></span>
+    </a>
+  </span>
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>14k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>23 分钟</span>
+            </span>
+        </div>
+      </header>
+    <div class="post-body" itemprop="articleBody">
+        <h2 id="搬砖工具"><a href="#搬砖工具" class="headerlink" title="搬砖工具"></a>搬砖工具</h2><p>上周末的时候更新完一篇《木子的搬砖工具😂》，最近因为项目需求又发现了个搬砖工具，所以来水篇博客分享给大家。</p>
+<blockquote>
+<p>  我司项目组中的一个需求就是：在一台机器上去 pull 一个镜像列表中的镜像，这些镜像存储在 registry A Harbor 上，pull 完这些镜像之后重新打上 tag 然后再 push 到另一个 registry B Harbor  上去。相当于一个同步镜像操作，但和 harbor 里在带的那个镜像同步还有很大的不同，我们仅仅需要同步特定 tag 的镜像，而不是整个 harbor 或者 project 里的全部镜像。目前我们的做法还是最简单的方式，使用 docker 命令行的方式来 pull 镜像，然后打 tag 接着 push 到 B harbor。但是啊，当同步二三百个的镜像，或者镜像的总大小几十 GB 的时候这种原始的方法速度还是太慢了，于是就思考有没有另一个工具可以直接将 registry A 中的某个镜像同步到 registry B 中去。</p>
+</blockquote>
+<p>之前我看到过 <a href="https://mritd.me/" target="_blank" rel="noopener">漠然大佬</a> 写的博客<a href="https://mritd.me/2020/03/31/how-to-download-docker-image-without-docker/" target="_blank" rel="noopener">《如何不通过 docker 下载 docker image》</a> ，于是咱也就上手试一下这个工具看看能不能帮咱搬点砖😂。结合这个工具的使用，又一次加深了对容器镜像分发存储的了解，收获颇丰😋</p>
+<h3 id="image"><a href="#image" class="headerlink" title="image"></a>image</h3><p>关于镜像的详细分析可以参考 <a href="https://github.com/helios741/myblog/tree/new/learn_go/src/2019/20191206_docker_disk_storage" target="_blank" rel="noopener">浅谈docker中镜像和容器在本地的存储</a></p>
+<h3 id="registry"><a href="#registry" class="headerlink" title="registry"></a>registry</h3><p>根据 <a href="https://supereagle.github.io/" target="_blank" rel="noopener">Robin</a> 大佬在 <a href="https://supereagle.github.io/2018/04/24/docker-registry/" target="_blank" rel="noopener">镜像仓库中镜像存储的原理解析</a> 文章里得出的结论：</p>
+<blockquote>
+<ul>
+<li>通过 Registry API 获得的两个镜像仓库中相同镜像的 manifest 信息完全相同。</li>
+<li>两个镜像仓库中相同镜像的 manifest 信息的存储路径和内容完全相同。</li>
+<li>两个镜像仓库中相同镜像的 blob 信息的存储路径和内容完全相同。</li>
+</ul>
+</blockquote>
+<h3 id="docker-pull-和-docker-push"><a href="#docker-pull-和-docker-push" class="headerlink" title="docker pull 和 docker push"></a>docker pull 和 docker push</h3><p>之所以想使用 skopeo 替代原有使用 docker pull –&gt; docker tag –&gt; docker push 的操作，是因为 docker pull 镜像的时候，registry 中存储的镜像 layer 格式是 <code>vnd.docker.image.rootfs.diff.tar.gzip</code> ，这是一个 tar.gz 类型的文件。我们可以在本地搭建一个 harbor ，并向 harbor 推送一个 alpine:latest 镜像，来分析一下镜像是如何在 registry 中存储的。</p>
+<ul>
+<li>harbor 的存储目录</li>
+</ul>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">tree</span><br><span class="line">`-- registry</span><br><span class="line">    `-- v2      # registry V2 版本</span><br><span class="line">        |-- blobs # blobs 目录下存储镜像的 raw 数据，存储的最小单元为 layer</span><br><span class="line">        |   `-- sha256</span><br><span class="line">        |       |-- 39</span><br><span class="line">        |       |-- cb</span><br><span class="line">        |       `-- f7</span><br><span class="line">        `-- repositories # 镜像的元数据信息</span><br><span class="line">            `-- library</span><br><span class="line">                `-- alpine</span><br></pre></td></tr></table></figure>
+<ul>
+<li>镜像的 <a href="https://github.com/opencontainers/image-spec/blob/master/manifest.md" target="_blank" rel="noopener">manifest</a> 是针对registry服务端的配置信息</li>
+</ul>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">sh-4.2# skopeo inspect docker://index.docker.io/library/alpine:latest --raw</span><br><span class="line">&#123;</span><br><span class="line">   "schemaVersion": 2,</span><br><span class="line">   "mediaType": "application/vnd.docker.distribution.manifest.v2+json",</span><br><span class="line">   "config": &#123;</span><br><span class="line">      "mediaType": "application/vnd.docker.container.image.v1+json",</span><br><span class="line">      "size": 1507,</span><br><span class="line">      "digest": "sha256:f70734b6a266dcb5f44c383274821207885b549b75c8e119404917a61335981a"</span><br><span class="line">   &#125;,</span><br><span class="line">   "layers": [</span><br><span class="line">      &#123;</span><br><span class="line">         "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",</span><br><span class="line">         "size": 2813316,</span><br><span class="line">         "digest": "sha256:cbdbe7a5bc2a134ca8ec91be58565ec07d037386d1f1d8385412d224deafca08"</span><br><span class="line">      &#125;</span><br><span class="line">   ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>仔细看一下 <code>digest</code> 和下面文件夹的名称，他们是一一对应的，因为 manifest 信息就是镜像在 registry 中存储的信息。</li>
+</ul>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line">tree</span><br><span class="line">|-- [  20]  blobs</span><br><span class="line">|   `-- [  36]  sha256</span><br><span class="line">|       |-- [  78]  39</span><br><span class="line">|       |   `-- [  18]  39eda93d15866957feaee28f8fc5adb545276a64147445c64992ef69804dbf01</span><br><span class="line">|       |       `-- [ 528]  data</span><br><span class="line">|       |-- [  78]  cb</span><br><span class="line">|       |   `-- [  18]  cbdbe7a5bc2a134ca8ec91be58565ec07d037386d1f1d8385412d224deafca08</span><br><span class="line">|       |       `-- [2.7M]  data </span><br><span class="line">|       `-- [  78]  f7</span><br><span class="line">|           `-- [  18]  f70734b6a266dcb5f44c383274821207885b549b75c8e119404917a61335981a</span><br><span class="line">|               `-- [1.5K]  data</span><br><span class="line">`-- [  21]  repositories</span><br><span class="line">    `-- [  20]  library</span><br><span class="line">        `-- [  55]  alpine</span><br><span class="line">            |-- [  20]  _layers</span><br><span class="line">            |   `-- [ 150]  sha256</span><br><span class="line">            |       |-- [  18]  cbdbe7a5bc2a134ca8ec91be58565ec07d037386d1f1d8385412d224deafca08</span><br><span class="line">            |       |   `-- [  71]  link</span><br><span class="line">            |       `-- [  18]  f70734b6a266dcb5f44c383274821207885b549b75c8e119404917a61335981a</span><br><span class="line">            |           `-- [  71]  link</span><br><span class="line">            |-- [  35]  _manifests</span><br><span class="line">            |   |-- [  20]  revisions</span><br><span class="line">            |   |   `-- [  78]  sha256</span><br><span class="line">            |   |       `-- [  18]  39eda93d15866957feaee28f8fc5adb545276a64147445c64992ef69804dbf01</span><br><span class="line">            |   |           `-- [  71]  link</span><br><span class="line">            |   `-- [  20]  tags</span><br><span class="line">            |       `-- [  34]  latest</span><br><span class="line">            |           |-- [  18]  current</span><br><span class="line">            |           |   `-- [  71]  link</span><br><span class="line">            |           `-- [  20]  index</span><br><span class="line">            |               `-- [  78]  sha256</span><br><span class="line">            |                   `-- [  18]  39eda93d15866957feaee28f8fc5adb545276a64147445c64992ef69804dbf01</span><br><span class="line">            |                       `-- [  71]  link</span><br><span class="line">            `-- [   6]  _uploads</span><br><span class="line"></span><br><span class="line">26 directories, 8 files</span><br></pre></td></tr></table></figure>
+<ul>
+<li>我们去看一下 <code>[2.7M]  data</code>  这个文件，其他文件估计是一些 json 文本用于保存元数据信息。使用 file 命令查看 blobs/sha256/cb/cbdbe7a5bc2a134ca8ec91be58565ec07d037386d1f1d8385412d224deafca08 目录下的 <code>data</code> 文件。镜像的每一层都是存放在一个 64 位长度名称的文件夹下，文件名就是 <code>data</code> 。而且这个文件还是个 gzip 压缩后的文件。我么可以使用 tar 命令将其解压开来。</li>
+</ul>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">cd registry/v2/blobs/sha256/cb/cbdbe7a5bc2a134ca8ec91be58565ec07d037386d1f1d8385412d224deafca08</span><br><span class="line">sh-4.2# file data</span><br><span class="line">data: gzip compressed data</span><br><span class="line">sh-4.2# mkdir layer</span><br><span class="line">sh-4.2# tar -xvf data -C layer/</span><br></pre></td></tr></table></figure>
+<ul>
+<li>将其解压到 layer 目录下，使用 tree 命令看一下文件夹下的内容就会明白，这不就是我们的 alpine 镜像真实的内容嘛😂。</li>
+</ul>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">sh-4.2# tree -L 1 -d layer</span><br><span class="line">layer</span><br><span class="line">|-- bin</span><br><span class="line">|-- dev</span><br><span class="line">|-- etc</span><br><span class="line">|-- home</span><br><span class="line">|-- lib</span><br><span class="line">|-- media</span><br><span class="line">|-- mnt</span><br><span class="line">|-- opt</span><br><span class="line">|-- proc</span><br><span class="line">|-- root</span><br><span class="line">|-- run</span><br><span class="line">|-- sbin</span><br><span class="line">|-- srv</span><br><span class="line">|-- sys</span><br><span class="line">|-- tmp</span><br><span class="line">|-- usr</span><br><span class="line">`-- var</span><br></pre></td></tr></table></figure>
+<p>知道了镜像在 registry 中是如何存储的，我们也就能够明白在当前仅仅为了同步两个 registry 上的镜像使用 docker pull –&gt; docker tag –&gt; docker push 操作的弊端。因为 docker pull 镜像时会对 registry 上的 layer 进行解压缩，这一点和我们的浏览器解压缩一些  gzip 压缩的资源一样道理，为了减少网络传输的流量。当我们 pull 镜像的时候，docker 会有一个单独的进程对镜像进行解压缩，在使用 docker pull 拉取镜像的时候使用 ps 查看一下进程就会找到 <code>docker-untar</code>  这个进程。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker-untar /var/lib/docker/overlay2/a076db6567c7306f3cdab6040cd7d083ef6a39d125171353eedbb8bde7f203b4/diff</span><br></pre></td></tr></table></figure>
+<p>对于一些很大的镜像比如 2GB 以上，有时候镜像 layer 已经 download 完了，但是还在进行镜像的解压缩，性能的瓶颈也就在了解压镜像这一块。对于 docker push 来讲，也是如此。</p>
+<p>有没有一种办法可以直接将 registry 上的 blob 复制到另一个 registry，中间过程不涉及对镜像 layer 的解压缩，这岂不美哉😂。</p>
+<h2 id="skopeo-install"><a href="#skopeo-install" class="headerlink" title="skopeo install"></a>skopeo install</h2><h3 id="yum-dnf-zypper-brew"><a href="#yum-dnf-zypper-brew" class="headerlink" title="yum/dnf/zypper/brew"></a>yum/dnf/zypper/brew</h3><p>安装方式很简单，对于常见的发相伴直接 install 一把梭就行，从官方文档偷来的安装方式😂</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> sudo dnf install skopeo</span></span><br></pre></td></tr></table></figure>
+<p>on RHEL/CentOS ≤ 7.x:</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> sudo yum install skopeo</span></span><br></pre></td></tr></table></figure>
+<p>for openSUSE:</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> sudo zypper install skopeo</span></span><br></pre></td></tr></table></figure>
+<p>on alpine:</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> sudo apk add skopeo</span></span><br></pre></td></tr></table></figure>
+<p>on macOS:</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> brew install skopeo</span></span><br></pre></td></tr></table></figure>
+<h3 id="build"><a href="#build" class="headerlink" title="build"></a>build</h3><p>由于我的 VPS 机器是 Ubuntu 1804 的 OS ，配置 apt 源并没成功，当场翻车。为了能够快速体验一把还是本地起一个 alpine 容器，在 alpine 里通过 apk add 的方式安装 skopeo。但 alpine 里的 skopeo 版本 还是 0.14.0 😥，GitHub 上的 master 分支已经 1.0.0了，而且并没有 sync 的选项。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">/ # skopeo --help</span><br><span class="line">NAME:</span><br><span class="line">   skopeo - Various operations with container images and container image registries</span><br><span class="line">USAGE:</span><br><span class="line">   skopeo [global options] command [command options] [arguments...]</span><br><span class="line">VERSION:</span><br><span class="line">   0.1.40</span><br><span class="line">COMMANDS:</span><br><span class="line">     copy               Copy an IMAGE-NAME from one location to another</span><br><span class="line">     inspect            Inspect image IMAGE-NAME</span><br><span class="line">     delete             Delete image IMAGE-NAME</span><br><span class="line">     manifest-digest    Compute a manifest digest of a file</span><br><span class="line">     standalone-sign    Create a signature using local files</span><br><span class="line">     standalone-verify  Verify a signature using local files</span><br><span class="line">     help, h            Shows a list of commands or help for one command</span><br></pre></td></tr></table></figure>
+<p>真是一波三折啊，绕了一圈最终还是亲自<del>指挥</del> build 一份吧，不过这个 build 过程也很简单。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">git clone https://github.com/containers/skopeo skopeo</span><br><span class="line">cd !$</span><br><span class="line">git checkout v1.0.0</span><br><span class="line">make binary-static DISABLE_CGO=1</span><br><span class="line">cp skopeo /usr/bin/</span><br></pre></td></tr></table></figure>
+<ul>
+<li>在这里需要注意一点，如果汝想构建一个在各 Linux 发行版通用的二进制可执行文件，一定要使用 <code>make binary-static DISABLE_CGO=1</code> ，之前我没有仔细看文档直接 make 一把梭，然后在 Ubuntu 上构建出来的二进制执行文件拿到 CentOS 上去用，当场翻车提示以下错误：</li>
+</ul>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">skopeo: error while loading shared libraries: libdevmapper.so.1.02.1: cannot open shared object file: No such file or directory</span><br></pre></td></tr></table></figure>
+<ul>
+<li>然后我傻乎乎地去安装 CentOS 上的这个库，但还是提示 <code>libdevmapper.so.1.02.1</code> 不存在。因为 Ubuntu 上的这个库和 CentOS 上的这个库是不一样名称的😑。所以说要在编译的时候加上 <code>DISABLE_CGO=1</code> 这个参数进行静态链接编译，这样编译出来的二进制可执行文件就可以在 Linux 发行版之间通用了。</li>
+</ul>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">ldd skopeo_d #</span><br><span class="line">        linux-vdso.so.1 (0x00007ffed9e66000)</span><br><span class="line">        libgpgme.so.11 =&gt; /usr/lib/x86_64-linux-gnu/libgpgme.so.11 (0x00007f94aed2e000)</span><br><span class="line">        libpthread.so.0 =&gt; /lib/x86_64-linux-gnu/libpthread.so.0 (0x00007f94aeb0f000)</span><br><span class="line">        libdevmapper.so.1.02.1 =&gt; /lib/x86_64-linux-gnu/libdevmapper.so.1.02.1 (0x00007f94ae8a4000)</span><br><span class="line">        libc.so.6 =&gt; /lib/x86_64-linux-gnu/libc.so.6 (0x00007f94ae4b3000)</span><br><span class="line">        libassuan.so.0 =&gt; /usr/lib/x86_64-linux-gnu/libassuan.so.0 (0x00007f94ae2a0000)</span><br><span class="line">        libgpg-error.so.0 =&gt; /lib/x86_64-linux-gnu/libgpg-error.so.0 (0x00007f94ae08b000)</span><br><span class="line">        /lib64/ld-linux-x86-64.so.2 (0x00007f94b0ac4000)</span><br><span class="line">        libselinux.so.1 =&gt; /lib/x86_64-linux-gnu/libselinux.so.1 (0x00007f94ade63000)</span><br><span class="line">        libudev.so.1 =&gt; /lib/x86_64-linux-gnu/libudev.so.1 (0x00007f94adc45000)</span><br><span class="line">        libm.so.6 =&gt; /lib/x86_64-linux-gnu/libm.so.6 (0x00007f94ad8a7000)</span><br><span class="line">        libpcre.so.3 =&gt; /lib/x86_64-linux-gnu/libpcre.so.3 (0x00007f94ad635000)</span><br><span class="line">        libdl.so.2 =&gt; /lib/x86_64-linux-gnu/libdl.so.2 (0x00007f94ad431000)</span><br><span class="line">        librt.so.1 =&gt; /lib/x86_64-linux-gnu/librt.so.1 (0x00007f94ad229000)</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"> 加上 DISABLE_CGO=1 编译后的二进制可执行文件</span></span><br><span class="line">ldd skopeo_s #</span><br><span class="line">        not a dynamic executable</span><br></pre></td></tr></table></figure>
+<h2 id="usage"><a href="#usage" class="headerlink" title="usage"></a>usage</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">Various operations with container images and container image registries</span><br><span class="line"></span><br><span class="line">Usage:</span><br><span class="line">  skopeo [command]</span><br><span class="line"></span><br><span class="line">Available Commands:</span><br><span class="line">  copy                      Copy an IMAGE-NAME from one location to another</span><br><span class="line">  delete                    Delete image IMAGE-NAME</span><br><span class="line">  help                      Help about any command</span><br><span class="line">  inspect                   Inspect image IMAGE-NAME</span><br><span class="line">  list-tags                 List tags in the transport/repository specified by the</span><br><span class="line">  login                     Login to a container registry</span><br><span class="line">  logout                    Logout of a container registry</span><br><span class="line">  manifest-digest           Compute a manifest digest of a file</span><br><span class="line">  standalone-sign           Create a signature using local files</span><br><span class="line">  standalone-verify         Verify a signature using local files</span><br><span class="line">  sync                      Synchronize one or more images from one location to another</span><br><span class="line"></span><br><span class="line">skopeo version 1.0.0 commit: bd162028cd83ceecd8915736f2d66d5ca73ee54a</span><br></pre></td></tr></table></figure>
+<p>可以看到  skopeo 的功能很简单：</p>
+<ul>
+<li>copy：复制一个镜像从 A 到 B，这里的 A 和 B 可以为本地 docker 镜像或者 registry 上的镜像。</li>
+<li>inspect：查看一个镜像的 manifest 火车 image config 详细信息</li>
+<li>delete：删除一个镜像，可以是本地 docker 镜像或者 registry 上的镜像</li>
+<li>list-tags：列出一个 registry 上某个镜像的所有 tag</li>
+<li>login：登录到某个 registry，和 docker login 类似</li>
+<li>logout： 退出已经登录到某个 registry 的 auth 信息，和 docker logout 类似</li>
+<li>manifest-digest、standalone-sign、standalone-verify 这三个用的不多</li>
+<li>sync：同步一个镜像从 A 到  B，感觉和 copy 一样，但 sync 支持的参数更多，功能更强大。在 0.14.0 版本的时候是没有 sync 选项的，到了 0.14.2 才有，现在是 1.0.0</li>
+</ul>
+<h3 id="IMAGE-NAMES"><a href="#IMAGE-NAMES" class="headerlink" title="IMAGE NAMES"></a>IMAGE NAMES</h3><p>在使用 skopeo 之前，我们首先要知道在命令行中镜像的格式，下面是官方详细的文档格式。无论我们的 src 镜像还是 desc 镜像都要满足以下格式才可以。</p>
+<blockquote>
+<p>  Most commands refer to container images, using a <em>transport<em><code>:</code></em>details</em> format. The following formats are supported:</p>
+<p>  <strong>containers-storage:*</strong>docker-reference* An image located in a local containers/storage image store. Both the location and image store are specified in /etc/containers/storage.conf. (Backend for Podman, CRI-O, Buildah and friends)</p>
+<p>  <strong>dir:*</strong>path* An existing local directory <em>path</em> storing the manifest, layer tarballs and signatures as individual files. This is a non-standardized format, primarily useful for debugging or noninvasive container inspection.</p>
+<p>  <strong>docker://*</strong>docker-reference* An image in a registry implementing the “Docker Registry HTTP API V2”. By default, uses the authorization state in either <code>$XDG_RUNTIME_DIR/containers/auth.json</code>, which is set using <code>(skopeo login)</code>. If the authorization state is not found there, <code>$HOME/.docker/config.json</code> is checked, which is set using <code>(docker login)</code>.</p>
+<p>  <strong>docker-archive:*</strong>path<em>[<strong>:*</strong>docker-reference*] An image is stored in the <code>docker save</code> formatted file. *docker-reference</em> is only used when creating such a file, and it must not contain a digest.</p>
+<p>  <strong>docker-daemon:*</strong>docker-reference* An image <em>docker-reference</em> stored in the docker daemon internal storage. <em>docker-reference</em> must contain either a tag or a digest. Alternatively, when reading images, the format can be docker-daemon:algo:digest (an image ID).</p>
+<p>  <strong>oci:*</strong>path<strong><em>:</em></strong>tag* An image <em>tag</em> in a directory compliant with “Open Container Image Layout Specification” at <em>path</em>.</p>
+</blockquote>
+<p>需要注意的是，这几种镜像的名字，对应着镜像存在的方式，不同存在的方式对镜像的 layer 处理的方式也不一样，比如 <code>docker://</code> 这种方式是存在 registry 上的，<code>docker-daemon:</code> 是存在本地 docker pull 下来的，再比如 <code>docker-archive</code> 是通过 docker save 出来的镜像。同一个镜像有这几种存在的方式就像水有气体、液体、固体一样。可以这样去理解，他们表述的都是同一个镜像，只不过是存在的方式不一样而已。</p>
+<table>
+<thead>
+<tr>
+<th>IMAGE NAMES</th>
+<th>example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>containers-storage:</strong></td>
+<td>containers-storage:</td>
+</tr>
+<tr>
+<td><strong>dir:</strong></td>
+<td>dir:/PATH</td>
+</tr>
+<tr>
+<td><strong>docker://</strong></td>
+<td>docker://k8s.gcr.io/kube-apiserver:v1.17.5</td>
+</tr>
+<tr>
+<td><strong>docker-daemon:</strong></td>
+<td>docker-daemon:alpine:latest</td>
+</tr>
+<tr>
+<td><strong>docker-archive:</strong></td>
+<td>docker-archive:alpine.tar (docker save)</td>
+</tr>
+<tr>
+<td><strong>oci:</strong></td>
+<td>oci:alpine:latest</td>
+</tr>
+</tbody></table>
+<h3 id="skopeo-copy"><a href="#skopeo-copy" class="headerlink" title="skopeo copy"></a>skopeo copy</h3><blockquote>
+<p>  Copy an IMAGE-NAME from one location to another </p>
+</blockquote>
+<p>注意一下，这里的 location 就是指的上面提到的 <code>IMAGE NAMES</code> ，也就是说 <code>skopeo copy src dest</code> 可以有6*6=36 种组合！比如我可以将一个镜像从一个 registry 复制到另一个 registry，<code>skopeo copy docker://IMAGE_NAME docker://IMAGE_NAME</code>，再强调一遍，一定要注意 <code>IMAGE_NAME</code> 的命名的格式。</p>
+<p>skopeo 的详细使用可以参考官方的文档，在使用之前先创建一个</p>
+<p>在使用 skopeo 之前如果镜像是存放在 registry 上的话，需要先登录到 registry。使用 skopeo login 或者  docker login 都可以。成功登录之后会在本地保存一个为 config.json 的文件，里面保存了登录需要的验证信息，skopeo 拿到这个验证信息才有权限往 registry push 镜像。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">╭─root@sg-02 /home/ubuntu/skopeo ‹master*›</span><br><span class="line">╰─# jq "." ~/.docker/config.json                                                             </span><br><span class="line">&#123;</span><br><span class="line">  "auths": &#123;</span><br><span class="line">    "https://index.docker.io/v1/": &#123;</span><br><span class="line">      "auth": "d2sddaqWM7bSVlJFpmQE43Sw=="</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;,</span><br><span class="line">  "HttpHeaders": &#123;</span><br><span class="line">    "User-Agent": "Docker-Client/19.03.5 (linux)"</span><br><span class="line">  &#125;,</span><br><span class="line">  "experimental": "enabled"</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>从 <code>k8s.gcr.io/kube-apiserver:v1.17.5</code> 复制镜像到 <code>index.docker.io/webpsh/kube-apiserver:v1.17.5</code> </li>
+</ul>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">╭─root@sg-02 ~/skopeo ‹master›</span><br><span class="line">╰─# skopeo copy docker://k8s.gcr.io/kube-apiserver:v1.17.5 docker://index.docker.io/webpsh/kube-apiserver:v1.17.5 --dest-authfile /root/.docker/config.json</span><br><span class="line">Getting image source signatures</span><br><span class="line">Copying blob 597de8ba0c30 done</span><br><span class="line">Copying blob e13a88fa950c done</span><br><span class="line">Copying config f640481f6d done</span><br><span class="line">Writing manifest to image destination</span><br><span class="line">Storing signatures</span><br></pre></td></tr></table></figure>
+<ul>
+<li>skopeo 输出的日志显示是 <code>Copying blob 597de8ba0c30 done</code> ，可以看到 skopeo 是直接 copy 镜像 layer 的 blob，而 blob 是在 registry 进行压缩存储的格式。</li>
+</ul>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 然后从重新 pul 下来刚刚 push 到 docker hub 上的镜像，验证是否正确</span></span><br><span class="line">╭─root@sg-02 ~/skopeo ‹master›</span><br><span class="line">╰─# docker pull webpsh/kube-apiserver:v1.17.5</span><br><span class="line">v1.17.5: Pulling from webpsh/kube-apiserver</span><br><span class="line">Digest: sha256:5ddc5c77f52767f2f225a531a257259228d74b32d8aac9cfe087251f998c42f3</span><br><span class="line">Status: Downloaded newer image for webpsh/kube-apiserver:v1.17.5</span><br><span class="line">docker.io/webpsh/kube-apiserver:v1.17.5</span><br></pre></td></tr></table></figure>
+<ul>
+<li>copy 镜像到本地</li>
+</ul>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">╭─root@sg-02 /home/ubuntu</span><br><span class="line">╰─# skopeo copy docker-daemon:alpine:latest oci:alpine</span><br><span class="line">Getting image source signatures</span><br><span class="line">Copying blob 3e207b409db3 done</span><br><span class="line">Copying config af88fdb253 done</span><br><span class="line">Writing manifest to image destination</span><br><span class="line">Storing signatures</span><br><span class="line">╭─root@sg-02 /home/ubuntu</span><br><span class="line">╰─# tree -h alpine</span><br><span class="line">alpine</span><br><span class="line">├── [4.0K]  blobs</span><br><span class="line">│   └── [4.0K]  sha256</span><br><span class="line">│       ├── [ 348]  1c6f747c933450c5169f349f2a57b9d31e833c0452e1ec712b8aab0cbfea4d2c</span><br><span class="line">│       ├── [2.8M]  3eee30c545e47333e6fe551863f6f29c3dcd850187ae3f37c606adb991444886</span><br><span class="line">│       └── [ 583]  af88fdb253aac46693de7883c9c55244327908c77248d7654841503f744aae8b</span><br><span class="line">├── [ 186]  index.json</span><br><span class="line">└── [  31]  oci-layout</span><br></pre></td></tr></table></figure>
+<p>有点好奇这个镜像格式，所以我们来分析一下 copy 出来的镜像，可以看到在导出来的.</p>
+<p>这个应该是镜像的 mainfaet 文件</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">╭─root@sg-02 /home/ubuntu/alpine/blobs/sha256</span><br><span class="line">╰─# jq "." 1c6f747c933450c5169f349f2a57b9d31e833c0452e1ec712b8aab0cbfea4d2c</span><br><span class="line">&#123;</span><br><span class="line">  <span class="attr">"schemaVersion"</span>: <span class="number">2</span>,</span><br><span class="line">  <span class="attr">"config"</span>: &#123;</span><br><span class="line">    <span class="attr">"mediaType"</span>: <span class="string">"application/vnd.oci.image.config.v1+json"</span>,</span><br><span class="line">    <span class="attr">"digest"</span>: <span class="string">"sha256:af88fdb253aac46693de7883c9c55244327908c77248d7654841503f744aae8b"</span>,</span><br><span class="line">    <span class="attr">"size"</span>: <span class="number">583</span></span><br><span class="line">  &#125;,</span><br><span class="line">  <span class="attr">"layers"</span>: [</span><br><span class="line">    &#123;</span><br><span class="line">      <span class="attr">"mediaType"</span>: <span class="string">"application/vnd.oci.image.layer.v1.tar+gzip"</span>,</span><br><span class="line">      <span class="attr">"digest"</span>: <span class="string">"sha256:3eee30c545e47333e6fe551863f6f29c3dcd850187ae3f37c606adb991444886"</span>,</span><br><span class="line">      <span class="attr">"size"</span>: <span class="number">2898973</span></span><br><span class="line">    &#125;</span><br><span class="line">  ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>这个就是镜像的 image config 文件</li>
+</ul>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line">╭─root@sg-02 /home/ubuntu/alpine/blobs/sha256</span><br><span class="line">╰─# jq "." af88fdb253aac46693de7883c9c55244327908c77248d7654841503f744aae8b</span><br><span class="line">&#123;</span><br><span class="line">  <span class="attr">"created"</span>: <span class="string">"2020-04-24T01:05:03.92860976Z"</span>,</span><br><span class="line">  <span class="attr">"architecture"</span>: <span class="string">"amd64"</span>,</span><br><span class="line">  <span class="attr">"os"</span>: <span class="string">"linux"</span>,</span><br><span class="line">  <span class="attr">"config"</span>: &#123;</span><br><span class="line">    <span class="attr">"Env"</span>: [</span><br><span class="line">      <span class="string">"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"</span></span><br><span class="line">    ],</span><br><span class="line">    <span class="attr">"Cmd"</span>: [</span><br><span class="line">      <span class="string">"/bin/sh"</span></span><br><span class="line">    ]</span><br><span class="line">  &#125;,</span><br><span class="line">  <span class="attr">"rootfs"</span>: &#123;</span><br><span class="line">    <span class="attr">"type"</span>: <span class="string">"layers"</span>,</span><br><span class="line">    <span class="attr">"diff_ids"</span>: [</span><br><span class="line">      <span class="string">"sha256:3e207b409db364b595ba862cdc12be96dcdad8e36c59a03b7b3b61c946a5741a"</span></span><br><span class="line">    ]</span><br><span class="line">  &#125;,</span><br><span class="line">  <span class="attr">"history"</span>: [</span><br><span class="line">    &#123;</span><br><span class="line">      <span class="attr">"created"</span>: <span class="string">"2020-04-24T01:05:03.608058404Z"</span>,</span><br><span class="line">      <span class="attr">"created_by"</span>: <span class="string">"/bin/sh -c #(nop) ADD file:b91adb67b670d3a6ff9463e48b7def903ed516be66fc4282d22c53e41512be49 in / "</span></span><br><span class="line">    &#125;,</span><br><span class="line">    &#123;</span><br><span class="line">      <span class="attr">"created"</span>: <span class="string">"2020-04-24T01:05:03.92860976Z"</span>,</span><br><span class="line">      <span class="attr">"created_by"</span>: <span class="string">"/bin/sh -c #(nop)  CMD [\"/bin/sh\"]"</span>,</span><br><span class="line">      <span class="attr">"empty_layer"</span>: <span class="literal">true</span></span><br><span class="line">    &#125;</span><br><span class="line">  ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="skopeo-inspect"><a href="#skopeo-inspect" class="headerlink" title="skopeo inspect"></a>skopeo inspect</h3><p>这个命令可以查看一个镜像的 image config 和 mainf 文件，和 docker inspect 命令差不多</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">╭─root@sg-02 /home/ubuntu/alpine/blobs/sha256</span><br><span class="line">╰─# skopeo inspect docker-daemon:alpine:latest --raw | jq "."</span><br><span class="line">&#123;</span><br><span class="line">  <span class="attr">"schemaVersion"</span>: <span class="number">2</span>,</span><br><span class="line">  <span class="attr">"mediaType"</span>: <span class="string">"application/vnd.docker.distribution.manifest.v2+json"</span>,</span><br><span class="line">  <span class="attr">"config"</span>: &#123;</span><br><span class="line">    <span class="attr">"mediaType"</span>: <span class="string">"application/vnd.docker.container.image.v1+json"</span>,</span><br><span class="line">    <span class="attr">"size"</span>: <span class="number">1507</span>,</span><br><span class="line">    <span class="attr">"digest"</span>: <span class="string">"sha256:f70734b6a266dcb5f44c383274821207885b549b75c8e119404917a61335981a"</span></span><br><span class="line">  &#125;,</span><br><span class="line">  <span class="attr">"layers"</span>: [</span><br><span class="line">    &#123;</span><br><span class="line">      <span class="attr">"mediaType"</span>: <span class="string">"application/vnd.docker.image.rootfs.diff.tar.gzip"</span>,</span><br><span class="line">      <span class="attr">"size"</span>: <span class="number">5878784</span>,</span><br><span class="line">      <span class="attr">"digest"</span>: <span class="string">"sha256:3e207b409db364b595ba862cdc12be96dcdad8e36c59a03b7b3b61c946a5741a"</span></span><br><span class="line">    &#125;</span><br><span class="line">  ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="skopeo-delete"><a href="#skopeo-delete" class="headerlink" title="skopeo delete"></a>skopeo delete</h3><p>使用这个命令可以删除镜像，对于删除 registry 上的镜像很有帮助，因为目前想要删除 registry 上的镜像常规的做法还是登录到 registry 在 WEB 上手动删除。skopeo delete 也是调用 registry 的 API 来进行删除镜像。</p>
+<h3 id="skopeo-list-tags"><a href="#skopeo-list-tags" class="headerlink" title="skopeo list-tags"></a>skopeo list-tags</h3><p>这个命令常用来列出 registry 上的某个镜像的所有 tag ，在一些 shell 脚本中可能会又用得到。</p>
+    </div>
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/docker/" rel="tag"><i class="fa fa-tag"></i> docker</a>
+              <a href="/tags/registry/" rel="tag"><i class="fa fa-tag"></i> registry</a>
+              <a href="/tags/%E9%95%9C%E5%83%8F/" rel="tag"><i class="fa fa-tag"></i> 镜像</a>
+              <a href="/tags/%E6%90%AC%E7%A0%96%E5%B7%A5%E5%85%B7/" rel="tag"><i class="fa fa-tag"></i> 搬砖工具</a>
+          </div>
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/My-brick-lifting-tools.html" rel="prev" title="木子的搬砖工具😂">
+      <i class="fa fa-chevron-left"></i> 木子的搬砖工具😂
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/mount-bind.html" rel="next" title="mount 命令之 --bind 挂载参数">
+      mount 命令之 --bind 挂载参数 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+  </article>
+  </div>
+          </div>
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+        </div>
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#搬砖工具"><span class="nav-number">1.</span> <span class="nav-text">搬砖工具</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#image"><span class="nav-number">1.1.</span> <span class="nav-text">image</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#registry"><span class="nav-number">1.2.</span> <span class="nav-text">registry</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#docker-pull-和-docker-push"><span class="nav-number">1.3.</span> <span class="nav-text">docker pull 和 docker push</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#skopeo-install"><span class="nav-number">2.</span> <span class="nav-text">skopeo install</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#yum-dnf-zypper-brew"><span class="nav-number">2.1.</span> <span class="nav-text">yum&#x2F;dnf&#x2F;zypper&#x2F;brew</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#build"><span class="nav-number">2.2.</span> <span class="nav-text">build</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#usage"><span class="nav-number">3.</span> <span class="nav-text">usage</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#IMAGE-NAMES"><span class="nav-number">3.1.</span> <span class="nav-text">IMAGE NAMES</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#skopeo-copy"><span class="nav-number">3.2.</span> <span class="nav-text">skopeo copy</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#skopeo-inspect"><span class="nav-number">3.3.</span> <span class="nav-text">skopeo inspect</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#skopeo-delete"><span class="nav-number">3.4.</span> <span class="nav-text">skopeo delete</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#skopeo-list-tags"><span class="nav-number">3.5.</span> <span class="nav-text">skopeo list-tags</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木子"
+      src="https://blog.k8s.li/avatar.png">
+  <p class="site-author-name" itemprop="name">木子</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">82</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">8</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">108</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/muzi502" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;muzi502" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:blog@502.li" title="E-Mail → mailto:blog@502.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://twitter.com/muzi_ii" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;muzi_ii" rel="noopener" target="_blank"><i class="fa fa-fw fa-twitter"></i>Twitter</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://t.me/muzi_ii" title="Telegram → https:&#x2F;&#x2F;t.me&#x2F;muzi_ii" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Telegram</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://kindle.502.li/" title="Kindle → https:&#x2F;&#x2F;kindle.502.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-book"></i>Kindle</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://tg.k8s.li/" title="Channel → https:&#x2F;&#x2F;tg.k8s.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Channel</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-fw fa-rss"></i>RSS</a>
+      </span>
+  </div>
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+      </div>
+    </main>
+    <footer class="footer">
+      <div class="footer-inner">
+<div class="copyright">
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木子</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">32:03</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">主题 – <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a>
+  </div>
+      </div>
+    </footer>
+  </div>
+  <script src="/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script>
+<script src="/js/schemes/pisces.js"></script>
+<script src="/js/next-boot.js"></script>
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://muzi.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: {page: {
+            url: "https://blog.k8s.li/skopeo.html",
+            identifier: "skopeo.html",
+            title: "镜像搬运工 skopeo 初体验"
+          }
+        }
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://muzi.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon.ico">
+  <link rel="mask-icon" href="/favicon.ico" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+<link rel="stylesheet" href="/css/main.css">
+<link rel="stylesheet" href="//fonts.loli.net/css?family=Lato:300,300italic,400,400italic,700,700italic|Roboto Mono:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://blog.k8s.li').hostname,
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":true,"scrollpercent":true},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"buttons","active":null,"storage":true,"lazyload":true,"nav":{"disqus":{"text":"Load Disqus","order":-1}}},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":false,"async":true,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+  <meta name="description" content="翻车（：由于我的 VPS 不是大盘鸡(就是大容量磁盘机器啦😂)， docker 存储目录 &#x2F;var&#x2F;lib&#x2F;docker 所在的分区严重不足，于是就想着在不改变 docker 配置的下将 &#x2F;opt 目录下的分区分配给 &#x2F;var&#x2F;lib&#x2F;docker 目录。首先想到的是把 &#x2F;var&#x2F;lib&#x2F;docker 复制到 &#x2F;opt&#x2F;docker，然后再将 &#x2F;opt&#x2F;docker 软链接到 &#x2F;var&#x2F;lib&#x2F;">
+<meta property="og:type" content="article">
+<meta property="og:title" content="mount 命令之 --bind 挂载参数">
+<meta property="og:url" content="https://blog.k8s.li/mount-bind.html">
+<meta property="og:site_name" content="木子">
+<meta property="og:description" content="翻车（：由于我的 VPS 不是大盘鸡(就是大容量磁盘机器啦😂)， docker 存储目录 &#x2F;var&#x2F;lib&#x2F;docker 所在的分区严重不足，于是就想着在不改变 docker 配置的下将 &#x2F;opt 目录下的分区分配给 &#x2F;var&#x2F;lib&#x2F;docker 目录。首先想到的是把 &#x2F;var&#x2F;lib&#x2F;docker 复制到 &#x2F;opt&#x2F;docker，然后再将 &#x2F;opt&#x2F;docker 软链接到 &#x2F;var&#x2F;lib&#x2F;">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2020-06-01T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-06-03T11:56:13.436Z">
+<meta property="article:author" content="木子">
+<meta property="article:tag" content="linux">
+<meta property="article:tag" content="overlay2">
+<meta property="article:tag" content="docker">
+<meta name="twitter:card" content="summary">
+<link rel="canonical" href="https://blog.k8s.li/mount-bind.html">
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+  <title>mount 命令之 --bind 挂载参数 | 木子</title>
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+<link rel="alternate" href="/atom.xml" title="木子" type="application/atom+xml">
+</head>
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">木子</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+    <a href="/" rel="section"><i class="fa fa-fw fa-desktop"></i>Home</a>
+  </li>
+        <li class="menu-item menu-item-books">
+    <a href="/booklist.html" rel="section"><i class="fa fa-fw fa-book"></i>Books</a>
+  </li>
+        <li class="menu-item menu-item-kindle">
+    <a href="https://kindle.502.li/" rel="noopener" target="_blank"><i class="fa fa-fw fa-book"></i>Kindle</a>
+  </li>
+        <li class="menu-item menu-item-friend">
+    <a href="/link/" rel="section"><i class="fa fa-fw fa-link"></i>Friend</a>
+  </li>
+        <li class="menu-item menu-item-about">
+    <a href="/about.html" rel="section"><i class="fa fa-fw fa-user-circle-o"></i>About</a>
+  </li>
+  </ul>
+</nav>
+</div>
+    </header>
+  <div class="reading-progress-bar"></div>
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div class="content">
+  <div class="posts-expand">
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.k8s.li/mount-bind.html">
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://blog.k8s.li/avatar.png">
+      <meta itemprop="name" content="木子">
+      <meta itemprop="description" content="">
+    </span>
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木子">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          mount 命令之 --bind 挂载参数
+        </h2>
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              <time title="创建时间：2020-06-02 2020-06-02T00:00:00+08:00" itemprop="dateCreated datePublished" datetime="2020-06-02T00:00:00+08:00">2020-06-02</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-06-03 2020-06-03T19:56:13+08:00" itemprop="dateModified" datetime="2020-06-03T19:56:13+08:00">2020-06-03</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%8A%80%E6%9C%AF/" itemprop="url" rel="index">
+                    <span itemprop="name">技术</span>
+                  </a>
+                </span>
+            </span>
+  <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-comment-o"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    <a title="disqus" href="/mount-bind.html#comments" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="mount-bind.html" itemprop="commentCount"></span>
+    </a>
+  </span>
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>4.1k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>7 分钟</span>
+            </span>
+        </div>
+      </header>
+    <div class="post-body" itemprop="articleBody">
+        <h2 id="翻车（："><a href="#翻车（：" class="headerlink" title="翻车（："></a>翻车（：</h2><p>由于我的 VPS 不是大盘鸡(就是大容量磁盘机器啦😂)， docker 存储目录 <code>/var/lib/docker</code> 所在的分区严重不足，于是就想着在不改变 docker 配置的下将 <code>/opt</code> 目录下的分区分配给 <code>/var/lib/docker</code> 目录。首先想到的是把 <code>/var/lib/docker</code> 复制到 <code>/opt/docker</code>，然后再将 <code>/opt/docker</code> 软链接到 <code>/var/lib/docker</code> 。</p>
+<p>于是我就一顿操作猛如虎，<code>mv /var/lib/docker /opt/docker &amp;&amp; ln -s /opt/docker /var/lib/docker</code> 一把梭，然后我启动一个容器的时候当场就翻车了🤣。</p>
+<p>原来有些程序是不支持软链接目录的，还有一点就是软链接的路径也有点坑。比如我将 <code>/opt/docker -&gt; /var/lib/docker/</code> ，在 <code>/var/lib/docker</code> 目录下执行 <code>ls ../</code> 即它的上一级目录是 <code>/opt</code> 而不是 <code>/var/lib</code> ，对于一些依赖相对路径的应用（尤其是 shell 脚本）来讲这样使用软链接的方式也容易翻车😂。</p>
+<p>那么有没有一种更好的办法将两个目录进行“硬链接”呢，注意我在此用的是双引号，并非是真正的”硬链接“，搜了一圈发现 mount –bind 这种骚操作。无论我们对文件使用软链接/硬链接/bind，还是对目录使用软链接，其实都是希望操作的 <code>src</code> 和 <code>dest</code> 他们二者都能保持一致。通过 bind 挂载的方式具有着挂载点的一些特性，这是链接是不具有的，对一些不支持链接的应用来讲，bind 的方式要友好一些。</p>
+<h2 id="bind"><a href="#bind" class="headerlink" title="bind"></a>bind</h2><p>其实 bind 这个挂载选项我们在使用 docker 或者 kubernetes 多少都会用到的，尤其是当使用 kubernetes  时 kubelet 在启动容器挂载存储的时候底层是将 node 节点本机的 <code>/var/lib/kubelet/pods/&lt;Pod的ID&gt;/volumes/kubernetes.io~&lt;Volume类型&gt;/&lt;Volume名字&gt;</code> 目录通过 bind 的方式挂载到容器中的，详细的分析可以参考之前我写的一篇博客 <a href="https://blog.k8s.li/kubelet-mount-volumes-analysis.html">kubelet 挂载 volume 原理分析</a> 。</p>
+<blockquote>
+<ul>
+<li><strong>Volumes</strong> are stored in a part of the host filesystem which is <em>managed by Docker</em> (<code>/var/lib/docker/volumes/</code> on Linux). Non-Docker processes should not modify this part of the filesystem. Volumes are the best way to persist data in Docker.</li>
+<li><strong>Bind mounts</strong> may be stored <em>anywhere</em> on the host system. They may even be important system files or directories. Non-Docker processes on the Docker host or a Docker container can modify them at any time.</li>
+<li><strong><code>tmpfs</code> mounts</strong> are stored in the host system’s memory only, and are never written to the host system’s filesystem.</li>
+</ul>
+</blockquote>
+<p>不过那时候并没有详细地去了解 bind 的原理，直到最近翻了一次车才想起来 bind ，于是接下来就详细地分析以下 mount –bind 挂载参数。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 使用软链接链接目录</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> ls -i 显示文件/目录的 inode 号</span></span><br><span class="line">╭─root@sg-02 /var/lib</span><br><span class="line">╰─# ln -s /opt/docker /var/lib/docker</span><br><span class="line">╭─root@sg-02 /var/lib</span><br><span class="line">╰─# ls -i /opt | grep docker</span><br><span class="line">2304916 docker</span><br><span class="line">╭─root@sg-02 /var/lib</span><br><span class="line">╰─# ls -i /var/lib | grep docker</span><br><span class="line">    211 docker</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"> 使用硬链接链接两个文件</span></span><br><span class="line">╭─root@sg-02 /var/lib</span><br><span class="line">╰─# ln /usr/local/bin/docker-compose /usr/bin/docker-compose</span><br><span class="line">╭─root@sg-02 /var/lib</span><br><span class="line">╰─# ls -i /usr/bin/docker-compose</span><br><span class="line">112 /usr/bin/docker-compose</span><br><span class="line">╭─root@sg-02 /var/lib</span><br><span class="line">╰─# ls -i /usr/bin/docker-compose</span><br><span class="line">112 /usr/bin/docker-compose</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"> 使用 --<span class="built_in">bind</span> 挂载目录</span></span><br><span class="line">╭─root@sg-02 /var/lib</span><br><span class="line">╰─# mount --bind /opt/docker /var/lib/docker</span><br><span class="line">╭─root@sg-02 /var/lib</span><br><span class="line">╰─# ls -i /var/lib | grep docker</span><br><span class="line">2304916 docker</span><br><span class="line">╭─root@sg-02 /var/lib</span><br><span class="line">╰─# ls -i /opt | grep docker</span><br><span class="line">2304916 docker</span><br></pre></td></tr></table></figure>
+<p>我们可以看到当使用使用硬链接或 bind 挂载目录时，两个文件 inode 号是相同的，使用软链接的两个文件的 inode 号是不同的。但目录又不能使用硬链接，而且硬链接不支持跨分区。我们是否可以将 bind 的效果和<br>“硬链接目录“ 样来使用呢？其实可以这样用，但这样类比并不严谨。</p>
+<p>当我们使用 bind 的时候，是将一个目录 A  挂载到另一个目录 B ，目录 B 原有的内容就被屏”蔽掉“了，目录 B 里面的内容就是目录 A 里面的内容。这和我们挂在其他分区到挂载点目录一样，目录 B 的内容还是存在的，只不过是被”屏蔽“掉了，当我们 umount B 后，原内容就会复现。</p>
+<p>当我们使用 <code>docker run -v PATH:PATH</code> 启动一个容器的时候，实质上也是会用到 <code>bind</code>，docker 会将主机的目录通过 <code>bind</code> 的方式挂载到容器目录。下面我们启动一个 alpine 容器来实验一下。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">docker run --name alpine -v /opt/bind/:/var --privileged --rm -it alpine sh</span><br><span class="line">docker inspect alpine</span><br></pre></td></tr></table></figure>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">"Mounts": [</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="attr">"Type"</span>: <span class="string">"bind"</span>,</span><br><span class="line">        <span class="attr">"Source"</span>: <span class="string">"/opt/bind"</span>,</span><br><span class="line">        <span class="attr">"Destination"</span>: <span class="string">"/var"</span>,</span><br><span class="line">        <span class="attr">"Mode"</span>: <span class="string">""</span>,</span><br><span class="line">        <span class="attr">"RW"</span>: <span class="literal">true</span>,</span><br><span class="line">        <span class="attr">"Propagation"</span>: <span class="string">"rprivate"</span></span><br><span class="line">    &#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+<p>在容器内使用 umount 命令卸载掉 <code>/var</code> ，umount 操作需要 root 权限，这也是为什么要在容器启动的时候加上 <code>--privileged</code> 参数来启动一个特权容器的原因。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">/ # ls /var/</span><br><span class="line">74898710_p21.jpg    MJSTEALEY.md        docker-compose.yml  letsencrypt         resolv.conf</span><br><span class="line">CONSOLE.md          README.md           hostname            logs                stop-and-remove.sh</span><br><span class="line">LICENSE             config              hosts               nginx               webp-server</span><br><span class="line">/ # umount /var/</span><br><span class="line"><span class="meta">#</span><span class="bash"> umount 之后容器内原来的 /var 目录内容<span class="string">"恢复"</span>了</span></span><br><span class="line">/ # ls /var/</span><br><span class="line">cache  empty  lib    local  lock   log    mail   opt    run    spool  tmp</span><br></pre></td></tr></table></figure>
+<h2 id="其他用处🤔"><a href="#其他用处🤔" class="headerlink" title="其他用处🤔"></a>其他用处🤔</h2><h3 id="无缝更新-Webp-Server-Go"><a href="#无缝更新-Webp-Server-Go" class="headerlink" title="无缝更新 Webp Server Go"></a>无缝更新 Webp Server Go</h3><p>在 <a href="">小土豆</a>、<a href="">Nona</a> 大佬讨论 <a href="">Webp Server Go</a> 无缝更新的时候我们提出了一个思路：</p>
+<blockquote>
+<ul>
+<li><p>在更新之前先对 nginx 配置文件进行修改，去掉 webp server 的 location 字段：</p>
+<figure class="highlight nginx"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">location</span> <span class="regexp">~* \.(png|jpg|jpeg)$</span> &#123;</span><br><span class="line">    <span class="attribute">proxy_pass</span> http://127.0.0.1:3333;</span><br><span class="line">    <span class="attribute">proxy_set_header</span> HOST <span class="variable">$http_host</span>;</span><br><span class="line">    <span class="attribute">add_header</span> Cache-Control <span class="string">'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0'</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>然后再 nginx -s reload 不中断 reload 一</p>
+</li>
+<li><p>接着停掉 webp server 服务 <code>systemctl stop webps</code></p>
+</li>
+<li><p>mv webp-server{.bak,}</p>
+</li>
+<li><p>mv ./upload/webp-server-linux-amd64 webp-server</p>
+</li>
+<li><p>接着启动 webp server 服务 <code>systemctl start webps</code></p>
+</li>
+<li><p>然后开倒车把 nginx 配置文件再改回去🍞</p>
+</li>
+</ul>
+</blockquote>
+<p>在此需要提几点，我们希望<strong>无缝更新</strong>，即在更新的过程中不会导致用户请求图片资源失败，那怕 <code>+1s</code>都不行，所以我们需要暂时性地在 nginx 配置文件里去掉 webp server ，使它去请求原图片，等更新完 webp server 之后再添加上去。</p>
+<p>对于木子这种经常删库跑路的手残菜鸟来讲，对一个配置文件改来改去不是好方法，万一 nginx 配置文件改来改去没改好， nginx -s reload 一下 nginx 服务就炸了😂。那么使用 cp 和 mv 怎么样。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">cp blog.conf&#123;,.bak&#125;</span><br><span class="line">vim blog.conf</span><br><span class="line">nginx -s reload</span><br><span class="line">- update webp server</span><br><span class="line">mv blog.conf&#123;,.bak2&#125;</span><br><span class="line">mv blog.conf&#123;.bak,&#125;</span><br><span class="line">nginx -s reload</span><br></pre></td></tr></table></figure>
+<p>使用 bind 呢？好像少了一步，下次更新 webp server 的时候只需要 umount 一下，更新完之后再 mount 一下就可以啦。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">cp blog.conf&#123;,.bak&#125;</span><br><span class="line">vim blog.conf</span><br><span class="line">nginx -s reload</span><br><span class="line">- update webp server</span><br><span class="line">mount --bind blog.conf.bak blohg.conf</span><br><span class="line">nginx -s reload</span><br></pre></td></tr></table></figure>
+<h3 id="VPS-搬家助手"><a href="#VPS-搬家助手" class="headerlink" title="VPS 搬家助手"></a>VPS 搬家助手</h3><p>其实还有很多用途啦，这里就不罗列了</p>
+    </div>
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/linux/" rel="tag"><i class="fa fa-tag"></i> linux</a>
+              <a href="/tags/overlay2/" rel="tag"><i class="fa fa-tag"></i> overlay2</a>
+              <a href="/tags/docker/" rel="tag"><i class="fa fa-tag"></i> docker</a>
+          </div>
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/skopeo.html" rel="prev" title="镜像搬运工 skopeo 初体验">
+      <i class="fa fa-chevron-left"></i> 镜像搬运工 skopeo 初体验
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/1984.html" rel="next" title="弱者的反抗">
+      弱者的反抗 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+  </article>
+  </div>
+          </div>
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+        </div>
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#翻车（："><span class="nav-number">1.</span> <span class="nav-text">翻车（：</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#bind"><span class="nav-number">2.</span> <span class="nav-text">bind</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#其他用处🤔"><span class="nav-number">3.</span> <span class="nav-text">其他用处🤔</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#无缝更新-Webp-Server-Go"><span class="nav-number">3.1.</span> <span class="nav-text">无缝更新 Webp Server Go</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#VPS-搬家助手"><span class="nav-number">3.2.</span> <span class="nav-text">VPS 搬家助手</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木子"
+      src="https://blog.k8s.li/avatar.png">
+  <p class="site-author-name" itemprop="name">木子</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">82</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">8</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">108</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/muzi502" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;muzi502" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:blog@502.li" title="E-Mail → mailto:blog@502.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://twitter.com/muzi_ii" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;muzi_ii" rel="noopener" target="_blank"><i class="fa fa-fw fa-twitter"></i>Twitter</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://t.me/muzi_ii" title="Telegram → https:&#x2F;&#x2F;t.me&#x2F;muzi_ii" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Telegram</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://kindle.502.li/" title="Kindle → https:&#x2F;&#x2F;kindle.502.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-book"></i>Kindle</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://tg.k8s.li/" title="Channel → https:&#x2F;&#x2F;tg.k8s.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Channel</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-fw fa-rss"></i>RSS</a>
+      </span>
+  </div>
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+      </div>
+    </main>
+    <footer class="footer">
+      <div class="footer-inner">
+<div class="copyright">
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木子</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">32:03</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">主题 – <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a>
+  </div>
+      </div>
+    </footer>
+  </div>
+  <script src="/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script>
+<script src="/js/schemes/pisces.js"></script>
+<script src="/js/next-boot.js"></script>
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://muzi.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: {page: {
+            url: "https://blog.k8s.li/mount-bind.html",
+            identifier: "mount-bind.html",
+            title: "mount 命令之 --bind 挂载参数"
+          }
+        }
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://muzi.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+</body>
+</html>
