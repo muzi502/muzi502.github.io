@@ -51,7 +51,7 @@
 <meta property="og:description" content="0.准备1.临时关闭swap、SELinux、防火墙。官方建议这么做。 12345swapoff -asetenforce 0sed -i &#39;s&#x2F;^SELINUX&#x3D;enforcing$&#x2F;SELINUX&#x3D; disabled&#x2F;&#39; &#x2F;etc&#x2F;selinux&#x2F;configsystemctl disable iptables-services firewalldsystemctl stop iptables">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2019-05-15T16:00:00.000Z">
-<meta property="article:modified_time" content="2020-06-30T12:04:59.596Z">
+<meta property="article:modified_time" content="2020-08-13T00:30:34.567Z">
 <meta property="article:author" content="木子">
 <meta property="article:tag" content="kubernetes">
 <meta property="article:tag" content="k8s">
@@ -165,7 +165,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-06-30 2020-06-30T20:04:59+08:00" itemprop="dateModified" datetime="2020-06-30T20:04:59+08:00">2020-06-30</time>
+                <time title="修改时间：2020-08-13 2020-08-13T08:30:34+08:00" itemprop="dateModified" datetime="2020-08-13T08:30:34+08:00">2020-08-13</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -226,7 +226,7 @@
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">systemctl <span class="built_in">enable</span> docker</span><br><span class="line">systemctl restart docker</span><br><span class="line">systemctl daemon-reload</span><br></pre></td></tr></table></figure>
 <h2 id="2-在国外服务器下载所需要的镜像并传输回国内服务器上"><a href="#2-在国外服务器下载所需要的镜像并传输回国内服务器上" class="headerlink" title="2.在国外服务器下载所需要的镜像并传输回国内服务器上"></a>2.在国外服务器下载所需要的镜像并传输回国内服务器上</h2><p>我自己在aws上做了个非官方k8s镜像站，仅仅包含了kubeadm初始化k8s集群时所需要的镜像<a href="https://images.k8s.502.li" target="_blank" rel="noopener">mirror</a>，没有对镜像做任何修改，定时任务每周拉取最新的镜像。你信得过我的话也可以去我的镜像站下载。上面log有校验的校验码，下载后记得校验一下。😂。我使用IDM下载，开启16个线程下载速度能打到15Mb/s。HTTPS传输，不用注册。国内的一些博主用百度云😂来分享这些镜像，十分不友好。这才是我建这个镜像站的原因。<br>下载完成后使用 <code>docker load &lt; k8s.image.tar.gz</code> 就能加载镜像，无需解压。</p>
 <p>你也可以自己在国外的服务器上下载这些镜像并传输回国内的服务器上。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">╭─root@k8s-master ~</span><br><span class="line">╰─<span class="comment"># kubeadm config images pull</span></span><br><span class="line">[config/images] Pulled k8s.gcr.io/kube-apiserver:v1.14.1</span><br><span class="line">[config/images] Pulled k8s.gcr.io/kube-controller-manager:v1.14.1</span><br><span class="line">[config/images] Pulled k8s.gcr.io/kube-scheduler:v1.14.1</span><br><span class="line">[config/images] Pulled k8s.gcr.io/kube-proxy:v1.14.1</span><br><span class="line">[config/images] Pulled k8s.gcr.io/pause:3.1</span><br><span class="line">[config/images] Pulled k8s.gcr.io/etcd:3.3.10</span><br><span class="line">[config/images] Pulled k8s.gcr.io/coredns:1.3.1</span><br><span class="line"><span class="comment"># 导出镜像</span></span><br><span class="line">docker save -o k8s.tar $(docker images | grep B | cut -d <span class="string">' '</span> -f1)</span><br><span class="line">gzip k8s.tar k8s.tar.gz</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">╭─root@k8s-master ~</span><br><span class="line">╰─<span class="comment"># kubeadm config images pull</span></span><br><span class="line">[config/images] Pulled k8s.gcr.io/kube-apiserver:v1.14.1</span><br><span class="line">[config/images] Pulled k8s.gcr.io/kube-controller-manager:v1.14.1</span><br><span class="line">[config/images] Pulled k8s.gcr.io/kube-scheduler:v1.14.1</span><br><span class="line">[config/images] Pulled k8s.gcr.io/kube-proxy:v1.14.1</span><br><span class="line">[config/images] Pulled k8s.gcr.io/pause:3.1</span><br><span class="line">[config/images] Pulled k8s.gcr.io/etcd:3.3.10</span><br><span class="line">[config/images] Pulled k8s.gcr.io/coredns:1.3.1</span><br><span class="line"><span class="comment"># 导出镜像</span></span><br><span class="line">docker save -o k8s.tar $(docker images | grep k8s.gcr.io | cut -d <span class="string">' '</span> -f1)</span><br><span class="line">gzip k8s.tar k8s.tar.gz</span><br></pre></td></tr></table></figure>
 <p>将这些镜像导出并压缩，传输回国内。http方式多线程传输最快。IDM64线程能跑满带宽😂，不到一分钟就下载到本地。然后再scp传输回国内的云服务器上。grep B是为了过滤掉输出结果第一行显示的 <code>REPOSITORY  TAG  IMAGE ID  CREATED  SIZE</code>😂<br>在使用docker save的时候，要指定镜像的名称，不要指定镜像的ID，不然你装载镜像的时候全是node的镜像，是启动不起来的😥<br>ps：第一次我使用的是<code>docker save $(docker images -q)</code>导出了所有的镜像。在装入镜像的时候发现镜像NAME全是node😂。使用<code>docker images | grep B | cut -d &#39; &#39; -f1</code>过滤出的是带NAME的镜像。</p>
 <p><code>docker save -o k8s.tar $(docker images | grep B | cut -d &#39; &#39; -f1) | gzip k8s.tar k8s.tar.gz</code></p>
 <p>然后你在国内的服务器上执行 <code>docker load &lt; k8s.tar.gz</code> ，不用手动 gzip 解压，docker load 会自动解压并把镜像加载进去。</p>
@@ -252,12 +252,12 @@
           </div>
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/fuch-rush-app-dir.html" rel="prev" title="清理毒瘤app在sdcard目录下拉屎产生的文件夹">
-      <i class="fa fa-chevron-left"></i> 清理毒瘤app在sdcard目录下拉屎产生的文件夹
+    <a href="/zabbix-compose.html" rel="prev" title="zabbix 监控服务">
+      <i class="fa fa-chevron-left"></i> zabbix 监控服务
     </a></div>
       <div class="post-nav-item">
-    <a href="/gitlab-install.html" rel="next" title="部署 Gitlab 及 gitlab-runner">
-      部署 Gitlab 及 gitlab-runner <i class="fa fa-chevron-right"></i>
+    <a href="/install-k8s-ubuntu18-04.html" rel="next" title="ubuntu 1804 使用 kubeadm 部署 kubernetes">
+      ubuntu 1804 使用 kubeadm 部署 kubernetes <i class="fa fa-chevron-right"></i>
     </a></div>
     </div>
       </footer>
@@ -322,13 +322,13 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
           <a href="/archives">
-          <span class="site-state-item-count">79</span>
+          <span class="site-state-item-count">82</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
-        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-count">8</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
@@ -391,7 +391,7 @@
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">31:58</span>
+    <span title="站点阅读时长">32:46</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动
   </div>
