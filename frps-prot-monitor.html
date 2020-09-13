@@ -51,11 +51,11 @@
 <meta property="og:description" content="背景最近国庆了，需要回家一趟。但是有点不放心自己的主机，毕竟是辛辛苦苦搬砖买来的主机嘛。而且房东那里也不太安全，所以干脆想着通过 frp 内网穿透把主机的 3389 端口转发到我的服务器上，在服务器上检测这个端口的存活状态，设置为定时任务。一旦检测到端口不存活了，就发短信通知我。 由于国内的短信服务都必须需要实名认证加备案，真鸡儿操蛋，老子最恶心这一套了，备案你个锤子。所以还是用国外的服务吧。找了">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://blog.k8s.lhttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/source/img/1569744256905.png">
-<meta property="og:image" content="https://blog.k8s.lhttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/source/img/image-20191029173931185.png">
-<meta property="og:image" content="https://blog.k8s.lhttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/source/img/image-20191029174001829.png">
+<meta property="og:image" content="https://blog.k8s.lhttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/source/img/20191029173931185.png">
+<meta property="og:image" content="https://blog.k8s.lhttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/source/img/20191029174001829.png">
 <meta property="og:image" content="https://blog.k8s.lhttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/source/img/1569744103630.png">
 <meta property="article:published_time" content="2019-09-29T16:00:00.000Z">
-<meta property="article:modified_time" content="2020-08-20T15:00:49.825Z">
+<meta property="article:modified_time" content="2020-09-13T09:07:17.118Z">
 <meta property="article:author" content="木子">
 <meta property="article:tag" content="monitor">
 <meta property="article:tag" content="Linux">
@@ -169,7 +169,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-08-20 2020-08-20T23:00:49+08:00" itemprop="dateModified" datetime="2020-08-20T23:00:49+08:00">2020-08-20</time>
+                <time title="修改时间：2020-09-13 2020-09-13T17:07:17+08:00" itemprop="dateModified" datetime="2020-09-13T17:07:17+08:00">2020-09-13</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -214,8 +214,8 @@
 <h2 id="使用-twilio"><a href="#使用-twilio" class="headerlink" title="使用 twilio"></a>使用 twilio</h2><h3 id="注册"><a href="#注册" class="headerlink" title="注册"></a>注册</h3><p>我的 twilio 账号是四个月前注册的了，注册过程也忘了，大致就是填写邮箱账号、设置密码、绑定信用卡、验证 +1 手机号，巴拉巴拉。</p>
 <p>注册绑定信用卡赠送 10 $，这些足够发送 1000 条短信了，足够咱使用了😂</p>
 <p><img src="https://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/source/img/1569744256905.png" alt="1569744256905"></p>
-<p><img src="https://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/source/img/image-20191029173931185.png" alt="image-20191029173931185"></p>
-<p><img src="https://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/source/img/image-20191029174001829.png" alt="image-20191029174001829"></p>
+<p><img src="https://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/source/img/20191029173931185.png" alt="image-20191029173931185"></p>
+<p><img src="https://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/source/img/20191029174001829.png" alt="image-20191029174001829"></p>
 <h3 id="验证手机号"><a href="#验证手机号" class="headerlink" title="验证手机号"></a>验证手机号</h3><p>只有验证手机号才能分配一个 twilio 的的手机号，用来发送短信</p>
 <p>发送短信过程比较长，耐心等个三四分钟</p>
 <h3 id="发送给短信测试"><a href="#发送给短信测试" class="headerlink" title="发送给短信测试"></a>发送给短信测试</h3><p>验证完手机号后，进入控制台 <a href="https://www.twilio.com/console" target="_blank" rel="noopener">console</a> ，</p>
@@ -312,7 +312,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
           <a href="/archives">
-          <span class="site-state-item-count">83</span>
+          <span class="site-state-item-count">84</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -323,7 +323,7 @@
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
-        <span class="site-state-item-count">109</span>
+        <span class="site-state-item-count">110</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -381,7 +381,7 @@
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">33:01</span>
+    <span title="站点阅读时长">33:17</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动
   </div>

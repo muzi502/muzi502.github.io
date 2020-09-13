@@ -50,14 +50,14 @@
 <meta property="og:site_name" content="木子">
 <meta property="og:description" content="目前gitlab官方给出的安装方式有很多种，普遍采用Omnibus包、Docker安装。官方说的😂我们强烈建议使用 Omnibus 包安装 GitLab ，因为它安装起来更快、更容易升级版本，而且包含了其他安装方式所没有的可靠性功能。 1.Omnibus包安装，也就是rpm包、deb包安装😂CentOS7123456789101112131415161718192021222324252627">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://blog.k8s.lhttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/source/img/image-20200310202057916.png">
+<meta property="og:image" content="https://blog.k8s.lhttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/source/img/20200310202057916.png">
 <meta property="article:published_time" content="2019-05-21T16:00:00.000Z">
 <meta property="article:modified_time" content="2019-05-21T16:00:00.000Z">
 <meta property="article:author" content="木子">
 <meta property="article:tag" content="gitlab">
 <meta property="article:tag" content="CI">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://blog.k8s.lhttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/source/img/image-20200310202057916.png">
+<meta name="twitter:image" content="https://blog.k8s.lhttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/source/img/20200310202057916.png">
 <link rel="canonical" href="https://blog.k8s.li/gitlab-install.html">
 <script id="page-configurations">
   // https://hexo.io/docs/variables.html
@@ -223,7 +223,7 @@
 <li>在 Runner 设置时指定以下 URL</li>
 <li>在安装过程中使用以下注册令牌：</li>
 </ul>
-<p><img src="https://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/source/img/image-20200310202057916.png" alt="image-20200310202057916"></p>
+<p><img src="https://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/source/img/20200310202057916.png" alt="image-20200310202057916"></p>
 <p>安装好 gitlab-runner 之后如果直接向 gitlab 注册则会失败，提示 <code>ERROR: Registering runner... failed   runner=qRGh2M86 status=500 Internal Server Error</code></p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">╭─root@gitlab ~</span><br><span class="line">╰─<span class="comment"># gitlab-runner register</span></span><br><span class="line">Runtime platform                                    arch=amd64 os=linux pid=6818 revision=1b659122 version=12.8.0</span><br><span class="line">Running <span class="keyword">in</span> system-mode.</span><br><span class="line"></span><br><span class="line">Please enter the gitlab-ci coordinator URL (e.g. https://gitlab.com/):</span><br><span class="line">http://10.10.107.216/</span><br><span class="line">Please enter the gitlab-ci token <span class="keyword">for</span> this runner:</span><br><span class="line">qRGh2M86iTasjBn1dU8L</span><br><span class="line">Please enter the gitlab-ci description <span class="keyword">for</span> this runner:</span><br><span class="line">[gitlab]: runner-centos</span><br><span class="line">Please enter the gitlab-ci tags <span class="keyword">for</span> this runner (comma separated):</span><br><span class="line">centos</span><br><span class="line">ERROR: Registering runner... failed   runner=qRGh2M86 status=500 Internal Server Error</span><br><span class="line">PANIC: Failed to register this runner. Perhaps you are having network problems</span><br></pre></td></tr></table></figure>
 <h3 id="修改-gitlab-默认网络设置"><a href="#修改-gitlab-默认网络设置" class="headerlink" title="修改 gitlab 默认网络设置"></a>修改 gitlab 默认网络设置</h3><p>使用 root 用户从 web 端登录到 gitlab 管理中心 http://${ip}/admin 。管理中心 –&gt; 设置 –&gt; 网络 –&gt; 外发请求 –&gt; 允许来自钩子和服务的对本地网络的请求。以下选项全部允许，才能通过外部请求的方式注册 gitlab-runner。</p>
@@ -254,8 +254,8 @@
           </div>
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/install-k8s-ubuntu18-04.html" rel="prev" title="ubuntu 1804 使用 kubeadm 部署 kubernetes">
-      <i class="fa fa-chevron-left"></i> ubuntu 1804 使用 kubeadm 部署 kubernetes
+    <a href="/fuch-rush-app-dir.html" rel="prev" title="清理毒瘤app在sdcard目录下拉屎产生的文件夹">
+      <i class="fa fa-chevron-left"></i> 清理毒瘤app在sdcard目录下拉屎产生的文件夹
     </a></div>
       <div class="post-nav-item">
     <a href="/8964.html" rel="next" title="弱者的抵抗">
@@ -324,7 +324,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
           <a href="/archives">
-          <span class="site-state-item-count">83</span>
+          <span class="site-state-item-count">84</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -335,7 +335,7 @@
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
-        <span class="site-state-item-count">109</span>
+        <span class="site-state-item-count">110</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -393,7 +393,7 @@
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">33:01</span>
+    <span title="站点阅读时长">33:17</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动
   </div>

@@ -50,7 +50,7 @@
 <meta property="og:site_name" content="木子">
 <meta property="og:description" content="俗话说文档写得好，同行抄到老😂。  在前期的技术选型调研过程中，对 K8s 密切相关的解决方案：网络插件、存储解决方案、监控告警系统、日志收集和处理、持续集成和交付系统等做了充分的调研和测试工作，现如今总结一下调研过程中的记录。 参考俗话说文档写得好，同行抄到老😂。不过咱木子还是有点原则的，最起码标注引用来源，尊重原作者的版权。所以就在此罗列了本文 剽窃 引用的来源。由于是技术调研，文中提到">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://blog.k8s.lhttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/source/img/image-20191227151129673.png">
+<meta property="og:image" content="https://blog.k8s.lhttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/source/img/20191227151129673.png">
 <meta property="og:image" content="https://blog.k8s.lhttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/source/img/Picture1.png">
 <meta property="og:image" content="https://blog.k8s.lhttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/source/img/Picture2.png">
 <meta property="og:image" content="https://blog.k8s.lhttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/source/img/Picture3.png">
@@ -61,7 +61,7 @@
 <meta property="article:tag" content="K8s">
 <meta property="article:tag" content="调研">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://blog.k8s.lhttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/source/img/image-20191227151129673.png">
+<meta name="twitter:image" content="https://blog.k8s.lhttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/source/img/20191227151129673.png">
 <link rel="canonical" href="https://blog.k8s.li/k8s-01.html">
 <script id="page-configurations">
   // https://hexo.io/docs/variables.html
@@ -642,7 +642,7 @@
 <li><a href="https://jishu.io/kubernetes/kubernetes-master-ha/" target="_blank" rel="noopener">关于Kubernetes Master高可用的一些策略</a></li>
 </ul>
 <p>这张图从管理平面、执行平面和数据平面 三个部分来简单说明一下该高可用架构方案以及各个组件的功能。</p>
-<p><img src="https://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/source/img/image-20191227151129673.png" alt="image-20191227151129673"></p>
+<p><img src="https://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/source/img/20191227151129673.png" alt="image-20191227151129673"></p>
 <h3 id="etcd-高可用"><a href="#etcd-高可用" class="headerlink" title="etcd 高可用"></a>etcd 高可用</h3><p>etcd 是 Kubernetes 当中唯一带状态的服务，也是高可用的难点。Kubernetes 选用 etcd 作为它的后端数据存储仓库正是看重了其使用分布式架构，没有单点故障的特性。etcd 的高可用基本有三种思路：</p>
 <h4 id="独立的-etcd-集群"><a href="#独立的-etcd-集群" class="headerlink" title="独立的 etcd 集群"></a>独立的 etcd 集群</h4><p>使用 3 台或者 5 台服务器只运行 etcd，独立维护和升级。甚至可以使用 CoreOS 的<code>update-engine</code>和<code>locksmith</code>，让服务器完全自主的完成升级。这个 etcd 集群将作为基石用于构建整个集群。 采用这项策略的主要动机是 etcd 集群的节点增减都需要显式的通知集群，保证 etcd 集群节点稳定可以更方便的用程序完成集群滚动升级，减轻维护负担。</p>
 <h4 id="Master-节点-static-pod-形式"><a href="#Master-节点-static-pod-形式" class="headerlink" title="Master 节点 static pod 形式"></a>Master 节点 static pod 形式</h4><p>二是在 Kubernetes Master上用 static pod 的形式来运行 etcd，并将多台 Kubernetes Master上的 etcd 组成集群。 在这一模式下，各个服务器的 etcd 实例被注册进了 Kubernetes 当中，虽然无法直接使用<code>kubectl</code>来管理这部分实例，但是监控以及日志搜集组件均可正常工作。在这一模式运行下的 etcd 可管理性更强。</p>
@@ -1220,7 +1220,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
           <a href="/archives">
-          <span class="site-state-item-count">83</span>
+          <span class="site-state-item-count">84</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1231,7 +1231,7 @@
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
-        <span class="site-state-item-count">109</span>
+        <span class="site-state-item-count">110</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -1289,7 +1289,7 @@
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">33:01</span>
+    <span title="站点阅读时长">33:17</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动
   </div>

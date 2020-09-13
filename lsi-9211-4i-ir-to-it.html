@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon.ico">
+  <link rel="mask-icon" href="/favicon.ico" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+<link rel="stylesheet" href="/css/main.css">
+<link rel="stylesheet" href="//fonts.loli.net/css?family=Lato:300,300italic,400,400italic,700,700italic|Roboto Mono:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://blog.k8s.li').hostname,
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":true,"scrollpercent":true},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"buttons","active":null,"storage":true,"lazyload":true,"nav":{"disqus":{"text":"Load Disqus","order":-1}}},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":false,"async":true,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+  <meta name="description" content="刷机？不久前捡垃圾搞了一台低功耗 Homelab 主机玩玩，由于主板 SATA 口的限制，不能使用大于 2TB 的硬盘，对于咱梦想着这种拥有几十 TB 存储来存放老婆的死肥宅来说，2TB 怎么够了。于是想要突破限制，再给 Homelab 主机增加一块 6TB 的磁盘。于是，在洋垃圾堆里花了 50 块钱捡了这块阵列卡👇。  买的这块阵列卡型号是 ServeRAID H1110 SAS&#x2F;SATA C">
+<meta property="og:type" content="article">
+<meta property="og:title" content="给阵列卡刷个机，IR 模式转 IT 模式">
+<meta property="og:url" content="https://blog.k8s.li/lsi-9211-4i-ir-to-it.html">
+<meta property="og:site_name" content="木子">
+<meta property="og:description" content="刷机？不久前捡垃圾搞了一台低功耗 Homelab 主机玩玩，由于主板 SATA 口的限制，不能使用大于 2TB 的硬盘，对于咱梦想着这种拥有几十 TB 存储来存放老婆的死肥宅来说，2TB 怎么够了。于是想要突破限制，再给 Homelab 主机增加一块 6TB 的磁盘。于是，在洋垃圾堆里花了 50 块钱捡了这块阵列卡👇。  买的这块阵列卡型号是 ServeRAID H1110 SAS&#x2F;SATA C">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://blog.k8s.lhttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/source/img/20200830_9211-4i-01.jpg">
+<meta property="og:image" content="https://blog.k8s.lhttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/source/img/20200830_9211-4i-02.png">
+<meta property="og:image" content="https://blog.k8s.lhttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/source/img/20200828_9211-4i-03.jpg">
+<meta property="og:image" content="https://blog.k8s.lhttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/source/img/20200828_9211-4i-04.jpg">
+<meta property="og:image" content="https://blog.k8s.lhttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/source/img/20200828_9211-4i-05.jpg">
+<meta property="og:image" content="https://blog.k8s.lhttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/source/img/20200828_9211-4i-06.jpg">
+<meta property="og:image" content="https://blog.k8s.lhttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/source/img/20200908_9211-4i-07.png">
+<meta property="article:published_time" content="2020-09-07T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-09-07T16:00:00.000Z">
+<meta property="article:author" content="木子">
+<meta property="article:tag" content="刷机">
+<meta property="article:tag" content="阵列卡">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog.k8s.lhttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/source/img/20200830_9211-4i-01.jpg">
+<link rel="canonical" href="https://blog.k8s.li/lsi-9211-4i-ir-to-it.html">
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+  <title>给阵列卡刷个机，IR 模式转 IT 模式 | 木子</title>
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+<link rel="alternate" href="/atom.xml" title="木子" type="application/atom+xml">
+</head>
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">木子</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+    <a href="/" rel="section"><i class="fa fa-fw fa-desktop"></i>Home</a>
+  </li>
+        <li class="menu-item menu-item-books">
+    <a href="/booklist.html" rel="section"><i class="fa fa-fw fa-book"></i>Books</a>
+  </li>
+        <li class="menu-item menu-item-kindle">
+    <a href="https://kindle.502.li/" rel="noopener" target="_blank"><i class="fa fa-fw fa-book"></i>Kindle</a>
+  </li>
+        <li class="menu-item menu-item-friend">
+    <a href="/link/" rel="section"><i class="fa fa-fw fa-link"></i>Friend</a>
+  </li>
+        <li class="menu-item menu-item-about">
+    <a href="/about.html" rel="section"><i class="fa fa-fw fa-user-circle-o"></i>About</a>
+  </li>
+  </ul>
+</nav>
+</div>
+    </header>
+  <div class="reading-progress-bar"></div>
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div class="content">
+  <div class="posts-expand">
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.k8s.li/lsi-9211-4i-ir-to-it.html">
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://blog.k8s.li/avatar.png">
+      <meta itemprop="name" content="木子">
+      <meta itemprop="description" content="">
+    </span>
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木子">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          给阵列卡刷个机，IR 模式转 IT 模式
+        </h2>
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              <time title="创建时间：2020-09-08 2020-09-08T00:00:00+08:00" itemprop="dateCreated datePublished" datetime="2020-09-08T00:00:00+08:00">2020-09-08</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%8A%80%E6%9C%AF/" itemprop="url" rel="index">
+                    <span itemprop="name">技术</span>
+                  </a>
+                </span>
+            </span>
+  <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-comment-o"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    <a title="disqus" href="/lsi-9211-4i-ir-to-it.html#comments" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="lsi-9211-4i-ir-to-it.html" itemprop="commentCount"></span>
+    </a>
+  </span>
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>7.9k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>13 分钟</span>
+            </span>
+        </div>
+      </header>
+    <div class="post-body" itemprop="articleBody">
+        <h2 id="刷机？"><a href="#刷机？" class="headerlink" title="刷机？"></a>刷机？</h2><p>不久前捡垃圾搞了一台低功耗 Homelab 主机玩玩，由于主板 SATA 口的限制，不能使用大于 2TB 的硬盘，对于咱梦想着这种拥有几十 TB 存储来存放老婆的死肥宅来说，2TB 怎么够了。于是想要突破限制，再给 Homelab 主机增加一块 6TB 的磁盘。于是，在洋垃圾堆里花了 50 块钱捡了这块阵列卡👇。</p>
+<p><img src="img/20200830_9211-4i-01.jpg" alt=""></p>
+<p>买的这块阵列卡型号是 <a href="https://lenovopress.com/tips0831-serveraid-h1110" target="_blank" rel="noopener">ServeRAID H1110 SAS/SATA Controller for IBM System x </a> ，卖家说是 <code>IBM H1110</code> ，其实都差不多啦。由于是第一次玩儿阵列卡，对这种型号也不是很熟悉，之后刷了新的固件又变成了 <code>LSI 9211-4i</code> 。</p>
+<h2 id="翻车？"><a href="#翻车？" class="headerlink" title="翻车？"></a>翻车？</h2><p>收到货后，迫不及待地将存满老婆的硬盘接到阵列卡上，开机的时候，一直卡在阵列卡 BIOS 初始化页面很久很久。顿时觉着，完蛋翻车了，正准备去怼一波卖家，阵列卡启动等了五六分钟后进入了久违的  ESXi 的启动页面。这尼玛，坑我啊，你一个巴掌大的阵列卡启动竟然需要五分钟？内心一万匹草泥马奔腾而过。</p>
+<p><img src="img/20200830_9211-4i-02.png" alt=""></p>
+<h2 id="IR-模式？"><a href="#IR-模式？" class="headerlink" title="IR 模式？"></a>IR 模式？</h2><p>在网上看来一下大佬们的评论，说阵列卡 IR 模式的启动速度要慢一些？然后又找到了 <a href="https://wiki2.xbits.net:4430/hardware:lsi:h1110-it-firmware" target="_blank" rel="noopener">IBM H1110卡刷为LSI 9211-4i IT固件</a> ，里面提到的可以将 IR 模式刷为 IT 直通模式。至于 IR 模式和 IT 模式，自己太菜没找到确切的资料。大概可以理解为 IR 模式适用于使用阵列卡组 RAID 阵列，而 IT 模式就是所谓的直通模式，不适用 RAID ，只使用阵列卡的磁盘控制器？相当于主板上的 SATA 接口。何况我这个是小主机，里面也塞不下那么多的磁盘，所以阵列卡使用 IT 直通模式无疑是最好的选择。</p>
+<p><img src="img/20200828_9211-4i-03.jpg" alt=""></p>
+<h2 id="万物皆可刷？"><a href="#万物皆可刷？" class="headerlink" title="万物皆可刷？"></a>万物皆可刷？</h2><p>参照大佬们的博客，咱也要体验一把刷<del>机</del>卡的痛快了，毕竟折腾这些没用的玩意儿也是咱的一大乐趣。</p>
+<blockquote>
+<p>  我青年时代就刷过：诺基亚、摩托罗拉、三星、黑莓、Lumia、HTC，我还刷过：路由器、交换机、阵列卡、电视盒子……</p>
+</blockquote>
+<p>安卓<del>基</del>机佬们想必对 twrp 再熟悉不过了，它是我们刷机，刷各种 ROM 包最常用的系统，相当于 Windows 中的 PE 系统，对系统分区刷上 ROM 来达到刷机的目的。刷阵列卡的固件和刷机也差不多，也是需要一个底层的系统进去对阵列卡上的存储芯片进行操作。最常见的就是 Dos 和 EFI Shell ，由于 Dos 年代久远，且我的主板对 EFI 支持比较友好，在进行刷机的时候为了稳妥起见选择 EFI shell。</p>
+<h3 id="记录-SAS-地址"><a href="#记录-SAS-地址" class="headerlink" title="记录 SAS 地址"></a>记录 SAS 地址</h3><p>在刷阵列卡之前要线记录下 SAS 的 Address ，进入到阵列卡的 BIOS 中会有这个信息。</p>
+<h3 id="找好固件和文档"><a href="#找好固件和文档" class="headerlink" title="找好固件和文档"></a>找好固件和文档</h3><p>由于我要刷入的固件不是阵列卡原厂的固件，只找到了现成的固件，直接就拿来用了，应该问题不大。而且刷入的流程也是比较简答。<a href="https://wiki2.xbits.net:4430/hardware:lsi:h1110-it-firmware" target="_blank" rel="noopener">IBM H1110卡刷为LSI 9211-4i IT固件</a> :</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 备份原卡信息和sbr</span></span><br><span class="line">MegaCli.exe -AdpAllInfo -aAll -ApplogFile bak.txt</span><br><span class="line">MegaRec.exe -readsbr 0 orig.sbr</span><br><span class="line"><span class="meta">#</span><span class="bash">擦写sbr和flash一遍能刷入LSI原厂固件</span></span><br><span class="line">MegaRec -writesbr 0 sbrempty.bin</span><br><span class="line">MegaRec -cleanflash 0</span><br><span class="line"><span class="meta">#</span><span class="bash">重启再次进入DOS</span></span><br><span class="line">reboot</span><br><span class="line"><span class="meta">#</span><span class="bash">刷入对应IT固件和ROM</span></span><br><span class="line">sas2flsh -o -f 2114it.bin -b mptsas2.rom</span><br><span class="line"><span class="meta">#</span><span class="bash">恢复原来的SAS地址</span></span><br><span class="line">sas2flsh -o -sasadd xxxxxxxx</span><br><span class="line"><span class="meta">#</span><span class="bash">查看最新状态</span></span><br><span class="line">sas2flsh -list</span><br><span class="line"><span class="meta">#</span><span class="bash">重启，完成</span></span><br><span class="line">reboot</span><br></pre></td></tr></table></figure>
+<p>一些官方的文档<a href="https://www.broadcom.cn/support/knowledgebase/1211161495925/flash-upgrading-firmware-on-lsi-sas-hbas-upgraded-firmware-on-92" target="_blank" rel="noopener">Flash upgrading firmware on LSI SAS HBAs; Upgraded firmware on 9211-8i to P8, now duplicated drives</a>：</p>
+<blockquote>
+<p>  Advanced users:</p>
+<p>  To delete the firmware and BIOS in your 9211, then reflash it, follow these steps:</p>
+<ol>
+<li><p>Check to see if there is an also an onboard SATA controller with disk in the system before running the commands below.<br>Run sas2flsh -listall<br>If you see only the 9211, then run the commands as shown below.<br>If you see two controllers (e.g. c0 and c1, then add -c 1 to all of the commands below–&gt; sas2flsh -c 1 -o -e 6</p>
+</li>
+<li><p>Record the SAS address of the 9211 in case you need it later.  To display it, type:<br>sas2flsh -list</p>
+<p>and write down the SAS address.  You can run the is DOS, Windows, Linux, etc.</p>
+</li>
+<li><p>Download 9211_8i_Package_for_P9_Firmware_BIOS_on_MSDOS_and_Windows.zip for the 9211-8i</p>
+</li>
+<li><p>Boot to DOS (create a DOS bootable USB stick from <a href="http://www.bootdisk.com" target="_blank" rel="noopener">http://www.bootdisk.com</a> or <a href="http://www.gocoding.com" target="_blank" rel="noopener">www.gocoding.com</a>).</p>
+</li>
+<li><p>Run from DOS sas2flsh -o -e 6 (this will erase the controller firmware and BIOS).</p>
+</li>
+<li><p>Turn the system off.</p>
+</li>
+<li><p>Turn the system on and boot to DOS (note:  the BIOS won’t post, as you will reflash it in step 8 below).</p>
+</li>
+<li><p>Run from DOS, with files sas2flsh.exe, the .bin and .rom files in the same directory:</p>
+<p>For IR firmware:  sas2flsh -f 9211IRP9.bin -b mptsas2.rom<br>For IT firmware:  sas2flsh -f 9211itp9.bin -b mptsas2.rom</p>
+<p>Note:  you will need to rename 9211-8i_IR_P9.bin to 9211IRP9.bin and 9211-8i-IT_ph9.bin to 9211itp9.bin</p>
+</li>
+<li><p>The controller will now work normally, with the P9 firmware and BIOS.</p>
+</li>
+<li><p>Check to make sure you have a SAS address:<br>sas2flsh -list<br>If you see the same SAS address that you had in step 2, then you are done.<br>If you don’t see the same SAS address, or you don’t see a SAS address, type:<br>sas2flsh -o -sasadd <SAS address></p>
+</li>
+</ol>
+</blockquote>
+<p>上面提到的都是基于 Dos 系统上操作的，不过我试了一下都翻车了🤣</p>
+<h3 id="制作-EFI-shell-系统"><a href="#制作-EFI-shell-系统" class="headerlink" title="制作 EFI shell 系统"></a>制作 EFI shell 系统</h3><p>如果主板支持 EFI 的话，建议使用 EFI shell 刷入固件，在 Dos 下会有些奇怪的问题。</p>
+<p>按照 <a href="https://superuser.com/questions/1057446/how-do-i-boot-to-uefi-shell" target="_blank" rel="noopener">How do I “Boot to UEFI shell”?</a> 中提到的：</p>
+<blockquote>
+<p>It depends on whether your UEFI has a shell builtin. If it does, there should be an option in its settings / boot menu for you to launch it. Some motherboard also provide an option to launch a shell from the EFI System Partition (ESP). You should consult the manual of your motherboard for the path it will look for (the instruction is often vague though). Usually they are looking for a file named <code>Shell.efi</code> in the ESP root folder.</p>
+<p>Another way is to launch it just like you launch any other EFI binary (e.g. bootloader). Since it’s not really accessible to register a EFI binary to your UEFI or put the shell binary to your ESP in Windows, so the easiest way is probably to put it as <code>\EFI\Boot\bootx64.efi</code> <strong>(also put the <code>update.nsh</code> you need to run and the files it requires under <code>\EFI\Boot\</code>)</strong> in a FAT(32)-formatted USB drive (It shouldn’t matter whether it’s MBR or GPT as long as your UEFI is standard-conforming enough). <strong>Then reboot and boot the USB in UEFI mode from your UEFI boot menu.</strong></p>
+<p>You can obtain the EFI shell binary from the EDK2 project repo:</p>
+<ul>
+<li><p><a href="https://github.com/tianocore/edk2/releases/download/edk2-stable202002/ShellBinPkg.zip" target="_blank" rel="noopener">version 2</a></p>
+</li>
+<li><p><a href="https://github.com/tianocore/edk2/blob/UDK2018/EdkShellBinPkg/FullShell/X64/Shell_Full.efi?raw=true" target="_blank" rel="noopener">version 1 (no longer updated, only for old UEFI that does not work with v2)</a></p>
+<p>(<strong>Note:</strong> some older EFI tools like [sas2flash.efi](<a href="https://www.broadcom.com/site-search?q=Installer" target="_blank" rel="noopener">https://www.broadcom.com/site-search?q=Installer</a> for UEFI) only work with such an old EFI shell (which works on current mainboards with current UEFI))</p>
+</li>
+</ul>
+</blockquote>
+<p>首先需要一个 U 盘，对容量没有闲置，几十兆足够，把分区格式化为 FAT32 文件系统格式，然后下载一个 EFI shell 的 efi 文件 <a href="https://github.com/tianocore/edk2/blob/UDK2018/EdkShellBinPkg/FullShell/X64/Shell_Full.efi?raw=true" target="_blank" rel="noopener">version 1 </a>，把该文件保存在 FAT32 分区下的 <code>\EFI\Boot\bootx64.efi</code> 路径下。</p>
+<blockquote>
+<p>  Download from Github Tianocore the precompiled UEFI version 1 Shell: <a href="https://github.com/tianocore/edk2/tree/master/EdkShellBinPkg/FullShell/X64" target="_blank" rel="noopener">Shell_Full.efi</a>. (Only v1 is applicable, later versions are not compatible with the flash tool and end up with the message: “InitShellApp: Application not started from Shell”.)</p>
+</blockquote>
+<p>由于刷固件的工具 <code>sas2flash.efi</code> 只和 EFI shell v1 版本的兼容，我第一次刷的时候时使用的 v2 版本，提示 <code>“InitShellApp: Application not started from Shell”</code> 错误😂</p>
+<p>然后还需要把固件 <code>2114it.bin</code> ，以及刷固件用到的工具 <code>sas2flash.efi</code> 放入到 FAT32 跟目录下，其中固件根据阵列卡的型号不同需要自行找到相应的固件版本，我这个虽然是 IBM H1110 型号的，但是可以刷成 LSI 9211 的，所以就没去找原厂的固件。</p>
+<h3 id="进入-EFI-shell-刷入新的固件"><a href="#进入-EFI-shell-刷入新的固件" class="headerlink" title="进入 EFI shell 刷入新的固件"></a>进入 EFI shell 刷入新的固件</h3><p>从 <a href="https://www.ixsystems.com/community/threads/how-to-flash-lsi-9211-8i-using-efi-shell.50902/" target="_blank" rel="noopener">How-to: Flash LSI 9211-8i using EFI shell</a> 大佬那里复制粘贴过来的的教程：</p>
+<blockquote>
+<ol>
+<li>Insert the controller card in a PCIe slot. (I’ve used the slot Nr. 3. In case of troubles recognizing the card in your desktop PC try different slots.)</li>
+<li>Boot the PC and prepare the USB stick:</li>
+<li>In the USB stick create and format a FAT or FAT32 partition &gt;= 10 MB. (I’ve created 500 MB FAT32 partition. I wouldn’t recommend large partitions, who knows if the EFI shell will read every big partition.)</li>
+<li>Create the sub-folders for EFI boot. In the web there are two different structures: <code>/boot/efi</code> and <code>/efi/boot</code>. For time saving I’ve created both groups, it works.</li>
+<li>Download from Broadcom following packages: <a href="https://docs.broadcom.com/docs/12350820" target="_blank" rel="noopener">Installer_P20_for_UEFI</a> and <a href="https://docs.broadcom.com/docs/12350530" target="_blank" rel="noopener">9211-8i_Package_P20_IR_IT_Firmware_BIOS_for_MSDOS_Windows</a> and extract them on your PC’s HDD.</li>
+<li>Copy from the downloaded packages three files to the USB stick root folder:</li>
+<li>from the first package the file <code>sas2flash.efi</code> (it is in sub-folder <code>/sas2flash_efi_ebc_rel/</code>);</li>
+<li>from the second package: <code>2118it.bin</code> (it is in sub-folder <code>/Firmware/HBA_9211_8i_IT/</code>) and <code>mptsas2.rom</code> (it is in sub-folder <code>/sasbios_rel/</code>).</li>
+<li>Download from Github Tianocore the precompiled UEFI version 1 Shell: <a href="https://github.com/tianocore/edk2/tree/master/EdkShellBinPkg/FullShell/X64" target="_blank" rel="noopener">Shell_Full.efi</a>. (Only v1 is applicable, later versions are not compatible with the flash tool and end up with the message: “InitShellApp: Application not started from Shell”.)</li>
+<li>Rename the <code>Shell_Full.efi</code> in <code>ShellX64.efi</code> and copy this file to following three USB stick destinations: root folder, <code>/boot/efi/</code>, <code>/efi/boot/</code>. (Again, there are different advices, for time saving it easier to use all three choices.)</li>
+<li>The creative part is completed, it’s time for action. Restart the PC and enter the BIOS. If you use ASUS UEFI BIOS Utility in advanced mode, mouse click on the Exit (not by using keyboard “Esc”), in the next dialog select “Launch EFI Shell from filesystem device”. Other BIOS should behave similarly.</li>
+<li>Next you should see starting shell execution, ending with a prompt: “Shell&gt;” (not the “2.0 Shell&gt;”!).</li>
+<li>Type the command: <code>map –b</code> (+Enter) for listing of available disks. Locate which one is your USB stick. In my case it is the fs6:<br>“fs6 :Removable HardDisk - … USB(…)”</li>
+<li>You can break further execution of the map command by <code>q</code>.</li>
+<li>Switch to the located USB stick by command <code>fsN:</code> (+Enter) (N=6 – in my example = “fs6:”, set N to your USB stick ID).</li>
+<li><code>Dir</code> shows the file list:<br>2118IT.BIN<br>MPTSAS2.ROM<br>sas2flash.efi<DIR> BOOT
+<DIR> EFI
+ShellX64.efi</li>
+<li>The action can start. During it the power shall not be brocken!</li>
+<li>Erase the controller flash memory: <code>sas2flash.efi -o -e 6</code>.</li>
+<li>Write the new firmware to the flash: <code>sas2flash.efi -o -f 2118it.bin -b mptsas2.rom</code>.</li>
+<li>After a while you’ll see the success message. You can restart the PC and check if the controller BIOS reports the new “IT”-firmware.</li>
+<li>The card is ready to use.</li>
+</ol>
+</blockquote>
+<ul>
+<li>使用 <code>map -b</code> 命令查看 U 盘的路径，一般为 <code>fsX</code> 然后按下 <code>fs0:</code> 路径就切换到了 U 盘的 FAT32 分区下。</li>
+</ul>
+<p><img src="img/20200828_9211-4i-04.jpg" alt=""></p>
+<ul>
+<li>然后使用 <code>sas2flash.efi -o -e 6</code> 命令清空阵列卡的  <code>flash memory</code>。</li>
+<li>接着使用 <code>sas2flsh -o -f 2114it.bin -b mptsas2.rom</code> 命令刷入新的固件。</li>
+</ul>
+<p><img src="img/20200828_9211-4i-05.jpg" alt=""></p>
+<ul>
+<li>恢复 SAS 地址 <code>sas2flsh -o -sasadd xxxxxxxx</code> </li>
+</ul>
+<p>操作完以上步骤后就可以重启了</p>
+<h2 id="IT-模式？"><a href="#IT-模式？" class="headerlink" title="IT 模式？"></a>IT 模式？</h2><p>刷完之后阵列卡的型号就莫名其妙地变成了 <code>LSI® SAS 9211-4i PCI Express® to 6Gb/s Serial Attached SCSI (SAS) Host Bus Adapter</code> ，固件的版本也变成了  IT 模式，开机的速度比以前快了很多，只需要不到 5s 就自检完成进入 ESXi 的启动流程，终于告别原先的龟速启动了。</p>
+<p><img src="img/20200828_9211-4i-06.jpg" alt=""></p>
+<p>在 ESXi 中，阵列卡也被识别为了 <code>LSI2004</code> ，看来是没问题了，插上硬盘也都是识别出来了。</p>
+<p><img src="img/20200908_9211-4i-07.png" alt=""></p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p>由于是是第一次给阵列卡刷固件，在网上找到了写资料可以做参考。</p>
+<ul>
+<li><a href="https://wiki2.xbits.net:4430/hardware:lsi:h1110-it-firmware" target="_blank" rel="noopener">IBM H1110卡刷为LSI 9211-4i IT固件</a></li>
+<li><a href="https://www.tfir.io/easiest-way-to-flash-lsi-sas-9211-8i-on-motherboards-without-efi-shell/" target="_blank" rel="noopener">Easiest Way To Flash LSI SAS 9211-8i on Motherboards without EFI Shell</a></li>
+<li><a href="https://www.broadcom.cn/support/knowledgebase/1211161495925/flash-upgrading-firmware-on-lsi-sas-hbas-upgraded-firmware-on-92" target="_blank" rel="noopener">Flash upgrading firmware on LSI SAS HBAs; Upgraded firmware on 9211-8i to P8, now duplicated drives</a></li>
+<li><a href="chrome-extension://ikhdkkncnoglghljlkmcimlnlhkeamad/pdf-viewer/web/viewer.html?file=https%3A%2F%2Fdocs.broadcom.com%2Fdoc%2F12353332">LSI® SAS 9211-4i PCI Express® to 6Gb/s Serial Attached SCSI (SAS) Host Bus Adapter </a></li>
+<li><a href="https://www.ixsystems.com/community/threads/how-to-flash-lsi-9211-8i-using-efi-shell.50902/" target="_blank" rel="noopener">How-to: Flash LSI 9211-8i using EFI shell</a></li>
+<li><a href="https://github.com/bsodmike/s5clouds8-lsi9211-8i-IR-to-IT-EFI-bootable-usb" target="_blank" rel="noopener">s5clouds8-lsi9211-8i-IR-to-IT-EFI-bootable-usb</a></li>
+<li><a href="https://superuser.com/questions/1057446/how-do-i-boot-to-uefi-shell" target="_blank" rel="noopener">How do I “Boot to UEFI shell”?</a></li>
+<li><a href="https://forums.laptopvideo2go.com/topic/29059-sas2008-lsi92409211-firmware-files/" target="_blank" rel="noopener">SAS2008 (LSI9240/9211) Firmware files</a></li>
+<li><a href="https://www.servethehome.com/ibm-serveraid-m1015-part-4/" target="_blank" rel="noopener">IBM ServeRAID M1015 Part 4: Cross flashing to a LSI9211-8i in IT or IR mode</a></li>
+<li><a href="https://web.archive.org/web/20200423162708/http://brycv.com/blog/2012/flashing-it-firmware-to-lsi-sas9211-8i/" target="_blank" rel="noopener">Flashing IT Firmware to the LSI SAS9211-8i HBA</a></li>
+<li><a href="https://forum.openmediavault.org/index.php?thread/2310-ibm-m1015-ir-vs-it/" target="_blank" rel="noopener">IBM M1015 - IR vs. IT</a></li>
+<li><a href="https://marcan.st/2016/05/crossflashing-the-fujitsu-d2607/" target="_blank" rel="noopener">Crossflashing the Fujitsu D2607</a></li>
+<li><a href="https://kc.mcafee.com/corporate/index?page=content&id=KB90801&locale=en_US" target="_blank" rel="noopener">How to create a bootable USB media to access the default EFI shell</a></li>
+</ul>
+    </div>
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%88%B7%E6%9C%BA/" rel="tag"><i class="fa fa-tag"></i> 刷机</a>
+              <a href="/tags/%E9%98%B5%E5%88%97%E5%8D%A1/" rel="tag"><i class="fa fa-tag"></i> 阵列卡</a>
+          </div>
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/homelab.html" rel="prev" title="垃圾佬的 Homelab 折腾记录">
+      <i class="fa fa-chevron-left"></i> 垃圾佬的 Homelab 折腾记录
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+  </article>
+  </div>
+          </div>
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+        </div>
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#刷机？"><span class="nav-number">1.</span> <span class="nav-text">刷机？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#翻车？"><span class="nav-number">2.</span> <span class="nav-text">翻车？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#IR-模式？"><span class="nav-number">3.</span> <span class="nav-text">IR 模式？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#万物皆可刷？"><span class="nav-number">4.</span> <span class="nav-text">万物皆可刷？</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#记录-SAS-地址"><span class="nav-number">4.1.</span> <span class="nav-text">记录 SAS 地址</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#找好固件和文档"><span class="nav-number">4.2.</span> <span class="nav-text">找好固件和文档</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#制作-EFI-shell-系统"><span class="nav-number">4.3.</span> <span class="nav-text">制作 EFI shell 系统</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#进入-EFI-shell-刷入新的固件"><span class="nav-number">4.4.</span> <span class="nav-text">进入 EFI shell 刷入新的固件</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#IT-模式？"><span class="nav-number">5.</span> <span class="nav-text">IT 模式？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考"><span class="nav-number">6.</span> <span class="nav-text">参考</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木子"
+      src="https://blog.k8s.li/avatar.png">
+  <p class="site-author-name" itemprop="name">木子</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">84</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">8</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">110</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/muzi502" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;muzi502" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:blog@502.li" title="E-Mail → mailto:blog@502.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://twitter.com/muzi_ii" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;muzi_ii" rel="noopener" target="_blank"><i class="fa fa-fw fa-twitter"></i>Twitter</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://t.me/muzi_ii" title="Telegram → https:&#x2F;&#x2F;t.me&#x2F;muzi_ii" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Telegram</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://kindle.502.li/" title="Kindle → https:&#x2F;&#x2F;kindle.502.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-book"></i>Kindle</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://tg.k8s.li/" title="Channel → https:&#x2F;&#x2F;tg.k8s.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Channel</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-fw fa-rss"></i>RSS</a>
+      </span>
+  </div>
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+      </div>
+    </main>
+    <footer class="footer">
+      <div class="footer-inner">
+<div class="copyright">
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木子</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">1.2m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">33:17</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">主题 – <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a>
+  </div>
+      </div>
+    </footer>
+  </div>
+  <script src="/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script>
+<script src="/js/schemes/pisces.js"></script>
+<script src="/js/next-boot.js"></script>
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://muzi.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: {page: {
+            url: "https://blog.k8s.li/lsi-9211-4i-ir-to-it.html",
+            identifier: "lsi-9211-4i-ir-to-it.html",
+            title: "给阵列卡刷个机，IR 模式转 IT 模式"
+          }
+        }
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://muzi.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+</body>
+</html>
