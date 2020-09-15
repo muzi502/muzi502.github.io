@@ -6,4 +6,5 @@ Disallow: /fancybox
 Disallow: /font-awesome
 Disallow: /img
 Disallow: /js
+Disallow: /images
 Sitemap: https://blog.k8s.li/sitemap.xml
