@@ -50,11 +50,11 @@
 <meta property="og:site_name" content="木子">
 <meta property="og:description" content="好久没更新博客了，在家摸鱼赶紧来水一篇😂  registry GC 原理🤔在咱上个月写的《深入浅出容器镜像的一生》中简单提到了容器镜像的一些知识，也简单介绍了镜像在 registry 中存储的目录结构。今天还是从文件系统层面分析一下 registry GC 的原理，比从源码来分析更直观一些。 部署 registry 容器首先我们需要在本地部署一个 registry 容器，同时为了操作的方便还">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://blog.k8s.lhttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/source/img/registry-storage.jpeg">
-<meta property="og:image" content="https://blog.k8s.lhttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/source/img/registry-gc.png">
-<meta property="og:image" content="https://blog.k8s.lhttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/source/img/registry-gc-1.jpeg">
-<meta property="og:image" content="https://blog.k8s.lhttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/source/img/registry-gc-2.jpeg">
-<meta property="og:image" content="https://blog.k8s.lhttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/source/img/registry-gc-3.jpeg">
+<meta property="og:image" content="https://blog.k8s.li/img/registry-storage.jpeg">
+<meta property="og:image" content="https://blog.k8s.li/img/registry-gc.png">
+<meta property="og:image" content="https://blog.k8s.li/img/registry-gc-1.jpeg">
+<meta property="og:image" content="https://blog.k8s.li/img/registry-gc-2.jpeg">
+<meta property="og:image" content="https://blog.k8s.li/img/registry-gc-3.jpeg">
 <meta property="article:published_time" content="2020-07-10T16:00:00.000Z">
 <meta property="article:modified_time" content="2021-01-18T15:29:36.227Z">
 <meta property="article:author" content="木子">
@@ -62,7 +62,7 @@
 <meta property="article:tag" content="registry">
 <meta property="article:tag" content="镜像">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://blog.k8s.lhttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/sourchttps://cdn.jsdelivr.net/gh/muzi502/blog/source/img/registry-storage.jpeg">
+<meta name="twitter:image" content="https://blog.k8s.li/img/registry-storage.jpeg">
 <link rel="canonical" href="https://blog.k8s.li/registry-gc.html">
 <script id="page-configurations">
   // https://hexo.io/docs/variables.html
