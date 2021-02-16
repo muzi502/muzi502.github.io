@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon.ico">
+  <link rel="mask-icon" href="/favicon.ico" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+<link rel="stylesheet" href="/css/main.css">
+<link rel="stylesheet" href="//fonts.loli.net/css?family=Lato:300,300italic,400,400italic,700,700italic|Roboto Mono:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://blog.k8s.li').hostname,
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":true,"scrollpercent":true},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"buttons","active":null,"storage":true,"lazyload":true,"nav":{"disqus":{"text":"Load Disqus","order":-1}}},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":false,"async":true,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+  <meta name="description" content="RegistryDocker DistributionDocker Distribution 是第一个是实现了打包、发布、存储和镜像分发的工具，起到 Docker registry 的作用。其中 Docker Distribution 中的 spec 规范 后来也就成为了 OCI distribution-spec 规范。可以认为 Docker Distribution 实现了大部分 OCI 镜像">
+<meta property="og:type" content="article">
+<meta property="og:title" content="docker registry 迁移至 harbor">
+<meta property="og:url" content="https://blog.k8s.li/docker-registry-to-harbor.html">
+<meta property="og:site_name" content="木子">
+<meta property="og:description" content="RegistryDocker DistributionDocker Distribution 是第一个是实现了打包、发布、存储和镜像分发的工具，起到 Docker registry 的作用。其中 Docker Distribution 中的 spec 规范 后来也就成为了 OCI distribution-spec 规范。可以认为 Docker Distribution 实现了大部分 OCI 镜像">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/muzi502/muzi502.github.io/img/registry-storage.jpeg">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/muzi502/muzi502.github.io/img/registry-storage.jpeg">
+<meta property="article:published_time" content="2021-01-30T16:00:00.000Z">
+<meta property="article:modified_time" content="2021-01-31T13:42:09.964Z">
+<meta property="article:author" content="木子">
+<meta property="article:tag" content="registry">
+<meta property="article:tag" content="harbor">
+<meta property="article:tag" content="镜像">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://cdn.jsdelivr.net/gh/muzi502/muzi502.github.io/img/registry-storage.jpeg">
+<link rel="canonical" href="https://blog.k8s.li/docker-registry-to-harbor.html">
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+  <title>docker registry 迁移至 harbor | 木子</title>
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+<link rel="alternate" href="/atom.xml" title="木子" type="application/atom+xml">
+</head>
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">木子</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+    <a href="/" rel="section"><i class="fa fa-fw fa-desktop"></i>Home</a>
+  </li>
+        <li class="menu-item menu-item-books">
+    <a href="/booklist.html" rel="section"><i class="fa fa-fw fa-book"></i>Books</a>
+  </li>
+        <li class="menu-item menu-item-kindle">
+    <a href="https://kindle.502.li/" rel="noopener" target="_blank"><i class="fa fa-fw fa-book"></i>Kindle</a>
+  </li>
+        <li class="menu-item menu-item-friend">
+    <a href="/link/" rel="section"><i class="fa fa-fw fa-link"></i>Friend</a>
+  </li>
+        <li class="menu-item menu-item-about">
+    <a href="/about.html" rel="section"><i class="fa fa-fw fa-user-circle-o"></i>About</a>
+  </li>
+  </ul>
+</nav>
+</div>
+    </header>
+  <div class="reading-progress-bar"></div>
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div class="content">
+  <div class="posts-expand">
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.k8s.li/docker-registry-to-harbor.html">
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://blog.k8s.li/avatar.png">
+      <meta itemprop="name" content="木子">
+      <meta itemprop="description" content="">
+    </span>
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木子">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          docker registry 迁移至 harbor
+        </h2>
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              <time title="创建时间：2021-01-31 2021-01-31T00:00:00+08:00 / 修改时间：2021-01-31T21:42:09+08:00" itemprop="dateCreated datePublished" datetime="2021-01-31T00:00:00+08:00">2021-01-31</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%8A%80%E6%9C%AF/" itemprop="url" rel="index">
+                    <span itemprop="name">技术</span>
+                  </a>
+                </span>
+            </span>
+  <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-comment-o"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    <a title="disqus" href="/docker-registry-to-harbor.html#comments" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="docker-registry-to-harbor.html" itemprop="commentCount"></span>
+    </a>
+  </span>
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>13k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>22 分钟</span>
+            </span>
+        </div>
+      </header>
+    <div class="post-body" itemprop="articleBody">
+        <h2 id="Registry"><a href="#Registry" class="headerlink" title="Registry"></a>Registry</h2><h3 id="Docker-Distribution"><a href="#Docker-Distribution" class="headerlink" title="Docker Distribution"></a>Docker Distribution</h3><p><a href="https://github.com/distribution/distribution" target="_blank" rel="noopener">Docker Distribution</a> 是第一个是实现了打包、发布、存储和镜像分发的工具，起到 Docker registry 的作用。其中 Docker Distribution 中的 <a href="https://github.com/distribution/distribution/tree/main/docs/spec" target="_blank" rel="noopener">spec 规范</a> 后来也就成为了 OCI <a href="https://github.com/opencontainers/distribution-spec" target="_blank" rel="noopener">distribution-spec</a> 规范。可以认为 Docker Distribution 实现了大部分 OCI 镜像分发的规范，二者在很大程度上也是兼容的。 OCI 的指导思想时先有工业界的实践，再将这些实践总结成技术规范，因此尽管 OCI 的 <a href="https://github.com/opencontainers/distribution-spec" target="_blank" rel="noopener">distribution-spec</a> 规范还没有正式发布（目前版本是<a href="https://github.com/opencontainers/distribution-spec/releases/tag/v1.0.0-rc1" target="_blank" rel="noopener">v1.0.0-rc1</a>），但以 Docker Distribution 作为基础的镜像仓库已经成为普遍采用的方案，Docker registry HTTP API V2 也就成为了事实上的标准。</p>
+<h3 id="Harbor"><a href="#Harbor" class="headerlink" title="Harbor"></a>Harbor</h3><p>Harbor 也是采用了 Docker Distribution （docker registry）作为后端镜像存储，在 Harbor 2.0 之前的版本，镜像相关的功能大部分是由 Docker Distribution 来处理，镜像和 OCI 等制品的元数据时 harbor 组件从 docker registry 中提取出来的；从 Harbor 2.0 版本之后，镜像等 OCI 制品相关的元数据由 Harbor 自己来维护，而且<strong>元数据是在 PUSH 这些制品时写入到 harbor 的数据库中的</strong>。也正因得益于此，Harbor 不再仅仅是个用来存储和管理镜像的服务，而一个云原生仓库服务，能够存储和管理符合 OCI 规范的 Helm Chart、CNAB、OPA Bundle等 Artifact 。</p>
+<h3 id="docker-registry-to-harbor"><a href="#docker-registry-to-harbor" class="headerlink" title="docker registry to harbor"></a>docker registry to harbor</h3><p>好了，扯了这么多没用的概念，回到本文要解决的问题：<strong>如何将 docker registry 中的镜像迁移至 harbor？</strong></p>
+<blockquote>
+<p>假如内网环境中有两台机器，一台机器上运行着 docker registry，域名假设为 registry.k8s.li 。另一台机器运行着 harbor，假设域名为 harbor.k8s.li。现在 docker registry 中存放了五千个镜像。harbor 是刚刚部署了，里面还没有镜像。在磁盘和网络没有限制的情况下，如何将 docker registry 中的镜像迁移到 harbor 中？</p>
+</blockquote>
+<h2 id="获取-registry-所有镜像的列表"><a href="#获取-registry-所有镜像的列表" class="headerlink" title="获取 registry 所有镜像的列表"></a>获取 registry 所有镜像的列表</h2><p>根据木子在  <a href="https://blog.k8s.li/Exploring-container-image.html">深入浅出容器镜像的一生🤔</a> 文章中提到的 registry 的存储目录结构，我们可以使用如下命令获取 registry 中的所有镜像的列表</p>
+<p><img src="img/registry-storage.jpeg" alt="img"></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 首先进入到 registry 存储的主目录下</span></span><br><span class="line"><span class="built_in">cd</span>  /var/lib/registry</span><br><span class="line">find docker -<span class="built_in">type</span> d -name <span class="string">"current"</span> | sed <span class="string">'s|docker/registry/v2/repositories/||g;s|/_manifests/tags/|:|g;s|/current||g'</span> &gt; images.list</span><br></pre></td></tr></table></figure>
+<h2 id="方案一：docker-retag"><a href="#方案一：docker-retag" class="headerlink" title="方案一：docker retag"></a>方案一：docker retag</h2><p>方案一可能是大多数人首先想到的办法，也是最简单粗暴的方法。就是在一台机器上使用 docker pull 下 docker  registry 中的所有镜像，然后再 docker retag 一下，再 docker push 到 harbor 中。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 假设其中的一个镜像为 library/alpine:latest</span></span><br><span class="line"></span><br><span class="line">docker pull registry.k8s.li/library/alpine:latest</span><br><span class="line"></span><br><span class="line">docker tag registry.k8s.li/library/alpine:latest harbor.k8s.li/library/alpine:latest</span><br><span class="line"></span><br><span class="line">docker push harbor.k8s.li/library/alpine:latest</span><br></pre></td></tr></table></figure>
+<p>如果你之前读过木子曾经写过的 <a href="https://blog.k8s.li/Exploring-container-image.html">深入浅出容器镜像的一生🤔</a> 和 <a href="https://blog.k8s.li/skopeo.html">镜像搬运工 skopeo 初体验</a> 并且已经在日常生活中使用 skopeo ，你一定会很觉着这个方案很蠢，因为 docker pull –&gt; docker tag –&gt; docker pull 的过程中会对镜像的 layer 进行解压缩，但对于只是将镜像从一个 registry 复制到另一个 registry 来说，这些过程中做了很多无用功。详细的原理可以翻看一下刚提到的两篇文章，在此就不再赘述。</p>
+<p>那么对于准求极致的人来讲肯定不会采用 docker retag 这么蠢的办法啦，下面就讲一下方案二：</p>
+<h2 id="方案二：skopeo"><a href="#方案二：skopeo" class="headerlink" title="方案二：skopeo"></a>方案二：skopeo</h2><p>在 <a href="https://blog.k8s.li/skopeo.html">镜像搬运工 skopeo 初体验</a> 中介绍过可以使用 skopeo copy 直接从一个 registry 中复制镜像原始的 layer 到另一个 registry 中，期间不会涉及镜像 layer 解压缩操作。至于性能和耗时，比 docker 高到不知道哪里去了😂。</p>
+<ul>
+<li>使用 skopeo copy</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">skopeo copy docker://registry.k8s.li/library/alpine:latest \ docker://harbor.k8s.li/library/alpine:latest</span><br></pre></td></tr></table></figure>
+<ul>
+<li>使用 skopeo sync</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">skopeo sync --insecure-policy --src-tls-verify=<span class="literal">false</span> --dest-tls-verify=<span class="literal">false</span> --src docker --dest docker registry.k8s.li/library/alpine:latest harbor.k8s.li/library/alpine:latest</span><br></pre></td></tr></table></figure>
+<p>但还有没有更好的办法？要知道无论是 docker 和 skopeo 本质上都是通过 registry 的 HTTP API 下载和上传镜像的，在这过程中还是多了不少 HTTP 请求的，还有没有更好的办法？</p>
+<h2 id="方案三：迁移存储目录"><a href="#方案三：迁移存储目录" class="headerlink" title="方案三：迁移存储目录"></a>方案三：迁移存储目录</h2><p>文章开篇提到 harbor 的后端镜像存储也是使用的  docker registry，那为何不直接将 registry 的存储目录打包复制并解压到 harbor 的 registry 存储目录呢？对于 harbor 1.x 版本来将，将 docker 的 registry 存储目录迁移到 harbor 的 registry 存储目录，然后删除 harbor 的 redis 数据，重启 harbor 就完事儿了。重启 harbor 之后，harbor 会调用后端的 registry 去提取镜像的元数据信息并存储到 redis 中。这样就完成了迁移的工作。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 切换到 harbor 的存储目录</span></span><br><span class="line"><span class="built_in">cd</span> /data/harbor</span><br><span class="line"></span><br><span class="line"><span class="comment"># 将 docker registry 备份的 docker 目录解压到 harbor 的 registry 目录下，目录层级一定要对应好</span></span><br><span class="line">tar -xf docker.tar.gz -C ./registry</span><br><span class="line"></span><br><span class="line"><span class="comment"># 删除 harbor 的 regis 数据，重启 harbor 后会重建 redis 数据。</span></span><br><span class="line">rm -f redis/dump.rdb</span><br><span class="line"></span><br><span class="line"><span class="comment"># 切换到 harbor 的安装目录重启 harbor</span></span><br><span class="line"><span class="built_in">cd</span> /opt/harbor</span><br><span class="line">docker-compose restart</span><br></pre></td></tr></table></figure>
+<h2 id="方案四："><a href="#方案四：" class="headerlink" title="方案四："></a>方案四：</h2><p>对于 harbor 2.x 来讲，由于 harbor 强化了 Artifact 的元数据管理能力，即元数据在 push 或者 sync 到 harbor 时会写入到 harbor 自身的数据库中。在 harbor 看来只要数据库中没有这个 Artifact 的 manifest 信息或者没有这一层 layer 的信息，harbor 都会认为该 Artifact 或者 layer 不存在，返回 404 的错误。所以按照方案三直接而将 registry 存储目录解压到 harbor 的 registry 存储目录时行不通的。那么现在看来只能通过 skopeo copy 的方法将镜像一个一个地 push 到 harbor 中了。</p>
+<p>对于某些特定的场景下，不能像方案二那样拥有一个 docker registry 的 HTTP 服务，只有一个 docker registry 的压缩包，这如何将 docker registry 的存储目录中的镜像迁移到 harbor 2.0 中呢？</p>
+<p>那么再次邀请我们的 skopeo 大佬出场，在 <a href="https://blog.k8s.li/skopeo.html">镜像搬运工 skopeo 初体验</a> 中提到过 skopeo 支持的<code>镜像格式</code>有如下几种：</p>
+<table>
+<thead>
+<tr>
+<th align="left">IMAGE NAMES</th>
+<th align="left">example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>containers-storage:</strong></td>
+<td align="left">containers-storage:</td>
+</tr>
+<tr>
+<td align="left"><strong>dir:</strong></td>
+<td align="left">dir:/PATH</td>
+</tr>
+<tr>
+<td align="left"><strong>docker://</strong></td>
+<td align="left">docker://k8s.gcr.io/kube-apiserver:v1.17.5</td>
+</tr>
+<tr>
+<td align="left"><strong>docker-daemon:</strong></td>
+<td align="left">docker-daemon:alpine:latest</td>
+</tr>
+<tr>
+<td align="left"><strong>docker-archive:</strong></td>
+<td align="left">docker-archive:alpine.tar (docker save)</td>
+</tr>
+<tr>
+<td align="left"><strong>oci:</strong></td>
+<td align="left">oci:alpine:latest</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>需要注意的是，这几种镜像的名字，对应着镜像存在的方式，不同存在的方式对镜像的 layer 处理的方式也不一样，比如 <code>docker://</code> 这种方式是存在 registry 上的，<code>docker-daemon:</code> 是存在本地 docker pull 下来的，再比如 <code>docker-archive</code> 是通过 docker save 出来的镜像。同一个镜像有这几种存在的方式就像水有气体、液体、固体一样。可以这样去理解，他们表述的都是同一个镜像，只不过是存在的方式不一样而已。</p>
+</blockquote>
+<p>既然镜像是存放在 registry 存储目录里的，那么使用 dir 的形式直接从文件系统读取镜像，理论上来讲会比方案二要好一些。虽然 skopeo 支持 dir 格式的镜像，但 skopeo 目前并不支持直接使用 registry 的存储目录，所以还是需要想办法将 docker registry 存储目录里的每一个镜像转换成 skopeo dir 的形式。</p>
+<h3 id="skopeo-dir"><a href="#skopeo-dir" class="headerlink" title="skopeo dir"></a>skopeo dir</h3><p>那么先来看一下 skopeo dir 是什么样子的？</p>
+<p>为了方便测试方案的可行性，先使用 skopeo 命令先从 docker hub 上拉取一个镜像，并保存为 dir，命令如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">skopeo copy docker://alpine:latest dir:./alpine</span><br></pre></td></tr></table></figure>
+<p>使用 tree 命令查看一下 alpine 文件夹的目录结构，如下：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">╭─root@sg-02 /var/lib/registry</span><br><span class="line">╰─# tree -h alpine</span><br><span class="line">alpine</span><br><span class="line">├── [2.7M]  4c0d98bf9879488e0407f897d9dd4bf758555a78e39675e72b5124ccf12c2580</span><br><span class="line">├── [1.4K]  e50c909a8df2b7c8b92a6e8730e210ebe98e5082871e66edd8ef4d90838cbd25</span><br><span class="line">├── [ 528]  manifest.json</span><br><span class="line">└── [  33]  version</span><br><span class="line"></span><br><span class="line">0 directories, 4 files</span><br><span class="line">╭─root@sg-02 /var/lib/registry</span><br><span class="line">╰─# file alpine/e50c909a8df2b7c8b92a6e8730e210ebe98e5082871e66edd8ef4d90838cbd25</span><br><span class="line">alpine/e50c909a8df2b7c8b92a6e8730e210ebe98e5082871e66edd8ef4d90838cbd25: ASCII text, with very long lines, with no line terminators</span><br><span class="line"></span><br><span class="line">╭─root@sg-02 /var/lib/registry</span><br><span class="line">╰─# file alpine/4c0d98bf9879488e0407f897d9dd4bf758555a78e39675e72b5124ccf12c2580</span><br><span class="line">alpine/4c0d98bf9879488e0407f897d9dd4bf758555a78e39675e72b5124ccf12c2580: gzip compressed data</span><br></pre></td></tr></table></figure>
+<p>从文件名和大小以及文件的内省我们可以判断出，manifest 文件对应的就是镜像的 manifests 文件；类型为 <code>ASCII text</code> 的文件正是镜像的 image config 文件，里面包含着镜像的元数据信息。而另一个 <code>gzip compressed data</code> 文件不就是经过 gzip 压缩过的镜像 layer 嘛。看一下 manifest 文件的内容也再次印证了这个结论：</p>
+<ul>
+<li>镜像的 config 字段对应的正是 e50c909a8df2，而文件类型正是 <code>image.v1+json</code> 文本文件。</li>
+<li>镜像的 layer 字段对应的也正是  4c0d98bf9879 而文件类型正是  <code>.tar.gzip</code> gzip 压缩文件。</li>
+</ul>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">alpine/4c0d98bf9879488e0407f897d9dd4bf758555a78e39675e72b5124ccf12c2580: gzip compressed data</span><br><span class="line">╭─root@sg-02 /var/lib/registry</span><br><span class="line">╰─# cat alpine/manifest.json</span><br><span class="line">&#123;</span><br><span class="line">   <span class="attr">"schemaVersion"</span>: <span class="number">2</span>,</span><br><span class="line">   <span class="attr">"mediaType"</span>: <span class="string">"application/vnd.docker.distribution.manifest.v2+json"</span>,</span><br><span class="line">   <span class="attr">"config"</span>: &#123;</span><br><span class="line">      <span class="attr">"mediaType"</span>: <span class="string">"application/vnd.docker.container.image.v1+json"</span>,</span><br><span class="line">      <span class="attr">"size"</span>: <span class="number">1471</span>,</span><br><span class="line">      <span class="attr">"digest"</span>: <span class="string">"sha256:e50c909a8df2b7c8b92a6e8730e210ebe98e5082871e66edd8ef4d90838cbd25"</span></span><br><span class="line">   &#125;,</span><br><span class="line">   <span class="attr">"layers"</span>: [</span><br><span class="line">      &#123;</span><br><span class="line">         <span class="attr">"mediaType"</span>: <span class="string">"application/vnd.docker.image.rootfs.diff.tar.gzip"</span>,</span><br><span class="line">         <span class="attr">"size"</span>: <span class="number">2811321</span>,</span><br><span class="line">         <span class="attr">"digest"</span>: <span class="string">"sha256:4c0d98bf9879488e0407f897d9dd4bf758555a78e39675e72b5124ccf12c2580"</span></span><br><span class="line">      &#125;</span><br><span class="line">   ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="从-registry-存储目录中抠镜像出来"><a href="#从-registry-存储目录中抠镜像出来" class="headerlink" title="从 registry 存储目录中抠镜像出来"></a>从 registry 存储目录中抠镜像出来</h3><p>接下来到本文的精彩的地方了。如何将 registry 存储里的镜像提取出来，转换成 skopeo 所支持的 dir 格式。</p>
+<p><img src="img/registry-storage.jpeg" alt="img"></p>
+<ul>
+<li>首先要得到镜像的 manifests 文件，从 manifests 文件中得到所有的 blob 文件。例如对于 registry 存储目录中的 <code>library/alpine:latest</code> 镜像。</li>
+</ul>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line">╭─root@sg-02 /var/lib/registry/docker/registry/v2</span><br><span class="line">╰─# tree</span><br><span class="line">.</span><br><span class="line">├── blobs</span><br><span class="line">│   └── sha256</span><br><span class="line">│       ├── 21</span><br><span class="line">│       │   └── 21c83c5242199776c232920ddb58cfa2a46b17e42ed831ca9001c8dbc532d22d</span><br><span class="line">│       │       └── data</span><br><span class="line">│       ├── a1</span><br><span class="line">│       │   └── a143f3ba578f79e2c7b3022c488e6e12a35836cd4a6eb9e363d7f3a07d848590</span><br><span class="line">│       │       └── data</span><br><span class="line">│       └── be</span><br><span class="line">│           └── be4e4bea2c2e15b403bb321562e78ea84b501fb41497472e91ecb41504e8a27c</span><br><span class="line">│               └── data</span><br><span class="line">└── repositories</span><br><span class="line">    └── library</span><br><span class="line">        └── alpine</span><br><span class="line">            ├── _layers</span><br><span class="line">            │   └── sha256</span><br><span class="line">            │       ├── 21c83c5242199776c232920ddb58cfa2a46b17e42ed831ca9001c8dbc532d22d</span><br><span class="line">            │       │   └── link</span><br><span class="line">            │       └── be4e4bea2c2e15b403bb321562e78ea84b501fb41497472e91ecb41504e8a27c</span><br><span class="line">            │           └── link</span><br><span class="line">            ├── _manifests</span><br><span class="line">            │   ├── revisions</span><br><span class="line">            │   │   └── sha256</span><br><span class="line">            │   │       └── a143f3ba578f79e2c7b3022c488e6e12a35836cd4a6eb9e363d7f3a07d848590</span><br><span class="line">            │   │           └── link</span><br><span class="line">            │   └── tags</span><br><span class="line">            │       └── latest</span><br><span class="line">            │           ├── current</span><br><span class="line">            │           │   └── link</span><br><span class="line">            │           └── index</span><br><span class="line">            │               └── sha256</span><br><span class="line">            │                   └── a143f3ba578f79e2c7b3022c488e6e12a35836cd4a6eb9e363d7f3a07d848590</span><br><span class="line">            │                       └── link</span><br><span class="line">            └── _uploads</span><br><span class="line"></span><br><span class="line">26 directories, 8 files</span><br></pre></td></tr></table></figure>
+<ol>
+<li>通过 <code>repositories/library/alpine/_manifests/tags/latest/current/link</code> 文件得到 manifests 文件的 sha256 值，然后根据这个 sha256 值去 blobs 找到镜像的 manifests 文件;</li>
+</ol>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">╭─root@sg-02 /var/lib/registry/docker/registry/v2/repositories/library/alpine/_manifests/tags/latest/current/</span><br><span class="line">╰─# cat link</span><br><span class="line">sha256:39eda93d15866957feaee28f8fc5adb545276a64147445c64992ef69804dbf01#</span><br></pre></td></tr></table></figure>
+<ol start="2">
+<li>根据 link 文件中的 sha256 值在 blobs 目录下找到与之对应的文件，blobs 目录下对应的 manifests 文件为 blobs/sha256/39/39eda93d15866957feaee28f8fc5adb545276a64147445c64992ef69804dbf01/data;</li>
+</ol>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">╭─root@sg-02 /var/lib/registry/docker/registry/v2/repositories/library/alpine/_manifests/tags/latest/current</span><br><span class="line">╰─# cat /var/lib/registry/docker/registry/v2/blobs/sha256/39/39eda93d15866957feaee28f8fc5adb545276a64147445c64992ef69804dbf01/data</span><br><span class="line">&#123;</span><br><span class="line">   <span class="attr">"schemaVersion"</span>: <span class="number">2</span>,</span><br><span class="line">   <span class="attr">"mediaType"</span>: <span class="string">"application/vnd.docker.distribution.manifest.v2+json"</span>,</span><br><span class="line">   <span class="attr">"config"</span>: &#123;</span><br><span class="line">      <span class="attr">"mediaType"</span>: <span class="string">"application/vnd.docker.container.image.v1+json"</span>,</span><br><span class="line">      <span class="attr">"size"</span>: <span class="number">1507</span>,</span><br><span class="line">      <span class="attr">"digest"</span>: <span class="string">"sha256:f70734b6a266dcb5f44c383274821207885b549b75c8e119404917a61335981a"</span></span><br><span class="line">   &#125;,</span><br><span class="line">   <span class="attr">"layers"</span>: [</span><br><span class="line">      &#123;</span><br><span class="line">         <span class="attr">"mediaType"</span>: <span class="string">"application/vnd.docker.image.rootfs.diff.tar.gzip"</span>,</span><br><span class="line">         <span class="attr">"size"</span>: <span class="number">2813316</span>,</span><br><span class="line">         <span class="attr">"digest"</span>: <span class="string">"sha256:cbdbe7a5bc2a134ca8ec91be58565ec07d037386d1f1d8385412d224deafca08"</span></span><br><span class="line">      &#125;</span><br><span class="line">   ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol start="3">
+<li>使用正则匹配，过滤出 manifests 文件中的所有 sha256 值，这些 sha256 值就对应着 blobs 目录下的 image config 文件和 image layer 文件</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">╭─root@sg-02 /var/lib/registry/docker/registry/v2/repositories/library/alpine/_manifests/tags/latest/current</span><br><span class="line">╰─<span class="comment"># cat /var/lib/registry/docker/registry/v2/blobs/sha256/39/39eda93d15866957feaee28f8fc5adb545276a64147445c64992ef69804dbf01/data | grep -Eo "\b[a-f0-9]&#123;64&#125;\b"</span></span><br><span class="line">f70734b6a266dcb5f44c383274821207885b549b75c8e119404917a61335981a</span><br><span class="line">cbdbe7a5bc2a134ca8ec91be58565ec07d037386d1f1d8385412d224deafca08</span><br></pre></td></tr></table></figure>
+<ol start="4">
+<li>根据 manifests 文件就可以得到 blobs 目录中镜像的所有 layer 和 image config 文件，然后将这些文件拼成一个 dir 格式的镜像，在这里使用 cp 的方式将镜像从 registry 存储目录里 <code>捞</code> 出来😂</li>
+</ol>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"> 首先创建一个文件夹，为了保留镜像的 name 和 tag，文件夹的名称就对应的是 NAME:TAG</span></span><br><span class="line">╭─root@sg-02 /var/lib/registry/docker</span><br><span class="line">╰─# mkdir -p skopeo/library/alpine:latest</span><br><span class="line">╭─root@sg-02 /var/lib/registry/docker</span><br><span class="line">╰─# cp /var/lib/registry/docker/registry/v2/blobs/sha256/39/39eda93d15866957feaee28f8fc5adb545276a64147445c64992ef69804dbf01/data skopeo/library/alpine:latest/manifest</span><br><span class="line">╭─root@sg-02 /var/lib/registry/docker</span><br><span class="line">╰─# cp /var/lib/registry/docker/registry/v2/blobs/sha256/f7/f70734b6a266dcb5f44c383274821207885b549b75c8e119404917a61335981a/data skopeo/library/alpine:latest/f70734b6a266dcb5f44c383274821207885b549b75c8e119404917a61335981a</span><br><span class="line">╭─root@sg-02 /var/lib/registry/docker</span><br><span class="line">╰─# cp /var/lib/registry/docker/registry/v2/blobs/sha256/cb/cbdbe7a5bc2a134ca8ec91be58565ec07d037386d1f1d8385412d224deafca08/data skopeo/library/alpine:latest/cbdbe7a5bc2a134ca8ec91be58565ec07d037386d1f1d8385412d224deafca08</span><br><span class="line">╭─root@sg-02 /var/lib/registry/docker</span><br><span class="line">╰─# tree skopeo/library/alpine:latest</span><br><span class="line">skopeo/library/alpine:latest</span><br><span class="line">├── cbdbe7a5bc2a134ca8ec91be58565ec07d037386d1f1d8385412d224deafca08</span><br><span class="line">├── f70734b6a266dcb5f44c383274821207885b549b75c8e119404917a61335981a</span><br><span class="line">└── manifest</span><br><span class="line"></span><br><span class="line">0 directories, 3 files</span><br></pre></td></tr></table></figure>
+<p>和上面的 skopeo copy 出来的 dir 文件夹对比一下，到此为止镜像所需要的文件就基本上都齐全了，就差一个 version 文件，这个文件无关紧要可以去掉。</p>
+<ol start="5">
+<li>再优化一下，将步骤 4 中的 cp 操作修改成硬链接操作，能极大减少磁盘的 IO 操作。需要注意，硬链接文件不能跨分区，所以要和 registry 存储目录在同一个分区下才行。</li>
+</ol>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">╭─root@sg-02 /var/lib/registry/docker</span><br><span class="line">╰─# ln /var/lib/registry/docker/registry/v2/blobs/sha256/39/39eda93d15866957feaee28f8fc5adb545276a64147445c64992ef69804dbf01/data skopeo/library/alpine:latest/manifest</span><br><span class="line">╭─root@sg-02 /var/lib/registry/docker</span><br><span class="line">╰─# ln /var/lib/registry/docker/registry/v2/blobs/sha256/f7/f70734b6a266dcb5f44c383274821207885b549b75c8e119404917a61335981a/data skopeo/library/alpine:latest/f70734b6a266dcb5f44c383274821207885b549b75c8e119404917a61335981a</span><br><span class="line">╭─root@sg-02 /var/lib/registry/docker</span><br><span class="line">╰─# ln /var/lib/registry/docker/registry/v2/blobs/sha256/cb/cbdbe7a5bc2a134ca8ec91be58565ec07d037386d1f1d8385412d224deafca08/data skopeo/library/alpine:latest/cbdbe7a5bc2a134ca8ec91be58565ec07d037386d1f1d8385412d224deafca08</span><br><span class="line">╭─root@sg-02 /var/lib/registry/docker</span><br><span class="line">╰─# tree skopeo/library/alpine:latest</span><br><span class="line">skopeo/library/alpine:latest</span><br><span class="line">├── cbdbe7a5bc2a134ca8ec91be58565ec07d037386d1f1d8385412d224deafca08</span><br><span class="line">├── f70734b6a266dcb5f44c383274821207885b549b75c8e119404917a61335981a</span><br><span class="line">└── manifest</span><br><span class="line"></span><br><span class="line">0 directories, 3 files</span><br></pre></td></tr></table></figure>
+<p>然后使用 skopeo copy 或者 skopeo sync 将镜像 push 到 harbor</p>
+<ul>
+<li>使用 skopeo copy</li>
+</ul>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">skopeo copy  --insecure-policy --src-tls-verify=false --dest-tls-verify=false \</span><br><span class="line">dir:skopeo/library/alpine:latest docker://harbor.k8s.li/library/alpine:latest</span><br></pre></td></tr></table></figure>
+<ul>
+<li>使用 skopeo sync</li>
+</ul>
+<p>需要注意的是，skopeo sync 的方式是同步 project 级别的，镜像的 name 和 tag 就对应的是目录的名称</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">skopeo sync --insecure-policy --src-tls-verify=false --dest-tls-verify=false \</span><br><span class="line">--src dir --dest docker skopeo/library/ harbor.k8s.li/library/</span><br></pre></td></tr></table></figure>
+<h3 id="实现脚本"><a href="#实现脚本" class="headerlink" title="实现脚本"></a>实现脚本</h3><p>大叫一声 shell 大法好！😂</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash">!/bin/bash</span></span><br><span class="line">REGISTRY_DOMAIN="harbor.k8s.li"</span><br><span class="line">REGISTRY_PATH="/var/lib/registry"</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"> 切换到 registry 存储主目录下</span></span><br><span class="line">cd $&#123;REGISTRY_PATH&#125;</span><br><span class="line"></span><br><span class="line">gen_skopeo_dir() &#123;</span><br><span class="line"><span class="meta">   #</span><span class="bash"> 定义 registry 存储的 blob 目录 和 repositories 目录，方便后面使用</span></span><br><span class="line">    BLOB_DIR="docker/registry/v2/blobs/sha256"</span><br><span class="line">    REPO_DIR="docker/registry/v2/repositories"</span><br><span class="line">    # 定义生成 skopeo 目录</span><br><span class="line">    SKOPEO_DIR="docker/skopeo"</span><br><span class="line">    # 通过 find 出 current 文件夹可以得到所有带 tag 的镜像，因为一个 tag 对应一个 current 目录</span><br><span class="line">    for image in $(find $&#123;REPO_DIR&#125; -type d -name "current"); do</span><br><span class="line">        # 根据镜像的 tag 提取镜像的名字</span><br><span class="line">        name=$(echo $&#123;image&#125; | awk -F '/' '&#123;print $5"/"$6":"$9&#125;')</span><br><span class="line">        link=$(cat $&#123;image&#125;/link | sed 's/sha256://')</span><br><span class="line">        mfs="$&#123;BLOB_DIR&#125;/$&#123;link:0:2&#125;/$&#123;link&#125;/data"</span><br><span class="line">        # 创建镜像的硬链接需要的目录</span><br><span class="line">        mkdir -p "$&#123;SKOPEO_DIR&#125;/$&#123;name&#125;"</span><br><span class="line">        # 硬链接镜像的 manifests 文件到目录的 manifest 文件</span><br><span class="line">        ln $&#123;mfs&#125; $&#123;SKOPEO_DIR&#125;/$&#123;name&#125;/manifest.json</span><br><span class="line">        # 使用正则匹配出所有的 sha256 值，然后排序去重</span><br><span class="line">        layers=$(grep -Eo "\b[a-f0-9]&#123;64&#125;\b" $&#123;mfs&#125; | sort -n | uniq)</span><br><span class="line">        for layer in $&#123;layers&#125;; do</span><br><span class="line">          # 硬链接 registry 存储目录里的镜像 layer 和 images config 到镜像的 dir 目录</span><br><span class="line">            ln $&#123;BLOB_DIR&#125;/$&#123;layer:0:2&#125;/$&#123;layer&#125;/data $&#123;SKOPEO_DIR&#125;/$&#123;name&#125;/$&#123;layer&#125;</span><br><span class="line">        done</span><br><span class="line">    done</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">sync_image() &#123;</span><br><span class="line">    # 使用 skopeo sync 将 dir 格式的镜像同步到 harbor</span><br><span class="line">    for project in $(ls $&#123;SKOPEO_DIR&#125;); do</span><br><span class="line">        skopeo sync --insecure-policy --src-tls-verify=false --dest-tls-verify=false \</span><br><span class="line">        --src dir --dest docker $&#123;SKOPEO_DIR&#125;/$&#123;project&#125; $&#123;REGISTRY_DOMAIN&#125;/$&#123;project&#125;</span><br><span class="line">    done</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">gen_skopeo_dir</span><br><span class="line">sync_image</span><br></pre></td></tr></table></figure>
+<p>其实魔改一下 skopeo 的源码也是可以无缝支持 registry 存储目录的，目前正在研究中😃</p>
+<h2 id="对比"><a href="#对比" class="headerlink" title="对比"></a>对比</h2><table>
+<thead>
+<tr>
+<th></th>
+<th>方法</th>
+<th>适用范围</th>
+<th>缺点</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>一</td>
+<td>docker retag</td>
+<td>两个 registry 之间同步镜像</td>
+<td></td>
+</tr>
+<tr>
+<td>二</td>
+<td>skopeo</td>
+<td>两个 registry 之间同步镜像</td>
+<td></td>
+</tr>
+<tr>
+<td>三</td>
+<td>解压目录</td>
+<td>registry 存储目录到另一个 registry</td>
+<td>harbor 1.x</td>
+</tr>
+<tr>
+<td>四</td>
+<td>skopeo dir</td>
+<td>registry 存储目录到另一个 registry</td>
+<td>适用于 harbor 2.x</td>
+</tr>
+</tbody></table>
+<p>对比总结一下以上几种方案：</p>
+<ul>
+<li>方案一：上手成本低，适用于镜像数量比较多少，无需安装 skopeo 的情况，缺点是性能较差；</li>
+<li>方案二：适用于两个 registry 之间同步复制镜像，如将 docker hub 中的一些公共镜像复制到公司内网的镜像仓库中。</li>
+<li>方案三：适用于镜像仓库之间进行迁移，性能是所有方案里最好的，需要额外注意的是如果目的镜像仓库是 harbor 2.x，是无法使用这种方式的。</li>
+<li>方案四：是方案三的妥协版，为了适配 harbor 2.0 ，因为需要重新将镜像 push 到 harbor ，所以性能上要比方案三差一些。</li>
+</ul>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ul>
+<li><a href="">《harbor权威指南》</a></li>
+<li><a href="https://goharbor.io/blog/harbor-2.0/" target="_blank" rel="noopener">Harbor 2.0 takes a giant leap in expanding supported artifacts with OCI support</a></li>
+</ul>
+    </div>
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/registry/" rel="tag"><i class="fa fa-tag"></i> registry</a>
+              <a href="/tags/harbor/" rel="tag"><i class="fa fa-tag"></i> harbor</a>
+              <a href="/tags/%E9%95%9C%E5%83%8F/" rel="tag"><i class="fa fa-tag"></i> 镜像</a>
+          </div>
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020-booklist.html" rel="prev" title="2020 年读书笔记和思考">
+      <i class="fa fa-chevron-left"></i> 2020 年读书笔记和思考
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/sync-dockerhub-library-images.html" rel="next" title="同步 docker hub library 镜像到本地 registry">
+      同步 docker hub library 镜像到本地 registry <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+  </article>
+  </div>
+          </div>
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+        </div>
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Registry"><span class="nav-number">1.</span> <span class="nav-text">Registry</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Docker-Distribution"><span class="nav-number">1.1.</span> <span class="nav-text">Docker Distribution</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Harbor"><span class="nav-number">1.2.</span> <span class="nav-text">Harbor</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#docker-registry-to-harbor"><span class="nav-number">1.3.</span> <span class="nav-text">docker registry to harbor</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#获取-registry-所有镜像的列表"><span class="nav-number">2.</span> <span class="nav-text">获取 registry 所有镜像的列表</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#方案一：docker-retag"><span class="nav-number">3.</span> <span class="nav-text">方案一：docker retag</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#方案二：skopeo"><span class="nav-number">4.</span> <span class="nav-text">方案二：skopeo</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#方案三：迁移存储目录"><span class="nav-number">5.</span> <span class="nav-text">方案三：迁移存储目录</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#方案四："><span class="nav-number">6.</span> <span class="nav-text">方案四：</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#skopeo-dir"><span class="nav-number">6.1.</span> <span class="nav-text">skopeo dir</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#从-registry-存储目录中抠镜像出来"><span class="nav-number">6.2.</span> <span class="nav-text">从 registry 存储目录中抠镜像出来</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#实现脚本"><span class="nav-number">6.3.</span> <span class="nav-text">实现脚本</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#对比"><span class="nav-number">7.</span> <span class="nav-text">对比</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考"><span class="nav-number">8.</span> <span class="nav-text">参考</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木子"
+      src="https://blog.k8s.li/avatar.png">
+  <p class="site-author-name" itemprop="name">木子</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">89</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">113</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/muzi502" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;muzi502" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:blog@502.li" title="E-Mail → mailto:blog@502.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://twitter.com/muzi_ii" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;muzi_ii" rel="noopener" target="_blank"><i class="fa fa-fw fa-twitter"></i>Twitter</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://t.me/muzi_ii" title="Telegram → https:&#x2F;&#x2F;t.me&#x2F;muzi_ii" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Telegram</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://kindle.502.li/" title="Kindle → https:&#x2F;&#x2F;kindle.502.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-book"></i>Kindle</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://tg.k8s.li/" title="Channel → https:&#x2F;&#x2F;tg.k8s.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Channel</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-fw fa-rss"></i>RSS</a>
+      </span>
+  </div>
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+      </div>
+    </main>
+    <footer class="footer">
+      <div class="footer-inner">
+<div class="copyright">
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木子</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">1.3m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">35:51</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">主题 – <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a>
+  </div>
+      </div>
+    </footer>
+  </div>
+  <script src="/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script>
+<script src="/js/schemes/pisces.js"></script>
+<script src="/js/next-boot.js"></script>
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://muzi.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: {page: {
+            url: "https://blog.k8s.li/docker-registry-to-harbor.html",
+            identifier: "docker-registry-to-harbor.html",
+            title: "docker registry 迁移至 harbor"
+          }
+        }
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://muzi.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+</body>
+</html>
