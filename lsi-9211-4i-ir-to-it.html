@@ -50,20 +50,20 @@
 <meta property="og:site_name" content="木子">
 <meta property="og:description" content="刷机？不久前捡垃圾搞了一台低功耗 Homelab 主机玩玩，由于主板 SATA 口的限制，不能使用大于 2TB 的硬盘，对于咱梦想着这种拥有几十 TB 存储来存放老婆的死肥宅来说，2TB 怎么够了。于是想要突破限制，再给 Homelab 主机增加一块 6TB 的磁盘。于是，在洋垃圾堆里花了 50 块钱捡了这块阵列卡👇。  买的这块阵列卡型号是 ServeRAID H1110 SAS&#x2F;SATA C">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://cdn.jsdelivr.net/gh/muzi502/muzi502.github.io/img/20200830_9211-4i-01.jpg">
-<meta property="og:image" content="https://cdn.jsdelivr.net/gh/muzi502/muzi502.github.io/img/20200830_9211-4i-02.png">
-<meta property="og:image" content="https://cdn.jsdelivr.net/gh/muzi502/muzi502.github.io/img/20200828_9211-4i-03.jpg">
-<meta property="og:image" content="https://cdn.jsdelivr.net/gh/muzi502/muzi502.github.io/img/20200828_9211-4i-04.jpg">
-<meta property="og:image" content="https://cdn.jsdelivr.net/gh/muzi502/muzi502.github.io/img/20200828_9211-4i-05.jpg">
-<meta property="og:image" content="https://cdn.jsdelivr.net/gh/muzi502/muzi502.github.io/img/20200828_9211-4i-06.jpg">
-<meta property="og:image" content="https://cdn.jsdelivr.net/gh/muzi502/muzi502.github.io/img/20200908_9211-4i-07.png">
+<meta property="og:image" content="https://p.k8s.li/20200830_9211-4i-01.jpg">
+<meta property="og:image" content="https://p.k8s.li/20200830_9211-4i-02.png">
+<meta property="og:image" content="https://p.k8s.li/20200828_9211-4i-03.jpg">
+<meta property="og:image" content="https://p.k8s.li/20200828_9211-4i-04.jpg">
+<meta property="og:image" content="https://p.k8s.li/20200828_9211-4i-05.jpg">
+<meta property="og:image" content="https://p.k8s.li/20200828_9211-4i-06.jpg">
+<meta property="og:image" content="https://p.k8s.li/20200908_9211-4i-07.png">
 <meta property="article:published_time" content="2020-09-07T16:00:00.000Z">
 <meta property="article:modified_time" content="2020-09-07T16:00:00.000Z">
 <meta property="article:author" content="木子">
 <meta property="article:tag" content="刷机">
 <meta property="article:tag" content="阵列卡">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://cdn.jsdelivr.net/gh/muzi502/muzi502.github.io/img/20200830_9211-4i-01.jpg">
+<meta name="twitter:image" content="https://p.k8s.li/20200830_9211-4i-01.jpg">
 <link rel="canonical" href="https://blog.k8s.li/lsi-9211-4i-ir-to-it.html">
 <script id="page-configurations">
   // https://hexo.io/docs/variables.html
@@ -206,12 +206,12 @@
       </header>
     <div class="post-body" itemprop="articleBody">
         <h2 id="刷机？"><a href="#刷机？" class="headerlink" title="刷机？"></a>刷机？</h2><p>不久前捡垃圾搞了一台低功耗 Homelab 主机玩玩，由于主板 SATA 口的限制，不能使用大于 2TB 的硬盘，对于咱梦想着这种拥有几十 TB 存储来存放老婆的死肥宅来说，2TB 怎么够了。于是想要突破限制，再给 Homelab 主机增加一块 6TB 的磁盘。于是，在洋垃圾堆里花了 50 块钱捡了这块阵列卡👇。</p>
-<p><img src="img/20200830_9211-4i-01.jpg" alt=""></p>
+<p><img src="https://p.k8s.li/20200830_9211-4i-01.jpg" alt=""></p>
 <p>买的这块阵列卡型号是 <a href="https://lenovopress.com/tips0831-serveraid-h1110" target="_blank" rel="noopener">ServeRAID H1110 SAS/SATA Controller for IBM System x </a> ，卖家说是 <code>IBM H1110</code> ，其实都差不多啦。由于是第一次玩儿阵列卡，对这种型号也不是很熟悉，之后刷了新的固件又变成了 <code>LSI 9211-4i</code> 。</p>
 <h2 id="翻车？"><a href="#翻车？" class="headerlink" title="翻车？"></a>翻车？</h2><p>收到货后，迫不及待地将存满老婆的硬盘接到阵列卡上，开机的时候，一直卡在阵列卡 BIOS 初始化页面很久很久。顿时觉着，完蛋翻车了，正准备去怼一波卖家，阵列卡启动等了五六分钟后进入了久违的  ESXi 的启动页面。这尼玛，坑我啊，你一个巴掌大的阵列卡启动竟然需要五分钟？内心一万匹草泥马奔腾而过。</p>
-<p><img src="img/20200830_9211-4i-02.png" alt=""></p>
+<p><img src="https://p.k8s.li/20200830_9211-4i-02.png" alt=""></p>
 <h2 id="IR-模式？"><a href="#IR-模式？" class="headerlink" title="IR 模式？"></a>IR 模式？</h2><p>在网上看来一下大佬们的评论，说阵列卡 IR 模式的启动速度要慢一些？然后又找到了 <a href="https://wiki2.xbits.net:4430/hardware:lsi:h1110-it-firmware" target="_blank" rel="noopener">IBM H1110卡刷为LSI 9211-4i IT固件</a> ，里面提到的可以将 IR 模式刷为 IT 直通模式。至于 IR 模式和 IT 模式，自己太菜没找到确切的资料。大概可以理解为 IR 模式适用于使用阵列卡组 RAID 阵列，而 IT 模式就是所谓的直通模式，不适用 RAID ，只使用阵列卡的磁盘控制器？相当于主板上的 SATA 接口。何况我这个是小主机，里面也塞不下那么多的磁盘，所以阵列卡使用 IT 直通模式无疑是最好的选择。</p>
-<p><img src="img/20200828_9211-4i-03.jpg" alt=""></p>
+<p><img src="https://p.k8s.li/20200828_9211-4i-03.jpg" alt=""></p>
 <h2 id="万物皆可刷？"><a href="#万物皆可刷？" class="headerlink" title="万物皆可刷？"></a>万物皆可刷？</h2><p>参照大佬们的博客，咱也要体验一把刷<del>机</del>卡的痛快了，毕竟折腾这些没用的玩意儿也是咱的一大乐趣。</p>
 <blockquote>
 <p>  我青年时代就刷过：诺基亚、摩托罗拉、三星、黑莓、Lumia、HTC，我还刷过：路由器、交换机、阵列卡、电视盒子……</p>
@@ -302,20 +302,20 @@ ShellX64.efi</li>
 <ul>
 <li>使用 <code>map -b</code> 命令查看 U 盘的路径，一般为 <code>fsX</code> 然后按下 <code>fs0:</code> 路径就切换到了 U 盘的 FAT32 分区下。</li>
 </ul>
-<p><img src="img/20200828_9211-4i-04.jpg" alt=""></p>
+<p><img src="https://p.k8s.li/20200828_9211-4i-04.jpg" alt=""></p>
 <ul>
 <li>然后使用 <code>sas2flash.efi -o -e 6</code> 命令清空阵列卡的  <code>flash memory</code>。</li>
 <li>接着使用 <code>sas2flsh -o -f 2114it.bin -b mptsas2.rom</code> 命令刷入新的固件。</li>
 </ul>
-<p><img src="img/20200828_9211-4i-05.jpg" alt=""></p>
+<p><img src="https://p.k8s.li/20200828_9211-4i-05.jpg" alt=""></p>
 <ul>
 <li>恢复 SAS 地址 <code>sas2flsh -o -sasadd xxxxxxxx</code> </li>
 </ul>
 <p>操作完以上步骤后就可以重启了</p>
 <h2 id="IT-模式？"><a href="#IT-模式？" class="headerlink" title="IT 模式？"></a>IT 模式？</h2><p>刷完之后阵列卡的型号就莫名其妙地变成了 <code>LSI® SAS 9211-4i PCI Express® to 6Gb/s Serial Attached SCSI (SAS) Host Bus Adapter</code> ，固件的版本也变成了  IT 模式，开机的速度比以前快了很多，只需要不到 5s 就自检完成进入 ESXi 的启动流程，终于告别原先的龟速启动了。</p>
-<p><img src="img/20200828_9211-4i-06.jpg" alt=""></p>
+<p><img src="https://p.k8s.li/20200828_9211-4i-06.jpg" alt=""></p>
 <p>在 ESXi 中，阵列卡也被识别为了 <code>LSI2004</code> ，看来是没问题了，插上硬盘也都是识别出来了。</p>
-<p><img src="img/20200908_9211-4i-07.png" alt=""></p>
+<p><img src="https://p.k8s.li/20200908_9211-4i-07.png" alt=""></p>
 <h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p>由于是是第一次给阵列卡刷固件，在网上找到了写资料可以做参考。</p>
 <ul>
 <li><a href="https://wiki2.xbits.net:4430/hardware:lsi:h1110-it-firmware" target="_blank" rel="noopener">IBM H1110卡刷为LSI 9211-4i IT固件</a></li>

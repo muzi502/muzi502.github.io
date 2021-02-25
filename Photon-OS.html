@@ -50,11 +50,11 @@
 <meta property="og:site_name" content="木子">
 <meta property="og:description" content="前段时间捡垃圾东拼西凑搞了台 Homelab 👇玩玩 👉《垃圾佬的 Homelab 折腾记录》 。  总体来讲性价比高，Intel i5-6600T 的性能和 i5-6600 持平，比那种 8250U 之类的低压 U 要高很多，跑一堆虚拟机也不成问题，甚至跑个三 master + 两 node 的 kubernetes 集群也是可以😂。至于功耗，整机待机时不到 30W ，一天不到 1 度电，">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://cdn.jsdelivr.net/gh/muzi502/muzi502.github.io/img/20200913_esxi_01.png">
-<meta property="og:image" content="https://cdn.jsdelivr.net/gh/muzi502/muzi502.github.io/img/rancheroshowitworks.png">
-<meta property="og:image" content="https://cdn.jsdelivr.net/gh/muzi502/muzi502.github.io/img/20200922-esxi_ova_01.png">
-<meta property="og:image" content="https://cdn.jsdelivr.net/gh/muzi502/muzi502.github.io/img/20200922-esxi_photonos-01.png">
-<meta property="og:image" content="https://cdn.jsdelivr.net/gh/muzi502/muzi502.github.io/img/20200925-pihole.png">
+<meta property="og:image" content="https://p.k8s.li/20200913_esxi_01.png">
+<meta property="og:image" content="https://p.k8s.li/rancheroshowitworks.png">
+<meta property="og:image" content="https://p.k8s.li/20200922-esxi_ova_01.png">
+<meta property="og:image" content="https://p.k8s.li/20200922-esxi_photonos-01.png">
+<meta property="og:image" content="https://p.k8s.li/20200925-pihole.png">
 <meta property="article:published_time" content="2020-09-24T16:00:00.000Z">
 <meta property="article:modified_time" content="2020-09-24T16:00:00.000Z">
 <meta property="article:author" content="木子">
@@ -62,7 +62,7 @@
 <meta property="article:tag" content="PhotonOS">
 <meta property="article:tag" content="Linux">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://cdn.jsdelivr.net/gh/muzi502/muzi502.github.io/img/20200913_esxi_01.png">
+<meta name="twitter:image" content="https://p.k8s.li/20200913_esxi_01.png">
 <link rel="canonical" href="https://blog.k8s.li/Photon-OS.html">
 <script id="page-configurations">
   // https://hexo.io/docs/variables.html
@@ -205,7 +205,7 @@
       </header>
     <div class="post-body" itemprop="articleBody">
         <p>前段时间捡垃圾东拼西凑搞了台 Homelab 👇玩玩 👉<a href="https://blog.k8s.li/homelab.html">《垃圾佬的 Homelab 折腾记录》</a> 。</p>
-<p><img src="img/20200913_esxi_01.png" alt=""></p>
+<p><img src="https://p.k8s.li/20200913_esxi_01.png" alt=""></p>
 <p>总体来讲性价比高，Intel i5-6600T 的性能和 i5-6600 持平，比那种 8250U 之类的低压 U 要高很多，跑一堆虚拟机也不成问题，甚至跑个三 master + 两 node 的 kubernetes 集群也是可以😂。至于功耗，整机待机时不到 30W ，一天不到 1 度电，不用担心电费爆表了；至于价格，一颗 Intel i5-6600T  不到 450 块钱，还不香嘛🙃。</p>
 <p>在 ESXi 运行着一些虚拟机，比如用 WireGuard 打通 VPS 之间的网络，运行在一个 alpine 虚拟机里作为网关机使用；比如使用 <a href="https://pi-hole.net/" target="_blank" rel="noopener">Pi-hole®</a> 来构建自己的 DNS 服务器，用来拦截屏蔽域名；比如运行 time-machine 服务用来定时备份 MacBook ；比如 Windows 虚拟机里运行着一些国产毒瘤软件😡；比如使用 <a href="https://docs.drone.io/" target="_blank" rel="noopener">Drone</a> 跑一套轻量级的 CI 流水线系统，总之可玩性非常高哦，只要你又时间瞎折腾，总能找点乐子玩😂。</p>
 <h2 id="Linux-Container-OS"><a href="#Linux-Container-OS" class="headerlink" title="Linux Container OS ?"></a>Linux Container OS ?</h2><p>有了一台运行着 ESXi 的 Homelab ，今天就玩一下 Linux container OS ，即 Linux 容器  OS 、容器优化型 OS，这是一类专门针对运行容器定制化开发的 Linux 发行版，裁剪掉一些不必要的软件和内核模块，使系统更加轻量一些。虽然来说民用级的 Intel i5-6600T 性能也不算太差，但和 E3  小王子，E5 老大哥比还是差个十万八千里。因此为了节省一些 CPU 资源，减少虚拟化带来的开销，就选择了容器化运行一些应用，同时再为这些容器找一个轻量级的宿主机 OS ，这就是为什么想要使用 Linux container OS 的原因。</p>
@@ -250,7 +250,7 @@
 <p>因为 CoreOS 团队现如今已经被 Red Hat® 收购了，正如在 <a href="https://access.redhat.com/documentation/zh-cn/openshift_container_platform/4.2/html/architecture/architecture-rhcos" target="_blank" rel="noopener">OpenShift 文档</a> 中提到的： Red Hat Enterprise Linux CoreOS (RHCOS) 代表了下一代单用途容器操作系统技术。RHCOS 由创建了 Red Hat Enterprise Linux Atomic Host 和 CoreOS Container Linux 的同一开发团队打造，它将 Red Hat Enterprise Linux (RHEL) 的质量标准与 Container Linux 的自动化远程升级功能结合在一起。</p>
 <h3 id="RancherOS"><a href="#RancherOS" class="headerlink" title="RancherOS"></a>RancherOS</h3><p>RancherOS 是 Rancher 团队所维护的开源项目，也是对标 CoreOS 一样，专门用来运行容器，并且可以运行在生产环境（至少官方做了这么样的承诺，咱也没在生产用过，不好说。在 RancherOS 中所有的进程（包括系统所有的服务，比如 udev 和 syslog）都是用 docker 来管理，这一点要比 CoreOS 更加激进一些，而 CoreOS 还是使用传统 Linux 发行版中的 systemd 来管理系统中的服务。RancherOS 通过移除传统 Linux 发行版中不必要的服务和库来最小化系统，使他专注单一的功能，即运行 docker 容器。不过之前体验了一番，占用资源比较多😂，好像并没有太大的优势（</p>
 <p><code>Everything in RancherOS is a Docker container.</code> 感觉这个要比 CoreOS 更加容器化，甚至使用 docker 取代了 systemd 来管理系统的各种服务。系统启动后运行两个 docker 服务进程，一个是系统 docker ，在此之上在运行系统服务容器，和用户层面的 docker 。不过看一下下面的这张图你就会明白。总的来讲 RancherOS 是使用 docker 来管理整个系统的服务的，包括用户层面的 docker 。</p>
-<p><img src="img/rancheroshowitworks.png" alt="How it works"></p>
+<p><img src="https://p.k8s.li/rancheroshowitworks.png" alt=""></p>
 <h3 id="VMware-的-Photon-OS"><a href="#VMware-的-Photon-OS" class="headerlink" title="VMware 的 Photon OS"></a>VMware 的 <a href="https://vmware.github.io/photon/" target="_blank" rel="noopener">Photon OS</a></h3><p>今天的主角，VMware  开源的 Photon OS，这个 OS 你可能没听说过，但 VMware 开源的 Harbor 想必很熟悉，而 Harbor 的基础镜像使用的就是他家的 Photon OS😂。</p>
 <figure class="highlight ini"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">root [ /harbor ]# cat /etc/os-release</span><br><span class="line"><span class="attr">NAME</span>=<span class="string">"VMware Photon OS"</span></span><br><span class="line"><span class="attr">VERSION</span>=<span class="string">"2.0"</span></span><br><span class="line"><span class="attr">ID</span>=photon</span><br><span class="line"><span class="attr">VERSION_ID</span>=<span class="number">2.0</span></span><br><span class="line"><span class="attr">PRETTY_NAME</span>=<span class="string">"VMware Photon OS/Linux"</span></span><br><span class="line"><span class="attr">ANSI_COLOR</span>=<span class="string">"1;34"</span></span><br><span class="line"><span class="attr">HOME_URL</span>=<span class="string">"https://vmware.github.io/photon/"</span></span><br><span class="line"><span class="attr">BUG_REPORT_URL</span>=<span class="string">"https://github.com/vmware/photon/issues"</span></span><br></pre></td></tr></table></figure>
 <p>在 Photon OS 的构建脚本 <a href="https://github.com/vmware/photon/blob/master/build.py" target="_blank" rel="noopener">build.py</a> 中可以看到它构建的产物支持 ISO 和 docker 镜像，以及众多公有云的虚拟机格式，两者都是来自相同的源码，根据构建出来的是形式不同，所包含的软件也不同。因为裁剪掉了一些不必要的系统服务， docker 镜像格式的要更精简一些。</p>
@@ -479,11 +479,11 @@
 <ul>
 <li>创建虚拟机的时候使用 OVA 文件导入</li>
 </ul>
-<p><img src="img/20200922-esxi_ova_01.png" alt=""></p>
+<p><img src="https://p.k8s.li/20200922-esxi_ova_01.png" alt=""></p>
 <ul>
 <li>默认的用户名为 <code>root</code> ，密码为 <code>changeme</code>，登录之后再输入一遍 <code>changeme</code>，然后修改为新的密码。</li>
 </ul>
-<p><img src="img/20200922-esxi_photonos-01.png" alt=""></p>
+<p><img src="https://p.k8s.li/20200922-esxi_photonos-01.png" alt=""></p>
 <h2 id="系统信息"><a href="#系统信息" class="headerlink" title="系统信息"></a>系统信息</h2><ul>
 <li>内核版本为 <code>4.19.132-5.ph3-esx</code>，4.19 是个 LTS 版本的内核，结尾的 <code>esx</code> 则代表着为 <code>ESXi</code> 虚拟化定制的内核。</li>
 </ul>
@@ -552,7 +552,7 @@
 <ul>
 <li>打开浏览器，输入 <code>http://ip:port/admin</code> 即可进入 Pi-hole 的后台管理页面，在这里可以查看到 DNS 解析的详细记录，关于 Pi-hole 的使用可以参考一些大佬的博客，比如 <a href="https://wzyboy.im/post/1372.html" target="_blank" rel="noopener">搭建 Pi-Hole 为网上冲浪保驾护航</a>。</li>
 </ul>
-<p><img src="img/20200925-pihole.png" alt=""></p>
+<p><img src="https://p.k8s.li/20200925-pihole.png" alt=""></p>
 <p>如果想要让内网的机器都走 Pi-hole 来进行 DNS ，可以将路由器的 DHCP 的  DNS 的 IP 设置为 Pi-hole 的 IP。</p>
 <h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ul>
 <li><a href="https://cloud.google.com/blog/products/containers-kubernetes/bringing-ebpf-and-cilium-to-google-kubernetes-engine" target="_blank" rel="noopener">New GKE Dataplane V2 increases security and visibility for containers</a></li>

@@ -50,7 +50,7 @@
 <meta property="og:site_name" content="木子">
 <meta property="og:description" content="最近参加了一场视频会议面试，虽然结果可能不太理想，但还是发现自己对技术细节钻研的不够深，一些很基础性的知识点并没有形成一个系统性的知识架构。比如 TCP 和 UDP 的区别，这是再简单不过的问题。虽然平时都知道 TCP 应用于哪些场景，UDP 应用与哪些场景，但二者之间的细节，还是没能仔细地深入研究。所以从现在开始从新学习一下一些基础性的东西，补足一下欠下的知识😥。不过这次面试也让我意识到，我是">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://cdn.jsdelivr.net/gh/muzi502/muzi502.github.io/img/iptables.png">
+<meta property="og:image" content="https://p.k8s.li/iptables.png">
 <meta property="og:image" content="https://www.frozentux.net/iptables-tutorial/chunkyhtml/images/tables_traverse.jpg">
 <meta property="article:published_time" content="2020-03-01T16:00:00.000Z">
 <meta property="article:modified_time" content="2020-03-01T16:00:00.000Z">
@@ -58,7 +58,7 @@
 <meta property="article:tag" content="Linux 网络">
 <meta property="article:tag" content="防火墙">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://cdn.jsdelivr.net/gh/muzi502/muzi502.github.io/img/iptables.png">
+<meta name="twitter:image" content="https://p.k8s.li/iptables.png">
 <link rel="canonical" href="https://blog.k8s.li/linux-net-and-iptables.html">
 <script id="page-configurations">
   // https://hexo.io/docs/variables.html
@@ -339,12 +339,12 @@
 </ul>
 <h4 id="Mangle-表"><a href="#Mangle-表" class="headerlink" title="Mangle 表"></a>Mangle 表</h4><p>Mangle 表包含五种内建链：PREROUTING、OUTPUT、FORWARD、INPUT、POSTROUTING。</p>
 <h4 id="Raw-表"><a href="#Raw-表" class="headerlink" title="Raw 表"></a>Raw 表</h4><p>含两个内建链：PREROUTING, OUTPUT.</p>
-<h3 id="数据包流程"><a href="#数据包流程" class="headerlink" title="数据包流程"></a>数据包流程</h3><p><img src="./img/iptables.png" alt="img"></p>
+<h3 id="数据包流程"><a href="#数据包流程" class="headerlink" title="数据包流程"></a>数据包流程</h3><p><img src="https://p.k8s.li/iptables.png" alt=""></p>
 <p>在 Linux 下，从任何网络端口进来的每一个 IP 数据包都要从上到下的穿过这张图，iptabales 对从任何端口进入的数据包都会采取相同的处理方式。</p>
 <p>此图摘自 <a href="https://wiki.archlinux.org/index.php/Iptables" target="_blank" rel="noopener">Archlinux 文档</a></p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">                               XXXXXXXXXXXXXXXXXX</span><br><span class="line">                             XXX     Network    XXX</span><br><span class="line">                               XXXXXXXXXXXXXXXXXX</span><br><span class="line">                                       +</span><br><span class="line">                                       |</span><br><span class="line">                                       v</span><br><span class="line"> +-------------+              +------------------+</span><br><span class="line"> |table: filter| &lt;---+        | table: nat       |</span><br><span class="line"> |chain: INPUT |     |        | chain: PREROUTING|</span><br><span class="line"> +-----+-------+     |        +--------+---------+</span><br><span class="line">       |             |                 |</span><br><span class="line">       v             |                 v</span><br><span class="line"> [local process]     |           ****************          +--------------+</span><br><span class="line">       |             +---------+ Routing decision +------&gt; |table: filter |</span><br><span class="line">       v                         ****************          |chain: FORWARD|</span><br><span class="line">****************                                           +------+-------+</span><br><span class="line">Routing decision                                                  |</span><br><span class="line">****************                                                  |</span><br><span class="line">       |                                                          |</span><br><span class="line">       v                        ****************                  |</span><br><span class="line">+-------------+       +------&gt;  Routing decision  &lt;---------------+</span><br><span class="line">|table: nat   |       |         ****************</span><br><span class="line">|chain: OUTPUT|       |               +</span><br><span class="line">+-----+-------+       |               |</span><br><span class="line">      |               |               v</span><br><span class="line">      v               |      +-------------------+</span><br><span class="line">+--------------+      |      | table: nat        |</span><br><span class="line">|table: filter | +----+      | chain: POSTROUTING|</span><br><span class="line">|chain: OUTPUT |             +--------+----------+</span><br><span class="line">+--------------+                      |</span><br><span class="line">                                      v</span><br><span class="line">                               XXXXXXXXXXXXXXXXXX</span><br><span class="line">                             XXX    Network     XXX</span><br><span class="line">                               XXXXXXXXXXXXXXXXXX</span><br></pre></td></tr></table></figure>
 <h3 id="遍历链流程图"><a href="#遍历链流程图" class="headerlink" title="遍历链流程图"></a>遍历链流程图</h3><p>该流程图描述链了在任何接口上收到的网络数据包是按照怎样的顺序穿过表的交通管制链。</p>
-<p><img src="https://www.frozentux.net/iptables-tutorial/chunkyhtml/images/tables_traverse.jpg" alt="tables_traverse"></p>
+<p><img src="https://www.frozentux.net/iptables-tutorial/chunkyhtml/images/tables_traverse.jpg" alt=""></p>
 <ul>
 <li><p>第一个路由策略包括决定数据包的目的地是本地主机（这种情况下，数据包穿过 INPUT 链），还是其他主机（数据包穿过 FORWARD 链）；</p>
 </li>
