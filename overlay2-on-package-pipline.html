@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon.ico">
+  <link rel="mask-icon" href="/favicon.ico" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+<link rel="stylesheet" href="/css/main.css">
+<link rel="stylesheet" href="//fonts.loli.net/css?family=Lato:300,300italic,400,400italic,700,700italic|Roboto Mono:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://blog.k8s.li').hostname,
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":true,"scrollpercent":true},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"buttons","active":null,"storage":true,"lazyload":true,"nav":{"disqus":{"text":"Load Disqus","order":-1}}},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":false,"async":true,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+  <meta name="description" content="背景自从去年五月份入职后一直在负责公司 PaaS toB 产品的打包发布及部署运维工作，工作性质上有点类似于 Kubernetes 社区的 SIG Release  团队。试用期的主要工作就是优化我们先有的打包发布流程。在这期间产品打包发布流水线做了很多优化，其中最突出的是镜像同步的优化，将镜像同步的速度提升了 5 到 15 倍。大大缩短了整个产品的发布耗时，也得到了同事们的一致好评。于是今天就想">
+<meta property="og:type" content="article">
+<meta property="og:title" content="overlay2 在打包发布流水线中的应用">
+<meta property="og:url" content="https://blog.k8s.li/overlay2-on-package-pipline.html">
+<meta property="og:site_name" content="木子">
+<meta property="og:description" content="背景自从去年五月份入职后一直在负责公司 PaaS toB 产品的打包发布及部署运维工作，工作性质上有点类似于 Kubernetes 社区的 SIG Release  团队。试用期的主要工作就是优化我们先有的打包发布流程。在这期间产品打包发布流水线做了很多优化，其中最突出的是镜像同步的优化，将镜像同步的速度提升了 5 到 15 倍。大大缩短了整个产品的发布耗时，也得到了同事们的一致好评。于是今天就想">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://p.k8s.li/2021-03-01-001.jpeg">
+<meta property="og:image" content="https://p.k8s.li/overlay_constructs.jpg">
+<meta property="og:image" content="https://p.k8s.li/registry-storage.jpeg">
+<meta property="og:image" content="https://p.k8s.li/registry-storage.jpeg">
+<meta property="og:image" content="https://p.k8s.li/2021-03-01_09-18-19.jpg">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/muzi502/muzi502.github.io/img/2021-03-01-002.jpeg">
+<meta property="article:published_time" content="2021-03-01T16:00:00.000Z">
+<meta property="article:modified_time" content="2021-03-01T16:00:00.000Z">
+<meta property="article:author" content="木子">
+<meta property="article:tag" content="registry">
+<meta property="article:tag" content="images">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://p.k8s.li/2021-03-01-001.jpeg">
+<link rel="canonical" href="https://blog.k8s.li/overlay2-on-package-pipline.html">
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+  <title>overlay2 在打包发布流水线中的应用 | 木子</title>
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+<link rel="alternate" href="/atom.xml" title="木子" type="application/atom+xml">
+</head>
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">木子</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+    <a href="/" rel="section"><i class="fa fa-fw fa-desktop"></i>Home</a>
+  </li>
+        <li class="menu-item menu-item-books">
+    <a href="/booklist.html" rel="section"><i class="fa fa-fw fa-book"></i>Books</a>
+  </li>
+        <li class="menu-item menu-item-kindle">
+    <a href="https://kindle.502.li/" rel="noopener" target="_blank"><i class="fa fa-fw fa-book"></i>Kindle</a>
+  </li>
+        <li class="menu-item menu-item-friend">
+    <a href="/link/" rel="section"><i class="fa fa-fw fa-link"></i>Friend</a>
+  </li>
+        <li class="menu-item menu-item-about">
+    <a href="/about.html" rel="section"><i class="fa fa-fw fa-user-circle-o"></i>About</a>
+  </li>
+  </ul>
+</nav>
+</div>
+    </header>
+  <div class="reading-progress-bar"></div>
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div class="content">
+  <div class="posts-expand">
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.k8s.li/overlay2-on-package-pipline.html">
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://blog.k8s.li/avatar.png">
+      <meta itemprop="name" content="木子">
+      <meta itemprop="description" content="">
+    </span>
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木子">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          overlay2 在打包发布流水线中的应用
+        </h2>
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              <time title="创建时间：2021-03-02 2021-03-02T00:00:00+08:00" itemprop="dateCreated datePublished" datetime="2021-03-02T00:00:00+08:00">2021-03-02</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%8A%80%E6%9C%AF/" itemprop="url" rel="index">
+                    <span itemprop="name">技术</span>
+                  </a>
+                </span>
+            </span>
+  <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-comment-o"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    <a title="disqus" href="/overlay2-on-package-pipline.html#comments" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="overlay2-on-package-pipline.html" itemprop="commentCount"></span>
+    </a>
+  </span>
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>11k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>19 分钟</span>
+            </span>
+        </div>
+      </header>
+    <div class="post-body" itemprop="articleBody">
+        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>自从去年五月份入职后一直在负责公司 PaaS toB 产品的打包发布及部署运维工作，工作性质上有点类似于 Kubernetes 社区的 <a href="https://github.com/kubernetes/sig-release" target="_blank" rel="noopener">SIG Release  团队</a>。试用期的主要工作就是优化我们先有的打包发布流程。在这期间产品打包发布流水线做了很多优化，其中最突出的是镜像同步的优化，将镜像同步的速度提升了 5 到 15 倍。大大缩短了整个产品的发布耗时，也得到了同事们的一致好评。于是今天就想着把这项优化和背后的原理分享出来。</p>
+<p>我们的产品打包时会有一个镜像列表，并根据这个镜像列表在 CI/CD 的流水线镜像仓库里将镜像同步到一个发布归档的镜像仓库和一个打包的镜像仓库。最终会将打包的镜像仓库的 registry 存储目录打包一个未经 gzip 压缩的 tar 包。最终在客户环境部署的时候将这个 tar 包解压到部署的镜像仓库存储目录中，供集群部署和组件部署使用。至于部署的时候为什么可以这样做，其中的原理可以参考我之前写过的文章 <a href="https://blog.k8s.li/docker-registry-to-harbor.html">docker registry 迁移至 harbor</a>。</p>
+<p>在打包的过程中镜像同步会进行两次，每次都会根据一个 images.list 列表将镜像同步到不同的镜像仓库中，同步的方式使用的是  <code>docker pull –&gt; docker tag –&gt; docker push</code>。其镜像同步的流程如下图所示：</p>
+<p><img src="https://p.k8s.li/2021-03-01-001.jpeg" alt="img"></p>
+<p>第一次是从CI/CD 流水线镜像仓库（cicd.registry.local）中拉取镜像并 push 到发布归档的镜像仓库(archive.registry.local)中，其目的是归档并备份我们已经发布的镜像，这一步称其为保存备份同步（save sync）。</p>
+<p>第二次将镜像从发布归档的镜像仓库 (archive.registry.local) 同步镜像到打包镜像仓库（package.registry.local）中。不同于第一次的镜像同步，这次同步镜像的时候会对镜像仓库做清理的操作，首先清理打包镜像仓库的存储目录，然后容器 registry 容器让 registry 重新提取镜像的元数据信息到内存中。其目的是清理旧数据，防止历史的镜像带入本次发布版本的安装包中。</p>
+<p>镜像同步完成之后会将整个打包镜像仓库的存储目录（/var/lib/registry）打包成一个 tar 包，并放到产品安装包中。</p>
+<h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><p>我刚入职的时候，我们的产品发布耗时最久的就是镜像同步阶段，记得最长的时候耗时 <code>2h30min</code>。耗时这么久的主要原因分析如下：</p>
+<h3 id="docker-性能问题"><a href="#docker-性能问题" class="headerlink" title="docker 性能问题"></a>docker 性能问题</h3><p>在做镜像同步的时候使用的是  <code>docker pull –&gt; docker tag –&gt; docker push</code> 的方式。木子在<a href="https://blog.k8s.li/Exploring-container-image.html">《深入浅出容器镜像的一生》</a> 中分析过：在 docker pull 和 docker push 的过程中 docker 守护进程都会对镜像的 layer 做解压缩的操作，这是及其耗时和浪费 CPU 资源的。</p>
+<p>又因为我们的内网机器的磁盘性能实在是太烂了，有时甚至连 USB 2.0 的速度（57MB/s）都不如！那慢的程度可想而知。这就导致了每次同步一两百个镜像时用时很久，最长的时候需要两个半小时。</p>
+<h3 id="无法复用旧数据"><a href="#无法复用旧数据" class="headerlink" title="无法复用旧数据"></a>无法复用旧数据</h3><p>在第二次镜像同步时会对打包镜像仓库做清理的操作，导致无法复用历史的镜像。其实每次发布的时候，变更和新增的镜像很少，平均为原来的 1/10 左右，增量同步的镜像也就那么一丢丢。因为要保证这次打包发布的镜像仓库中只能包好这个需要的镜像，不能包含与本次无关的镜像，因此每次都需要清理打包镜像仓库，这无法避免。一直没有找到能够复用这些历史镜像的方法。</p>
+<h2 id="优化"><a href="#优化" class="headerlink" title="优化"></a>优化</h2><p>根据上面提到的两个问题，经过反复的研究和测试终于都完美地解决了，并将镜像同步从原来最长需要两个半小时优化到了平均五分钟。</p>
+<h3 id="skopeo-替代-docker"><a href="#skopeo-替代-docker" class="headerlink" title="skopeo 替代 docker"></a>skopeo 替代 docker</h3><p>针对  <code>docker pull –&gt; docker tag –&gt; docker push</code>  的性能问题，当时第一个方案想到的就是使用 skopeo 来替代它。使用 <code>skopeo copy</code> 直接将镜像从一个 registry 复制到另一个 registry 中。这样可以避免 docker 守护进程对镜像的 layer 进行解压缩而带来的性能损耗。关于 skopeo 的使用和其背后的原理可以参考我之前的博客 <a href="https://blog.k8s.li/skopeo.html">镜像搬运工 skopeo 初体验</a> 。使用 skopeo 之后镜像同步比之前快了很多，平均快了 5 倍左右。</p>
+<h3 id="overlay2-复用旧数据"><a href="#overlay2-复用旧数据" class="headerlink" title="overlay2 复用旧数据"></a>overlay2 复用旧数据</h3><p>解决了 docker 的性能问题，剩下的就是无法复用旧数据的问题了。在如何保留历史镜像的问题上可煞费苦心。<strong>当时也不知道为什么就想到了 overlay2 的特性</strong>：<code>写时复制</code>。就好比如 docker run 启动一个容器，在容器内进行修改和删除文件的操作，这些操作并不会影响到镜像本身。因为 docker 使用 overlay2 联合挂载的方式将镜像的每一层挂载为一个 merged 的层。在容器内看到的就是这个 merged 的层，在容器内对 merged 层文件的修改和删除操作是通过 overlay2 的 upper 层完成的，并不会影响到处在 lower 层的镜像本身。从 docker 官方文档 <a href="https://docs.docker.com/storage/storagedriver/overlayfs-driver/" target="_blank" rel="noopener">Use the OverlayFS storage driver</a> 里偷来的一张图片：</p>
+<p><img src="https://p.k8s.li/overlay_constructs.jpg" alt="img"></p>
+<p>关于上图中这些 Dir 的作用，下面是一段从 <a href="https://stackoverflow.com/questions/56550890/docker-image-merged-diff-work-lowerdir-components-of-graphdriver" target="_blank" rel="noopener">StackOverflow</a> 上搬运过来的解释。如果想对 overlayfs 文件系统有详细的了解，可以参考 Linux 内核官网上的这篇文档 <a href="https://www.kernel.org/doc/Documentation/filesystems/overlayfs.txt" target="_blank" rel="noopener">overlayfs.txt</a> 。</p>
+<blockquote>
+<p><strong>LowerDir</strong>: these are the read-only layers of an overlay filesystem. For docker, these are the image layers assembled in order.</p>
+<p><strong>UpperDir</strong>: this is the read-write layer of an overlay filesystem. For docker, that is the equivalent of the container specific layer that contains changes made by that container.</p>
+<p><strong>WorkDir</strong>: this is a required directory for overlay, it needs an empty directory for internal use.</p>
+<p><strong>MergedDir</strong>: this is the result of the overlay filesystem. Docker effectively chroot’s into this directory when running the container.</p>
+</blockquote>
+<p>总之 overlay2 大法好！根据 overlay2 的特性，我们可以将历史的数据当作 overlay2 里的 lowerdir 来使用。而 upperdir 则是本次镜像同步的增量数据，merged 则是最终实际需要的数据。</p>
+<h2 id="overlay2"><a href="#overlay2" class="headerlink" title="overlay2"></a>overlay2</h2><p>虽然在上文中提到了使用 overlay2 的方案，但到目前为止还是没有一个成熟的解决方案。需要解决的问题如下：</p>
+<ul>
+<li><p>如何清理旧数据</p>
+</li>
+<li><p>如何复用历史的镜像？</p>
+</li>
+<li><p>如何区分出历史的镜像和本次的镜像？</p>
+</li>
+<li><p>如何保障本次镜像同步的结果只包含本次需要的镜像？</p>
+</li>
+</ul>
+<h3 id="registry-存储结构"><a href="#registry-存储结构" class="headerlink" title="registry 存储结构"></a>registry 存储结构</h3><p>既然要使用历史的镜像仓库数据来作为 overlay2 的 lowerdir。那么如何解决之前提到的清理旧数据问题，以及如何使用历史的镜像的问题？那么还是需要再次回顾一下 registry 存储目录结构。</p>
+<p><img src="https://p.k8s.li/registry-storage.jpeg" alt="img"></p>
+<p>根据 registry 的存储结构可以得知：在 blobs 目录下保存的是镜像的 blob 的文件。blob 文件大体上有三种：镜像的 manifests；镜像的 image config 文件；以及镜像的 layer 层文件。其中 manifests 和 images config 文件都是 json 格式的文本文件，镜像的 layer 层文件则是经过压缩的 tar 包文件(一般为 gzip)。如果要复用历史的镜像，很大程度上复用的是镜像的 layer 层文件，因为这些文件是镜像当中最大的，在 docker pull 和 docker push 的时候就是对镜像的 layer 层文件进行解压缩的。</p>
+<p>而且对于同一个镜像仓库来讲，blobs 下的文件都是由 repositories 下的 link 文件指向对应的 data 文件的。这就意味着，多个镜像可以使用相同的 layer。比如假如多个镜像的 base 镜像使用的都是  <code>debian:buster</code>，那么对于整个 registry 镜像仓库而言，只需要存一份 <code>debian:buster</code> 镜像即可。</p>
+<p>同理，在使用历史的镜像时，我们是否可以只使用它的 layer 呢？这一点可能比较难理解 😂。我们使用下面这个例子来简单说明下。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">k8s.gcr.io/kube-apiserver:v1.18.3</span><br><span class="line">k8s.gcr.io/kube-controller-manager:v1.18.3</span><br><span class="line">k8s.gcr.io/kube-scheduler:v1.18.3</span><br><span class="line">k8s.gcr.io/kube-proxy:v1.v1.18.3</span><br></pre></td></tr></table></figure>
+<p>当我们使用  skopeo copy 将这些镜像从 <code>k8s.gcr.io</code> 复制到本地的一个镜像仓库时，复制完第一个镜像后，在 copy 后面的镜像时都会提示 <code>Copying blob 83b4483280e5 skipped: already exists</code> 的日志信息。这是因为这些镜像使用的是同一个 base 镜像，这个 base 镜像只包含了一个 layer，也就是 <code>83b4483280e5</code> 这一个 blob 文件。虽然本地的镜像仓库中没有这些镜像的 base 镜像，但是有 base 镜像的 layer，skopeo 也就不会再 copy 这个相同的 blob。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line">╭─root@sg-02 /home/ubuntu</span><br><span class="line">╰─<span class="comment"># skopeo copy docker://k8s.gcr.io/kube-apiserver:v1.18.3 docker://localhost/kube-apiserver:v1.18.3 --dest-tls-verify=false                                                     </span></span><br><span class="line">Getting image <span class="built_in">source</span> signatures</span><br><span class="line">Copying blob 83b4483280e5 <span class="keyword">done</span></span><br><span class="line">Copying blob 2bfb66b13a96 <span class="keyword">done</span></span><br><span class="line">Copying config 7e28efa976 <span class="keyword">done</span></span><br><span class="line">Writing manifest to image destination</span><br><span class="line">Storing signatures</span><br><span class="line">╭─root@sg-02 /home/ubuntu</span><br><span class="line">╰─<span class="comment"># skopeo copy docker://k8s.gcr.io/kube-controller-manager:v1.18.3 docker://localhost/kube-controller-manager:v1.18.3 --dest-tls-verify=false</span></span><br><span class="line">Getting image <span class="built_in">source</span> signatures</span><br><span class="line">Copying blob 83b4483280e5 skipped: already exists</span><br><span class="line">Copying blob 7a73c2c3b85e <span class="keyword">done</span></span><br><span class="line">Copying config da26705ccb <span class="keyword">done</span></span><br><span class="line">Writing manifest to image destination</span><br><span class="line">Storing signatures</span><br><span class="line">╭─root@sg-02 /home/ubuntu</span><br><span class="line">╰─<span class="comment"># skopeo copy docker://k8s.gcr.io/kube-scheduler:v1.18.3 docker://localhost/kube-scheduler:v1.18.3 --dest-tls-verify=false</span></span><br><span class="line">Getting image <span class="built_in">source</span> signatures</span><br><span class="line">Copying blob 83b4483280e5 skipped: already exists</span><br><span class="line">Copying blob 133c4d2f432a <span class="keyword">done</span></span><br><span class="line">Copying config 76216c34ed <span class="keyword">done</span></span><br><span class="line">Writing manifest to image destination</span><br><span class="line">Storing signatures</span><br><span class="line">╭─root@sg-02 /home/ubuntu</span><br><span class="line">╰─<span class="comment"># skopeo copy docker://k8s.gcr.io/kube-proxy:v1.18.3 docker://localhost/kube-proxy:v1.18.3 --dest-tls-verify=false</span></span><br><span class="line">Getting image <span class="built_in">source</span> signatures</span><br><span class="line">Copying blob 83b4483280e5 skipped: already exists</span><br><span class="line">Copying blob ffa39a529ef3 <span class="keyword">done</span></span><br><span class="line">Copying config 3439b7546f <span class="keyword">done</span></span><br><span class="line">Writing manifest to image destination</span><br><span class="line">Storing signatures</span><br></pre></td></tr></table></figure>
+<p>从上面的实验我们可以得知，只要 registry 中存在相同的 blob，skopeo 就不会 copy 这个相同的 blob。那么如何让 skopeo 和 registry 知道存在这些 layer 了呢？</p>
+<p>这时需要再次回顾以下 registry 存储结构。在 repositories 下，每个镜像的文件夹中都会有 <code>_layers</code> 这个目录，而这个目录下的内容正是指向镜像 layer 和 image config 的 link 文件。也就是说：只要某个镜像的 <code>_layers</code> 下有指向 blob 的 link 文件，并且该 link 文件指向的 blobs 下的 data 文件确实存在，那么在 push 镜像的时候 registry 就会向客户端返回该 blob 已经存在，而 skopeo 就会略过处理已经存在的 blob 。以此，我们就可以达到复用历史数据的目的。</p>
+<p><img src="https://p.k8s.li/registry-storage.jpeg" alt="img"></p>
+<p>在历史镜像仓库文件中：blobs 目录是全部都要的； repositories 目录下只需要每个镜像的 <code>_layers</code> 目录即可；<code>_manifests</code> 目录下是镜像的 tag 我们并不需要他们； <code>_uploads</code> 目录则是 push 镜像时的临时目录也不需要。那么我们最终需要的历史镜像仓库中的文件就如下图所示：</p>
+<p><img src="https://p.k8s.li/2021-03-01_09-18-19.jpg" alt="img"></p>
+<p>到此为止已经解决掉了如何清理旧数据和如何如何复用历史的镜像的问题了。接下来要做的如何使用 overlay2  去构建这个镜像仓库所需的文件系统了。</p>
+<h3 id="套娃：镜像里塞镜像？"><a href="#套娃：镜像里塞镜像？" class="headerlink" title="套娃：镜像里塞镜像？"></a>套娃：镜像里塞镜像？</h3><p>提到 overlay2 第一个想到的方案就是容器镜像：使用套娃的方式，将历史的镜像仓库存储目录复制到一个 registry 的镜像里，然后用这个镜像来启动打包镜像仓库的 registry 容器。这个镜像仓库的 <code>Dockerfile</code> 如下：</p>
+<figure class="highlight dockerfile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">FROM</span> registry:latest</span><br><span class="line"></span><br><span class="line"><span class="comment"># 将历史镜像仓库的目录打包成 tar 包，放到 registry 的镜像中， ADD 指令会自动解开这个 tar 包</span></span><br><span class="line"><span class="keyword">ADD</span><span class="bash"> docker.tar /var/lib/registry/</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 删除掉所有镜像的 _manifests 目录，让 registry 认为里面没有镜像只有 blobs 数据</span></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> find /var/lib/registry/docker/registry/v2/repositories -<span class="built_in">type</span> d -name <span class="string">"_manifests"</span> -<span class="built_in">exec</span> rm -rf &#123;&#125; \;</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>然后使用这个 <code>Dockerfile</code> 构建一个镜像，并命名为 <code>registry:v0.1.0-base</code> ，使用这个镜像来 docker run 一个容器。</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run -d --name registry -p 127.0.0.1:443:5000 registry:v0.1.0-base</span><br></pre></td></tr></table></figure>
+<ul>
+<li>接着同步镜像</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat images.list | xargs -L1 -I &#123;&#125; skopeo copy  docker://cidi.registry.local/&#123;&#125; docker://package.registry.local/&#123;&#125;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>同步完成镜像之后，需要删除掉 repositories 下没有生成 _manifests 目录的镜像。因为如果本次同步镜像有该镜像的话，会在 repositories 目录下重新生成 _manifests 目录，如果没有生成的话就说明本次同步的列表中不包含该镜像。以此可以解决如何区分出历史的镜像和本次的镜像的问腿，这样又能何保障本次镜像同步的结果只包含本次需要的镜像。</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> project <span class="keyword">in</span> $(ls repositories/); <span class="keyword">do</span></span><br><span class="line">  <span class="keyword">for</span> image <span class="keyword">in</span> $(ls repositories/<span class="variable">$&#123;project&#125;</span>); <span class="keyword">do</span></span><br><span class="line">    <span class="keyword">if</span> [[ ! -d <span class="string">"repositories/<span class="variable">$&#123;project&#125;</span>/<span class="variable">$&#123;image&#125;</span>/_manifests"</span> ]]; <span class="keyword">then</span></span><br><span class="line">    rm -rf repositories/<span class="variable">$&#123;project&#125;</span>/<span class="variable">$&#123;image&#125;</span></span><br><span class="line">  <span class="keyword">fi</span></span><br><span class="line"><span class="keyword">done</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>最后还需要使用 registry GC 来删除掉 blobs 目录下没有被引用的文件。</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker <span class="built_in">exec</span> -it registry registry garbage-collect /etc/docker/registry/config.yml</span><br></pre></td></tr></table></figure>
+<ul>
+<li>再使用 docker cp 的方式将镜像从容器里复制出来并打包成一个 tar 包</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">docker cp registry:/var/lib/registry/docker docker</span><br><span class="line">tar -cf docker.tar docker</span><br></pre></td></tr></table></figure>
+<p>使用这种办法做了一下简单的测试，因为使用 skopeo copy 镜像的时候会提示很多 blobs 已经存在了，所以实际上复制的镜像只是一小部分，性能上的确比之前快了很多。但是这种方案也存在很多的弊端：一是这个 registry 的镜像需要手动维护和构建；二是使用 docker cp 的方式将容器内的 registry 存储目录复制到容器宿主机，性能上有点差；三是不同的产品需要不同的 base 镜像，维护起来比较麻烦。所以我们还需要更为简单一点使用 overlay2 技术。</p>
+<h3 id="容器挂载-overlay2-merged-目录"><a href="#容器挂载-overlay2-merged-目录" class="headerlink" title="容器挂载 overlay2 merged 目录"></a>容器挂载 overlay2 merged 目录</h3><p>仔细想一下，将历史的镜像数据放到 registry 镜像中，用它来启动一个 registry 容器。同步镜像和进行 registry gc 这两部实际上是对 overlay2 的 merged 层进行读写删除操作。那我们为何不直接在宿主机上创建好 overlay2 需要的目录，然后再使用 overlay2 联合挂载的方式将这些目录挂载为一个 merged 目录。在启动 registry 容器的时候通过 <code>docker run -v</code> 参数将这个 merged 目录以 bind 的方式挂载到 registry 容器内呢？下面我们就做一个简单的验证和测试：</p>
+<ul>
+<li>首先创建 overlay2 需要的目录</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> /var/lib/registry</span><br><span class="line">mkdir -p lower upper work merged</span><br></pre></td></tr></table></figure>
+<ul>
+<li>将历史镜像仓库数据放到 lower 目录内</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tar -cf docker.tar -C /var/lib/registry/lower</span><br></pre></td></tr></table></figure>
+<ul>
+<li>删除 所有镜像的 _manifests 目录，让 registry 认为里面没有镜像只有 blobs 数据</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">find /var/lib/registry/lower/docker/registry/v2/repositories -<span class="built_in">type</span> d -name <span class="string">"_manifests"</span> -<span class="built_in">exec</span> rm -rf &#123;&#125; \;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>模拟容器的启动，使用 overlay2 联合挂载为一层 merged 层</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mount -t overlay overlay -o lowerdir=lower,upperdir=upper,workdir=work merged</span><br></pre></td></tr></table></figure>
+<ul>
+<li>docker run 启动一个 registry ，并将 merged 目录挂载到容器内的 <code>/var/lib/registry/docker</code> 目录</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">docker run -d -name registry -p 127.0.0.1:443:5000 \</span><br><span class="line">-v /var/lib/registry/merged/docker:/var/lib/registry/docker</span><br></pre></td></tr></table></figure>
+<ul>
+<li>同步镜像，将本次发布需要的镜像同步到 registry 中</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat images.list | xargs -L1 -I &#123;&#125; skopeo copy --insecure-policy --src-tls-verify=<span class="literal">false</span> --dest-tls-verify=<span class="literal">false</span> docker://cicd.registry.local/&#123;&#125; docker://package.registry.local/&#123;&#125;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>同步完成镜像后，进行 registry gc ，删除无用的 blob 数据</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker <span class="built_in">exec</span> -it registry registry garbage-collect /etc/docker/registry/config.yml</span><br></pre></td></tr></table></figure>
+<ul>
+<li>最后打包 merged 目录，就是本次最终的结果</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> /var/lib/registry/merged</span><br><span class="line">tar -cf docker.tar docker</span><br></pre></td></tr></table></figure>
+<p>在本地按照上述步骤进行了简单的验证，确实可以！在第二次同步镜像的时候会提示很多 blob 已经存在，镜像同步的速度比之前又快了 5 倍左右。那么将上述步骤写成一个脚本就能反复使用了。</p>
+<h3 id="registry-gc-问题-？"><a href="#registry-gc-问题-？" class="headerlink" title="registry gc 问题 ？"></a>registry gc 问题 ？</h3><p>在使用的过程中遇到过 registry GC 清理不干净的问题：在进行 GC 之后，一些镜像 layer 和 config 文件已经在 blobs 存储目录下删除了，但指向它的 link 文件依旧保存在 repositories 目录下🙄。GitHub 上有个 PR <a href="https://github.com/docker/distribution/issues/2288" target="_blank" rel="noopener">Remove the layer’s link by garbage-collect #2288</a> 就是专门来清理这些无用的 layer link 文件的，最早的一个是三年前的，但是还没有合并😂。</p>
+<p>解决办法就是使用我在 <a href="https://blog.k8s.li/registry-gc.html">docker registry GC 原理分析</a> 文章中提到的方案：自制 registry GC 脚本🙃。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#!/bin/bash</span></span><br><span class="line">v2=<span class="variable">$1</span></span><br><span class="line">v2=<span class="variable">$&#123;v2:="/var/lib/registry/docker/registry/v2"&#125;</span></span><br><span class="line"><span class="built_in">cd</span> <span class="variable">$&#123;v2&#125;</span></span><br><span class="line">all_blobs=/tmp/all_blobs.list</span><br><span class="line">: &gt; <span class="variable">$&#123;all_blobs&#125;</span></span><br><span class="line"><span class="comment"># delete unlink blob's link file in _layers</span></span><br><span class="line"><span class="keyword">for</span> link <span class="keyword">in</span> $(find repositories -<span class="built_in">type</span> f -name <span class="string">"link"</span> | grep -E <span class="string">"_layers\/sha256\/.*"</span>); <span class="keyword">do</span></span><br><span class="line">    link_sha256=$(<span class="built_in">echo</span> <span class="variable">$&#123;link&#125;</span> | grep -Eo <span class="string">"_layers\/sha256\/.*"</span> | sed <span class="string">'s/_layers\/sha256\///g;s/\/link//g'</span>)</span><br><span class="line">    link_short=<span class="variable">$&#123;link:0:2&#125;</span></span><br><span class="line">    link_dir=$(<span class="built_in">echo</span> <span class="variable">$&#123;link&#125;</span> | sed <span class="string">'s/\/link//'</span>)</span><br><span class="line">    data_file=blobs/sha256/<span class="variable">$&#123;link_short&#125;</span>/<span class="variable">$&#123;link&#125;</span></span><br><span class="line">    <span class="keyword">if</span> [[ ! -d <span class="variable">$&#123;data_file&#125;</span> ]]; <span class="keyword">then</span> rm -rf <span class="variable">$&#123;link_dir&#125;</span>; <span class="keyword">fi</span></span><br><span class="line"><span class="keyword">done</span></span><br><span class="line"><span class="comment">#marking all the blob by all images manifest</span></span><br><span class="line"><span class="keyword">for</span> tag <span class="keyword">in</span> $(find repositories -name <span class="string">"link"</span> | grep current); <span class="keyword">do</span></span><br><span class="line">    link=$(cat <span class="variable">$&#123;tag&#125;</span> | cut -c8-71)</span><br><span class="line">    mfs=blobs/sha256/<span class="variable">$&#123;link:0:2&#125;</span>/<span class="variable">$&#123;link&#125;</span>/data</span><br><span class="line">    <span class="built_in">echo</span> <span class="variable">$&#123;link&#125;</span> &gt;&gt; <span class="variable">$&#123;all_blobs&#125;</span></span><br><span class="line">    grep -Eo <span class="string">"\b[a-f0-9]&#123;64&#125;\b"</span> <span class="variable">$&#123;mfs&#125;</span> | sort -n | uniq | cut -c1-12 &gt;&gt; <span class="variable">$&#123;all_blobs&#125;</span></span><br><span class="line"><span class="keyword">done</span></span><br><span class="line"><span class="comment">#delete blob if the blob doesn't exist in all_blobs.list</span></span><br><span class="line"><span class="keyword">for</span> blob <span class="keyword">in</span> $(find blobs -name <span class="string">"data"</span> | cut -d <span class="string">"/"</span> -f4); <span class="keyword">do</span></span><br><span class="line">    <span class="keyword">if</span> ! grep <span class="variable">$&#123;blob&#125;</span> <span class="variable">$&#123;all_blobs&#125;</span>; <span class="keyword">then</span></span><br><span class="line">        rm -rf blobs/sha256/<span class="variable">$&#123;blob:0:2&#125;</span>/<span class="variable">$&#123;blob&#125;</span></span><br><span class="line">    <span class="keyword">fi</span></span><br><span class="line"><span class="keyword">done</span></span><br></pre></td></tr></table></figure>
+<h2 id="流程"><a href="#流程" class="headerlink" title="流程"></a>流程</h2><p>好了，至此最终的优化方案已经定下来了，其流程上如下：</p>
+<p><img src="img/2021-03-01-002.jpeg" alt="img"></p>
+<ul>
+<li>第一次同步镜像的时候不再将镜像同步归档备份的镜像仓库（archive.registry.local） 而是同步到 overlay2 的镜像仓库，这个镜像仓库中的镜像将作为第二次镜像同步的 lower 层。</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat images.list | xargs -L1 -I &#123;&#125; skopeo copy --insecure-policy --src-tls-verify=<span class="literal">false</span> --dest-tls-verify=<span class="literal">false</span> docker://cicd.registry.local/&#123;&#125; docker://overlay2.registry.local/&#123;&#125;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>第一次镜像同步完成之后，先清理掉 overlay2 的 merged、upper、work 这三层，只保留 lower 层。因为 lower 层里保留着第一次镜像同步的结果。</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">umount /var/lib/registry/merged</span><br><span class="line">rm -rf /var/lib/registry/&#123;merged,upper,work&#125;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>接下来就是使用 mount 挂载 overlay2，挂载完成之后进入到 merged 层删除掉所有的 _manifests 目录</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">mount -t overlay overlay -o lowerdir=lower,upperdir=upper,workdir=work merged</span><br><span class="line"><span class="built_in">cd</span> /var/lib/registry/merged</span><br><span class="line">find registry/v2/repositories -<span class="built_in">type</span> d -name <span class="string">"_manifests"</span> -<span class="built_in">exec</span> rm -rf &#123;&#125; \;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>接着进行第二次的镜像同步，这一次的同步目的是重新建立  _manifests 目录</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat images.list | xargs -L1 -I &#123;&#125; skopeo copy --insecure-policy --src-tls-verify=<span class="literal">false</span> --dest-tls-verify=<span class="literal">false</span> docker://overlay2.registry.local/&#123;&#125; docker://package.registry.local/&#123;&#125;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>第二次同步完成之后再使用自制的 registry GC 脚本来删除不必要的 blob 文件和 link 文件。</li>
+<li>最后将镜像仓库存储目录打包就得到了本次需要的镜像啦。</li>
+</ul>
+<h2 id="结尾"><a href="#结尾" class="headerlink" title="结尾"></a>结尾</h2><p>虽然比之前的流程复杂了很多，但优化的结果是十分明显，比以往快了 5 到 15 倍，并在我们的生产环境中已经稳稳地使用了大半年。</p>
+<p>读完这篇文章可能你会觉得一头雾水，不知道究竟在讲什么。什么镜像同步、镜像 blob、layer、overlay2、联合挂载、写时复制等等，被这一堆复杂的背景和概念搞混了😂。本文确实不太好理解，因为背景可能较特殊和复杂，很少人会遇到这样的场景。为了很好地理解本文所讲到的内容和背后的原理，过段时间我会单独写一篇博客，通过最佳实践来理解本文提到的技术原理。敬请期待😝</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><h3 id="文档"><a href="#文档" class="headerlink" title="文档"></a>文档</h3><ul>
+<li><a href="https://github.com/containers/image" target="_blank" rel="noopener">image</a></li>
+<li><a href="https://github.com/opencontainers/image-spec" target="_blank" rel="noopener">OCI Image Manifest Specification</a></li>
+<li><a href="https://github.com/opencontainers/distribution-spec" target="_blank" rel="noopener">distribution-spec</a></li>
+<li><a href="https://doi-janky.infosiftr.net/job/tianon/job/debuerreotype/" target="_blank" rel="noopener">debuerreotype/</a></li>
+<li><a href="https://www.kernel.org/doc/Documentation/filesystems/overlayfs.txt" target="_blank" rel="noopener">overlayfs.txt</a></li>
+</ul>
+<h3 id="博客"><a href="#博客" class="headerlink" title="博客"></a>博客</h3><ul>
+<li><a href="http://open.daocloud.io/allen-tan-docker-xi-lie-zhi-tu-kan-jin-docker-rong-qi-wen-jian-xi-tong/" target="_blank" rel="noopener">看尽 docker 容器文件系统</a></li>
+<li><a href="https://supereagle.github.io/2018/04/24/docker-registry/" target="_blank" rel="noopener">镜像仓库中镜像存储的原理解析</a></li>
+<li><a href="https://segmentfault.com/a/1190000014284289" target="_blank" rel="noopener">Docker镜像的存储机制</a></li>
+</ul>
+<h2 id="推荐阅读"><a href="#推荐阅读" class="headerlink" title="推荐阅读"></a>推荐阅读</h2><ul>
+<li><a href="https://blog.k8s.li/Exploring-container-image.html">深入浅出容器镜像的一生🤔</a></li>
+<li><a href="https://blog.k8s.li/skopeo.html">镜像搬运工 skopeo 初体验</a></li>
+<li><a href="https://blog.k8s.li/mount-bind.html">mount 命令之 –bind 挂载参数</a></li>
+<li><a href="https://blog.k8s.li/registry-gc.html">docker registry GC 原理分析</a></li>
+<li><a href="https://blog.k8s.li/docker-registry-to-harbor.html">docker registry 迁移至 harbor</a></li>
+</ul>
+    </div>
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/registry/" rel="tag"><i class="fa fa-tag"></i> registry</a>
+              <a href="/tags/images/" rel="tag"><i class="fa fa-tag"></i> images</a>
+          </div>
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/sync-dockerhub-library-images.html" rel="prev" title="同步 docker hub library 镜像到本地 registry">
+      <i class="fa fa-chevron-left"></i> 同步 docker hub library 镜像到本地 registry
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+  </article>
+  </div>
+          </div>
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+        </div>
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#背景"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#问题"><span class="nav-number">2.</span> <span class="nav-text">问题</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#docker-性能问题"><span class="nav-number">2.1.</span> <span class="nav-text">docker 性能问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#无法复用旧数据"><span class="nav-number">2.2.</span> <span class="nav-text">无法复用旧数据</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#优化"><span class="nav-number">3.</span> <span class="nav-text">优化</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#skopeo-替代-docker"><span class="nav-number">3.1.</span> <span class="nav-text">skopeo 替代 docker</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#overlay2-复用旧数据"><span class="nav-number">3.2.</span> <span class="nav-text">overlay2 复用旧数据</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#overlay2"><span class="nav-number">4.</span> <span class="nav-text">overlay2</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#registry-存储结构"><span class="nav-number">4.1.</span> <span class="nav-text">registry 存储结构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#套娃：镜像里塞镜像？"><span class="nav-number">4.2.</span> <span class="nav-text">套娃：镜像里塞镜像？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#容器挂载-overlay2-merged-目录"><span class="nav-number">4.3.</span> <span class="nav-text">容器挂载 overlay2 merged 目录</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#registry-gc-问题-？"><span class="nav-number">4.4.</span> <span class="nav-text">registry gc 问题 ？</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#流程"><span class="nav-number">5.</span> <span class="nav-text">流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#结尾"><span class="nav-number">6.</span> <span class="nav-text">结尾</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考"><span class="nav-number">7.</span> <span class="nav-text">参考</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#文档"><span class="nav-number">7.1.</span> <span class="nav-text">文档</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#博客"><span class="nav-number">7.2.</span> <span class="nav-text">博客</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#推荐阅读"><span class="nav-number">8.</span> <span class="nav-text">推荐阅读</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木子"
+      src="https://blog.k8s.li/avatar.png">
+  <p class="site-author-name" itemprop="name">木子</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">90</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">113</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/muzi502" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;muzi502" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:blog@502.li" title="E-Mail → mailto:blog@502.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://twitter.com/muzi_ii" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;muzi_ii" rel="noopener" target="_blank"><i class="fa fa-fw fa-twitter"></i>Twitter</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://t.me/muzi_ii" title="Telegram → https:&#x2F;&#x2F;t.me&#x2F;muzi_ii" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Telegram</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://kindle.502.li/" title="Kindle → https:&#x2F;&#x2F;kindle.502.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-book"></i>Kindle</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://tg.k8s.li/" title="Channel → https:&#x2F;&#x2F;tg.k8s.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Channel</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-fw fa-rss"></i>RSS</a>
+      </span>
+  </div>
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+      </div>
+    </main>
+    <footer class="footer">
+      <div class="footer-inner">
+<div class="copyright">
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木子</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">1.3m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">36:12</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">主题 – <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a>
+  </div>
+      </div>
+    </footer>
+  </div>
+  <script src="/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script>
+<script src="/js/schemes/pisces.js"></script>
+<script src="/js/next-boot.js"></script>
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://muzi.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: {page: {
+            url: "https://blog.k8s.li/overlay2-on-package-pipline.html",
+            identifier: "overlay2-on-package-pipline.html",
+            title: "overlay2 在打包发布流水线中的应用"
+          }
+        }
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://muzi.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+</body>
+</html>
