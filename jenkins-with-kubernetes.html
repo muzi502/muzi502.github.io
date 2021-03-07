@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon.ico">
+  <link rel="mask-icon" href="/favicon.ico" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+<link rel="stylesheet" href="/css/main.css">
+<link rel="stylesheet" href="//fonts.loli.net/css?family=Lato:300,300italic,400,400italic,700,700italic|Roboto Mono:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://blog.k8s.li').hostname,
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":true,"scrollpercent":true},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"buttons","active":null,"storage":true,"lazyload":true,"nav":{"disqus":{"text":"Load Disqus","order":-1}}},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":false,"async":true,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+  <meta name="description" content="背景虽然云原生时代有了 JenkinsX、Drone、Tekton 这样的后起之秀，但 Jenkins 这样一个老牌的 CI&#x2F;CD 工具仍是各大公司主流的使用方案。比如我司的私有云产品打包发布就是用这老家伙完成的。然而传统的 Jenkins Slave 一主多从方式会存在一些痛点，比如：  每个 Slave 的配置环境不一样，来完成不同语言的编译打包等操作，但是这些差异化的配置导致管理起来非常不方">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Jenkins 大叔与 kubernetes 船长手牵手 🧑‍🤝‍🧑">
+<meta property="og:url" content="https://blog.k8s.li/jenkins-with-kubernetes.html">
+<meta property="og:site_name" content="木子">
+<meta property="og:description" content="背景虽然云原生时代有了 JenkinsX、Drone、Tekton 这样的后起之秀，但 Jenkins 这样一个老牌的 CI&#x2F;CD 工具仍是各大公司主流的使用方案。比如我司的私有云产品打包发布就是用这老家伙完成的。然而传统的 Jenkins Slave 一主多从方式会存在一些痛点，比如：  每个 Slave 的配置环境不一样，来完成不同语言的编译打包等操作，但是这些差异化的配置导致管理起来非常不方">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://p.k8s.li/k8s-jenkins-slave.png">
+<meta property="og:image" content="https://p.k8s.li/image-20210306102735594.png">
+<meta property="og:image" content="https://p.k8s.li/image-20210306103352837.png">
+<meta property="og:image" content="https://p.k8s.li/image-20210306111626079.png">
+<meta property="og:image" content="https://p.k8s.li/image-20210306111037947.png">
+<meta property="og:image" content="https://p.k8s.li/image-20210306111148462.png">
+<meta property="og:image" content="https://p.k8s.li/image-20210306185651025.png">
+<meta property="og:image" content="https://p.k8s.li/image-20210306185838845.png">
+<meta property="og:image" content="https://p.k8s.li/image-20210306190124096.png">
+<meta property="article:published_time" content="2021-03-05T16:00:00.000Z">
+<meta property="article:modified_time" content="2021-03-06T16:00:00.000Z">
+<meta property="article:author" content="木子">
+<meta property="article:tag" content="kubernetes">
+<meta property="article:tag" content="Jenkins">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://p.k8s.li/k8s-jenkins-slave.png">
+<link rel="canonical" href="https://blog.k8s.li/jenkins-with-kubernetes.html">
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+  <title>Jenkins 大叔与 kubernetes 船长手牵手 🧑‍🤝‍🧑 | 木子</title>
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+<link rel="alternate" href="/atom.xml" title="木子" type="application/atom+xml">
+</head>
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">木子</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+    <a href="/" rel="section"><i class="fa fa-fw fa-desktop"></i>Home</a>
+  </li>
+        <li class="menu-item menu-item-books">
+    <a href="/booklist.html" rel="section"><i class="fa fa-fw fa-book"></i>Books</a>
+  </li>
+        <li class="menu-item menu-item-kindle">
+    <a href="https://kindle.502.li/" rel="noopener" target="_blank"><i class="fa fa-fw fa-book"></i>Kindle</a>
+  </li>
+        <li class="menu-item menu-item-friend">
+    <a href="/link/" rel="section"><i class="fa fa-fw fa-link"></i>Friend</a>
+  </li>
+        <li class="menu-item menu-item-about">
+    <a href="/about.html" rel="section"><i class="fa fa-fw fa-user-circle-o"></i>About</a>
+  </li>
+  </ul>
+</nav>
+</div>
+    </header>
+  <div class="reading-progress-bar"></div>
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div class="content">
+  <div class="posts-expand">
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.k8s.li/jenkins-with-kubernetes.html">
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://blog.k8s.li/avatar.png">
+      <meta itemprop="name" content="木子">
+      <meta itemprop="description" content="">
+    </span>
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木子">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          Jenkins 大叔与 kubernetes 船长手牵手 🧑‍🤝‍🧑
+        </h2>
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              <time title="创建时间：2021-03-06 2021-03-06T00:00:00+08:00" itemprop="dateCreated datePublished" datetime="2021-03-06T00:00:00+08:00">2021-03-06</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-03-07 2021-03-07T00:00:00+08:00" itemprop="dateModified" datetime="2021-03-07T00:00:00+08:00">2021-03-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%8A%80%E6%9C%AF/" itemprop="url" rel="index">
+                    <span itemprop="name">技术</span>
+                  </a>
+                </span>
+            </span>
+  <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-comment-o"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    <a title="disqus" href="/jenkins-with-kubernetes.html#comments" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="jenkins-with-kubernetes.html" itemprop="commentCount"></span>
+    </a>
+  </span>
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>9.6k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>16 分钟</span>
+            </span>
+        </div>
+      </header>
+    <div class="post-body" itemprop="articleBody">
+        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>虽然云原生时代有了 <a href="https://jenkins-x.io/" target="_blank" rel="noopener">JenkinsX</a>、<a href="https://www.drone.io/" target="_blank" rel="noopener">Drone</a>、<a href="https://tekton.dev" target="_blank" rel="noopener">Tekton</a> 这样的后起之秀，但 Jenkins 这样一个老牌的 CI/CD 工具仍是各大公司主流的使用方案。比如我司的私有云产品打包发布就是用这老家伙完成的。然而传统的 Jenkins Slave 一主多从方式会存在一些痛点，比如：</p>
+<ul>
+<li>每个 Slave 的配置环境不一样，来完成不同语言的编译打包等操作，但是这些差异化的配置导致管理起来非常不方便，维护起来也是比较费劲</li>
+<li>资源分配不均衡，有的 Slave 要运行的 job 出现排队等待，而有的 Slave 处于空闲状态</li>
+<li>资源有浪费，每台 Slave 可能是物理机或者虚拟机，当 Slave 处于空闲状态时，也不会完全释放掉资源。</li>
+</ul>
+<p>正因为上面的 Jenkins slave 存在这些种种痛点，我们渴望一种更高效更可靠的方式来完成这个 CI/CD 流程，而 Docker 虚拟化容器技术能很好的解决这个痛点，又特别是在 Kubernetes 集群环境下面能够更好来解决上面的问题，下图是基于 Kubernetes 搭建 Jenkins slave 集群的简单示意图：</p>
+<p><img src="https://p.k8s.li/k8s-jenkins-slave.png" alt="k8s-jenkins"></p>
+<p>从图上可以看到 Jenkins Master 时以 docker-compose 的方式运行在一个节点上。Jenkins Slave 以 Pod 形式运行在 Kubernetes 集群的 Node 上，并且它不是一直处于运行状态，它会按照需求动态的创建并自动删除。这种方式的工作流程大致为：当 Jenkins Master 接受到 Build 请求时，会根据配置的 Label 动态创建一个运行在 Pod 中的 Jenkins Slave 并注册到 Master 上，当运行完 Job 后，这个 Slave 会被注销并且这个 Pod 也会自动删除，恢复到最初状态。</p>
+<p>那么我们使用这种方式带来了以下好处：</p>
+<ul>
+<li><strong>动态伸缩</strong>，合理使用资源，每次运行 Job 时，会自动创建一个 Jenkins Slave，Job 完成后，Slave 自动注销并删除容器，资源自动释放，而且 Kubernetes 会根据每个资源的使用情况，动态分配 Slave 到空闲的节点上创建，降低出现因某节点资源利用率高，还排队等待在该节点的情况。</li>
+<li><strong>扩展性好</strong>，当 Kubernetes 集群的资源严重不足而导致 Job 排队等待时，可以很容易的添加一个 Kubernetes Node 到集群中，从而实现扩展。</li>
+</ul>
+<p>上面的大半段复制粘贴自 <a href="https://www.qikqiak.com/k8s-book/docs/36.Jenkins%20Slave.html" target="_blank" rel="noopener">基于 Jenkins 的 CI/CD (一)</a> 🤐</p>
+<h2 id="kubernetes-集群"><a href="#kubernetes-集群" class="headerlink" title="kubernetes 集群"></a>kubernetes 集群</h2><p>关于 kubernetes 集群部署，使用 kubeadm 部署是最为方便的了，可参考我很早之前写过的文章《<a href="https://blog.k8s.li/kubeadm-deploy-k8s-v1.17.4.html">使用 kubeadm 快速部署体验 K8s</a>》，在这里只是简单介绍一下：</p>
+<ul>
+<li>使用 kubeadm 来创建一个单 master 节点的 kubernets 集群</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">root@jenkins:~ <span class="comment"># kubeadm init --pod-network-cidr=10.244.0.0/16 --apiserver-advertise-address=192.168.20.11</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>集群成功部署完成之后会有如下提示：</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Your Kubernetes control-plane has initialized successfully!</span><br><span class="line">To start using your cluster, you need to run the following as a regular user:</span><br><span class="line">  mkdir -p <span class="variable">$HOME</span>/.kube</span><br><span class="line">  sudo cp -i /etc/kubernetes/admin.conf <span class="variable">$HOME</span>/.kube/config</span><br><span class="line">  sudo chown $(id -u):$(id -g) <span class="variable">$HOME</span>/.kube/config</span><br></pre></td></tr></table></figure>
+<ul>
+<li>查看节点状态和 pod 都已经正常</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">root@jenkins:~ <span class="comment"># kubectl get pod -A</span></span><br><span class="line">NAMESPACE     NAME                              READY   STATUS    RESTARTS   AGE</span><br><span class="line">kube-system   coredns-f9fd979d6-9t6qp           1/1     Running   0          89s</span><br><span class="line">kube-system   coredns-f9fd979d6-hntm8           1/1     Running   0          89s</span><br><span class="line">kube-system   etcd-jenkins                      1/1     Running   0          106s</span><br><span class="line">kube-system   kube-apiserver-jenkins            1/1     Running   0          106s</span><br><span class="line">kube-system   kube-controller-manager-jenkins   1/1     Running   0          106s</span><br><span class="line">kube-system   kube-proxy-8pzkz                  1/1     Running   0          89s</span><br><span class="line">kube-system   kube-scheduler-jenkins            1/1     Running   0          106s</span><br><span class="line">root@jenkins:~ <span class="comment"># kubectl get node</span></span><br><span class="line">NAME      STATUS   ROLES    AGE    VERSION</span><br><span class="line">jenkins   Ready    master   119s   v1.19.8</span><br></pre></td></tr></table></figure>
+<ul>
+<li>去除 master 节点上的污点，允许其他的 pod 调度在 master 节点上，不然后面 Jenkins 所创建的 pod 将无法调度在该节点上。</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl taint nodes $(hostname) node-role.kubernetes.io/master:NoSchedule-</span><br></pre></td></tr></table></figure>
+<h2 id="Jenkins-master"><a href="#Jenkins-master" class="headerlink" title="Jenkins master"></a>Jenkins master</h2><p>至于  Jenkins master 的部署方式，个人建议使用 docker-compose 来部署。运行在 kubernetes 集群集群中也没什么毛病，可以参考 <a href="https://www.qikqiak.com/k8s-book/docs/36.Jenkins%20Slave.html" target="_blank" rel="noopener">基于 Jenkins 的 CI/CD (一)</a> 这篇博客。但从个人运维踩的坑来讲，还是将  Jenkins master 独立于 kubernetes 集群部署比较方便😂。</p>
+<ul>
+<li><code>docker-compose.yaml</code></li>
+</ul>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">version:</span> <span class="string">'3.6'</span></span><br><span class="line"><span class="attr">services:</span></span><br><span class="line">  <span class="attr">jenkins:</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">jenkins/jenkins:2.263.4-lts-slim</span></span><br><span class="line">    <span class="attr">container_name:</span> <span class="string">jenkins</span></span><br><span class="line">    <span class="attr">restart:</span> <span class="string">always</span></span><br><span class="line">    <span class="attr">volumes:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">./jenkins_home:/var/jenkins_home</span></span><br><span class="line">    <span class="attr">network_mode:</span> <span class="string">host</span></span><br><span class="line">    <span class="attr">user:</span> <span class="string">root</span></span><br><span class="line">    <span class="attr">environment:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">JAVA_OPTS=-Duser.timezone=Asia/Shanghai</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>使用 docker-compose up 来启动，成功启动后会有如下提示，日志输出的密钥就是 <code>admin</code> 用户的默认密码，使用它来第一次登录 Jenkins。</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">jenkins    | 2021-03-06 02:22:31.741+0000 [id=41]	INFO	jenkins.install.SetupWizard<span class="comment">#init:</span></span><br><span class="line">jenkins    |</span><br><span class="line">jenkins    | *************************************************************</span><br><span class="line">jenkins    | *************************************************************</span><br><span class="line">jenkins    | *************************************************************</span><br><span class="line">jenkins    |</span><br><span class="line">jenkins    | Jenkins initial setup is required. An admin user has been created and a password generated.</span><br><span class="line">jenkins    | Please use the following password to proceed to installation:</span><br><span class="line">jenkins    |</span><br><span class="line">jenkins    | 4c2361968cd94323acdde17f7603d8e1</span><br><span class="line">jenkins    |</span><br><span class="line">jenkins    | This may also be found at: /var/jenkins_home/secrets/initialAdminPassword</span><br><span class="line">jenkins    |</span><br><span class="line">jenkins    | *************************************************************</span><br><span class="line">jenkins    | *************************************************************</span><br><span class="line">jenkins    | *************************************************************</span><br></pre></td></tr></table></figure>
+<ul>
+<li>登录上去之后，建议选择 <code>选择插件来安装</code>，尽可能少地安装插件，按需安装即可。</li>
+</ul>
+<p><img src="https://p.k8s.li/image-20210306102735594.png" alt="image-20210306102735594"></p>
+<ul>
+<li>在 Jenkins 的插件管理那里安装上 kubernetes 插件</li>
+<li><img src="https://p.k8s.li/image-20210306103352837.png" alt="image-20210306103352837"></li>
+<li>接下来开始配置 Jenkins 大叔如何与 kubernetes 船长手牵手🧑‍🤝‍🧑 :-)。配置 kubernets 的地方是在 <code>系统管理 &gt; 节点管理 &gt; Configure Clouds</code>。点击 <code>Add a new cloud</code>，来添加一个 kubernetes 集群。</li>
+</ul>
+<p><img src="https://p.k8s.li/image-20210306111626079.png" alt="image-20210306111626079"></p>
+<ul>
+<li>配置连接参数</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>名称</td>
+<td>kubernetes</td>
+<td>也是后面 pod 模板中的 <code>cloud</code> 的值</td>
+</tr>
+<tr>
+<td>凭据</td>
+<td>kubeconfig 凭据 id</td>
+<td>使用 kubeconfig 文件来连接集群</td>
+</tr>
+<tr>
+<td>Kubernetes 地址</td>
+<td>默认即可</td>
+<td></td>
+</tr>
+<tr>
+<td>Use Jenkins Proxy</td>
+<td>默认即可</td>
+<td></td>
+</tr>
+<tr>
+<td>Kubernetes 服务证书 key</td>
+<td>默认即可</td>
+<td></td>
+</tr>
+<tr>
+<td>禁用 HTTPS 证书检查</td>
+<td>默认即可</td>
+<td></td>
+</tr>
+<tr>
+<td>Kubernetes 命名空间</td>
+<td>默认即可</td>
+<td></td>
+</tr>
+<tr>
+<td>WebSocket</td>
+<td>默认即可</td>
+<td></td>
+</tr>
+<tr>
+<td>Direct Connection</td>
+<td>默认即可</td>
+<td></td>
+</tr>
+<tr>
+<td>Jenkins 地址</td>
+<td><a href="http://jenkins.k8s.li:8080" target="_blank" rel="noopener">http://jenkins.k8s.li:8080</a></td>
+<td>Jenkins pod 连接  Jenkins master 的  URL</td>
+</tr>
+<tr>
+<td>Jenkins 通道</td>
+<td>50000</td>
+<td>Jenkins <code>JNLP</code> 的端口，默认为 50000</td>
+</tr>
+<tr>
+<td>Connection Timeout</td>
+<td>默认即可</td>
+<td>Jenkins 连接 kubernetes 超时时间</td>
+</tr>
+<tr>
+<td>Read Timeout</td>
+<td>默认即可</td>
+<td></td>
+</tr>
+<tr>
+<td>容器数量</td>
+<td>默认即可</td>
+<td>Jenkins pod 创建的最大数量</td>
+</tr>
+<tr>
+<td>Pod Labels</td>
+<td>默认即可</td>
+<td>Jenkins pod 的 lables</td>
+</tr>
+<tr>
+<td>连接 Kubernetes API 的最大连接数</td>
+<td>默认即可</td>
+<td></td>
+</tr>
+<tr>
+<td>Seconds to wait for pod to be running</td>
+<td>默认即可</td>
+<td>等待 pod 正常 running 的时间</td>
+</tr>
+</tbody></table>
+<ul>
+<li>在 Jenkins 的凭据那里添加上 kubeconfig 文件，凭据的类型选择为 <code>Secret file</code>，然后将上面使用 kubeadm 部署生成的 kubeconfig 上传到这里。</li>
+</ul>
+<p><img src="https://p.k8s.li/image-20210306111037947.png" alt="image-20210306111037947"></p>
+<ul>
+<li>点击连接测试，如果提示 <code>Connected to Kubernetes v1.19.8</code> 就说明已经成功连接上了 kubernetes 集群。</li>
+</ul>
+<p><img src="https://p.k8s.li/image-20210306111148462.png" alt="image-20210306111148462"></p>
+<ul>
+<li>关于 pod 模板</li>
+</ul>
+<p>其实就是配置 Jenkins Slave 运行的 Pod 模板，个人不太建议使用插件中的模板去配置，推荐将 pod 的模板放在 Jenkinsfile 中，因为这些配置与我们的流水线紧密相关，把 pod 的配置存储在 Jenkins 的插件里实在是不太方便；不方便后续的迁移备份之类的工作；后续插件升级后这些配置也可能会丢失。因此建议将 pod 模板的配置直接定义在 Jenkinsfile 中，灵活性更高一些，不会受 Jenkins 插件升级的影响。总之用代码去管理这些 pod 配置维护成本将会少很多。</p>
+<h2 id="Jenkinsfile"><a href="#Jenkinsfile" class="headerlink" title="Jenkinsfile"></a>Jenkinsfile</h2><ul>
+<li>流水线 <code>Jenkinsfile</code>，下面是一个简单的任务，用于构建 <a href="https://github.com/webp-sh/webp_server_go" target="_blank" rel="noopener">webp-server-go</a> 项目的 docker 镜像。</li>
+</ul>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">//</span> <span class="string">Kubernetes</span> <span class="string">pod</span> <span class="string">template</span> <span class="string">to</span> <span class="string">run.</span></span><br><span class="line"><span class="string">def</span> <span class="string">JOB_NAME</span> <span class="string">=</span> <span class="string">"$&#123;env.JOB_NAME&#125;"</span></span><br><span class="line"><span class="string">def</span> <span class="string">BUILD_NUMBER</span> <span class="string">=</span> <span class="string">"$&#123;env.BUILD_NUMBER&#125;"</span></span><br><span class="line"><span class="string">def</span> <span class="string">POD_NAME</span> <span class="string">=</span> <span class="string">"jenkins-$&#123;JOB_NAME&#125;-$&#123;BUILD_NUMBER&#125;"</span></span><br><span class="line"><span class="string">podTemplate(</span></span><br><span class="line"><span class="comment"># 这里定义 pod 模版</span></span><br><span class="line"><span class="string">)</span></span><br><span class="line"><span class="string">&#123;</span> <span class="string">node(POD_NAME)</span> <span class="string">&#123;</span></span><br><span class="line">    <span class="string">container(JOB_NAME)</span> <span class="string">&#123;</span></span><br><span class="line">      <span class="string">stage("Build</span> <span class="string">image")</span> <span class="string">&#123;</span></span><br><span class="line">        <span class="string">sh</span> <span class="string">""</span><span class="string">"#!/bin/bash</span></span><br><span class="line"><span class="string">          git clone https://github.com/webp-sh/webp_server_go /build</span></span><br><span class="line"><span class="string">          cd /build</span></span><br><span class="line"><span class="string">          docker build -t webps:0.3.2-rc.1 .</span></span><br><span class="line"><span class="string">        "</span><span class="string">""</span></span><br><span class="line">      <span class="string">&#125;</span></span><br><span class="line">    <span class="string">&#125;</span></span><br><span class="line">  <span class="string">&#125;</span></span><br><span class="line"><span class="string">&#125;</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>pod 模版如下，将模板的内容复制粘贴到上面的 Jenkinsfile 中。在容器中构建镜像，我们使用 dind 的方案：将 pod 所在宿主机的 docker sock 文件挂载到 pod 的容器内，pod 容器内只要安装好 docker-cli 工具就可以像宿主机那样直接使用 docker 了。</li>
+</ul>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">podTemplate(</span></span><br><span class="line">  <span class="attr">cloud:</span> <span class="string">"kubernetes"</span><span class="string">,</span></span><br><span class="line">  <span class="attr">namespace:</span> <span class="string">"default"</span><span class="string">,</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">POD_NAME,</span></span><br><span class="line">  <span class="attr">label:</span> <span class="string">POD_NAME,</span></span><br><span class="line">  <span class="attr">yaml:</span> <span class="string">""</span><span class="string">"</span></span><br><span class="line"><span class="string">apiVersion: v1</span></span><br><span class="line"><span class="string">kind: Pod</span></span><br><span class="line"><span class="string">spec:</span></span><br><span class="line"><span class="string">  containers:</span></span><br><span class="line"><span class="string">  - name: $&#123;JOB_NAME&#125;</span></span><br><span class="line"><span class="string">    image: "</span><span class="string">debian:buster-docker"</span></span><br><span class="line">    <span class="attr">imagePullPolicy:</span> <span class="string">IfNotPresent</span></span><br><span class="line">    <span class="attr">tty:</span> <span class="literal">true</span></span><br><span class="line">    <span class="attr">volumeMounts:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">dockersock</span></span><br><span class="line">      <span class="attr">mountPath:</span> <span class="string">/var/run/docker.sock</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">jnlp</span></span><br><span class="line">    <span class="attr">args:</span> <span class="string">["\$(JENKINS_SECRET)",</span> <span class="string">"\$(JENKINS_NAME)"</span><span class="string">]</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">"jenkins/inbound-agent:4.3-4-alpine"</span></span><br><span class="line">    <span class="attr">imagePullPolicy:</span> <span class="string">IfNotPresent</span></span><br><span class="line">  <span class="attr">volumes:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">dockersock</span></span><br><span class="line">    <span class="attr">hostPath:</span></span><br><span class="line">      <span class="attr">path:</span> <span class="string">/var/run/docker.sock</span></span><br><span class="line"><span class="string">""</span><span class="string">",</span></span><br><span class="line"><span class="string">)</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>构建 <code>debian:buster-docker</code> 镜像，使用它来在 pod 的容器内构建 docker 镜像，使用的 <code>Dockerfile</code> 如下：</li>
+</ul>
+<figure class="highlight dockerfile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">FROM</span> debian:buster</span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> apt update \</span></span><br><span class="line"><span class="bash">    &amp;&amp; apt install -y --no-install-recommends \</span></span><br><span class="line"><span class="bash">        vim \</span></span><br><span class="line"><span class="bash">        curl \</span></span><br><span class="line"><span class="bash">        git \</span></span><br><span class="line"><span class="bash">        make \</span></span><br><span class="line"><span class="bash">        ca-certificates \</span></span><br><span class="line"><span class="bash">        gnupg \</span></span><br><span class="line"><span class="bash">    &amp;&amp; rm -rf /var/lib/apt/lists/*</span></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> curl -fsSL <span class="string">"https://download.docker.com/linux/debian/gpg"</span> | apt-key add -qq - &gt;/dev/null \</span></span><br><span class="line"><span class="bash">    &amp;&amp; <span class="built_in">echo</span> <span class="string">"deb [arch=amd64] https://download.docker.com/linux/debian buster stable"</span> &gt; /etc/apt/sources.list.d/docker.list \</span></span><br><span class="line"><span class="bash">    &amp;&amp; apt update -qq \</span></span><br><span class="line"><span class="bash">    &amp;&amp; apt-get install -y -qq --no-install-recommends docker-ce-cli \</span></span><br><span class="line"><span class="bash">    &amp;&amp; rm -rf /var/lib/apt/lists/*</span></span><br></pre></td></tr></table></figure>
+<p>定义好 jenkinsfile 文件并且构建好 pod 模板中的镜像后，接下来我们开始使用它来创建流水线任务。</p>
+<h2 id="流水线"><a href="#流水线" class="headerlink" title="流水线"></a>流水线</h2><ul>
+<li>在 Jenkins 上新建一个任务，选择任务的类型为 <code>流水线</code></li>
+</ul>
+<p><img src="https://p.k8s.li/image-20210306185651025.png" alt="image-20210306185651025"></p>
+<ul>
+<li>将定义好的 Jenkinsfile 内容复制粘贴到流水线定义 <code>Pipeline script</code> 中并点击保存。在新建好的 Job 页面点击 <code>立即构建</code> 来运行流水线任务。</li>
+</ul>
+<p><img src="https://p.k8s.li/image-20210306185838845.png" alt="image-20210306185838845"></p>
+<ul>
+<li>在 kubernetes 集群的机器上使用 kubectl 命令查看 pod 是否正常 Running</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">root@jenkins:~ <span class="comment"># kubectl get pod</span></span><br><span class="line">NAME                              READY   STATUS    RESTARTS   AGE</span><br><span class="line">jenkins-webps-9-bs78x-5x204   2/2     Running   0          66s</span><br></pre></td></tr></table></figure>
+<ul>
+<li>Job 正常运行并且状态为绿色表明该 job 已经成功执行了。</li>
+</ul>
+<p><img src="https://p.k8s.li/image-20210306190124096.png" alt="image-20210306190124096"></p>
+<ul>
+<li>在 kubernetes 集群机器上查看 docker 镜像是否构建成功</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">root@jenkins:~ <span class="comment"># docker images | grep webps</span></span><br><span class="line">webps                                0.3.2-rc.1          f68f496c0444        20 minutes ago      13.7MB</span><br></pre></td></tr></table></figure>
+<h2 id="踩坑"><a href="#踩坑" class="headerlink" title="踩坑"></a>踩坑</h2><ul>
+<li>pod 无法正常 Running</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">Running <span class="keyword">in</span> Durability level: MAX_SURVIVABILITY</span><br><span class="line">[Pipeline] Start of Pipeline</span><br><span class="line">[Pipeline] podTemplate</span><br><span class="line">[Pipeline] &#123;</span><br><span class="line">[Pipeline] node</span><br><span class="line">Created Pod: kubernetes default/debian-35a11b49-087b-4a8c-abac-bd97d7eb5a1f-fkmzq-9wm0r</span><br><span class="line">[Normal][default/debian-35a11b49-087b-4a8c-abac-bd97d7eb5a1f-fkmzq-9wm0r][Scheduled] Successfully assigned default/debian-35a11b49-087b-4a8c-abac-bd97d7eb5a1f-fkmzq-9wm0r to jenkins</span><br><span class="line">[Normal][default/debian-35a11b49-087b-4a8c-abac-bd97d7eb5a1f-fkmzq-9wm0r][Pulling] Pulling image <span class="string">"debian:buster"</span></span><br><span class="line">[Normal][default/debian-35a11b49-087b-4a8c-abac-bd97d7eb5a1f-fkmzq-9wm0r][Pulled] Successfully pulled image <span class="string">"debian:buster"</span> <span class="keyword">in</span> 2.210576896s</span><br><span class="line">[Normal][default/debian-35a11b49-087b-4a8c-abac-bd97d7eb5a1f-fkmzq-9wm0r][Created] Created container debian</span><br><span class="line">[Normal][default/debian-35a11b49-087b-4a8c-abac-bd97d7eb5a1f-fkmzq-9wm0r][Started] Started container debian</span><br><span class="line">[Normal][default/debian-35a11b49-087b-4a8c-abac-bd97d7eb5a1f-fkmzq-9wm0r][Pulling] Pulling image <span class="string">"jenkins/inbound-agent:4.3-4-alpine"</span></span><br><span class="line">Still waiting to schedule task</span><br><span class="line">‘debian-35a11b49-087b-4a8c-abac-bd97d7eb5a1f-fkmzq-9wm0r’ is offline</span><br><span class="line">[Normal][default/debian-35a11b49-087b-4a8c-abac-bd97d7eb5a1f-fkmzq-9wm0r][Pulled] Successfully pulled image <span class="string">"jenkins/inbound-agent:4.3-4-alpine"</span> <span class="keyword">in</span> 3.168311973s</span><br><span class="line">[Normal][default/debian-35a11b49-087b-4a8c-abac-bd97d7eb5a1f-fkmzq-9wm0r][Created] Created container jnlp</span><br><span class="line">[Normal][default/debian-35a11b49-087b-4a8c-abac-bd97d7eb5a1f-fkmzq-9wm0r][Started] Started container jnlp</span><br><span class="line">Created Pod: kubernetes default/debian-35a11b49-087b-4a8c-abac-bd97d7eb5a1f-fkmzq-qdw4m</span><br><span class="line">[Normal][default/debian-35a11b49-087b-4a8c-abac-bd97d7eb5a1f-fkmzq-qdw4m][Scheduled] Successfully assigned default/debian-35a11b49-087b-4a8c-abac-bd97d7eb5a1f-fkmzq-qdw4m to jenkins</span><br><span class="line">[Normal][default/debian-35a11b49-087b-4a8c-abac-bd97d7eb5a1f-fkmzq-qdw4m][Pulled] Container image <span class="string">"debian:buster"</span> already present on machine</span><br><span class="line">[Normal][default/debian-35a11b49-087b-4a8c-abac-bd97d7eb5a1f-fkmzq-qdw4m][Created] Created container debian</span><br><span class="line">[Normal][default/debian-35a11b49-087b-4a8c-abac-bd97d7eb5a1f-fkmzq-qdw4m][Started] Started container debian</span><br><span class="line">[Normal][default/debian-35a11b49-087b-4a8c-abac-bd97d7eb5a1f-fkmzq-qdw4m][Pulled] Container image <span class="string">"jenkins/inbound-agent:4.3-4-alpine"</span> already present on machine</span><br><span class="line">[Normal][default/debian-35a11b49-087b-4a8c-abac-bd97d7eb5a1f-fkmzq-qdw4m][Created] Created container jnlp</span><br><span class="line">[Normal][default/debian-35a11b49-087b-4a8c-abac-bd97d7eb5a1f-fkmzq-qdw4m][Started] Started container jnlp</span><br></pre></td></tr></table></figure>
+<p>这是因为 Jenkins pod 中的 jnlp 容器无法连接  Jenkins master。可以检查一下 Jenkins master 上 <code>系统管理 &gt; 节点管理 &gt; Configure Clouds</code> 中 <code>Jenkins 地址</code> 和 <code>Jenkins 通道</code> 这两个参数是否配置正确。</p>
+<h2 id="结束"><a href="#结束" class="headerlink" title="结束"></a>结束</h2><p>到此为止，我们就完成了让 Jenkins 大叔与 kubernetes 船长手牵手🧑‍🤝‍🧑啦！上面使用了一个简单的例子来展示了如何将 Jenkins 的 Job 任务运行在 kubernetes 集群上，但在实际工作中遇到的情形可能比这要复杂一些，流水线需要配置的参数也要多一些。那么我将会在下一篇博客中再讲一下高级的用法：使用 Jenkins 完成 kubespray 离线安装包打包。</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ul>
+<li><p><a href="https://jenkins-zh.cn/wechat/articles/2020/03/2020-03-10-create-a-ci-cd-pipeline-with-kubernetes-and-jenkins/" target="_blank" rel="noopener">使用 Kubernetes 和 Jenkins 创建一个 CI/CD 流水线</a></p>
+</li>
+<li><p><a href="https://www.qikqiak.com/k8s-book/docs/36.Jenkins%20Slave.html" target="_blank" rel="noopener">基于 Jenkins 的 CI/CD (一)</a></p>
+</li>
+<li><p><a href="https://a-wing.top/kubernetes/2021/01/27/jenkins_and_kubernetes.html" target="_blank" rel="noopener">PingCAP 面试：Jenkins 和 Kubernetes</a></p>
+</li>
+<li><p><a href="https://www.chenshaowen.com/blog/using-podman-to-build-images-under-kubernetes-and-jenkins.html" target="_blank" rel="noopener">基于 Kubernetes 的 Jenkins 服务也可以去 Docker 了</a></p>
+</li>
+<li><p><a href="https://www.chenshaowen.com/blog/jenkins-pipeline-usging-and-debug.html" target="_blank" rel="noopener">Jenkins Pipeline 使用及调试</a></p>
+</li>
+<li><p><a href="https://www.chenshaowen.com/blog/creating-jenkins-slave-dynamically-on-kubernetes.html" target="_blank" rel="noopener">在 Kubernetes 上动态创建 Jenkins Slave</a></p>
+</li>
+<li><p><a href="https://www.chenshaowen.com/blog/jenkins-x-is-not-jenkins-but-stack.html" target="_blank" rel="noopener">Jenkins X 不是 Jenkins ，而是一个技术栈</a></p>
+</li>
+<li><p><a href="https://atbug.com/using-role-based-authorization-strategy-in-jenkins/" target="_blank" rel="noopener">Jenkins CI/CD (一) 基于角色的授权策略</a></p>
+</li>
+</ul>
+    </div>
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/kubernetes/" rel="tag"><i class="fa fa-tag"></i> kubernetes</a>
+              <a href="/tags/Jenkins/" rel="tag"><i class="fa fa-tag"></i> Jenkins</a>
+          </div>
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/overlay2-on-package-pipline.html" rel="prev" title="overlay2 在打包发布流水线中的应用">
+      <i class="fa fa-chevron-left"></i> overlay2 在打包发布流水线中的应用
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+  </article>
+  </div>
+          </div>
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+        </div>
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#背景"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#kubernetes-集群"><span class="nav-number">2.</span> <span class="nav-text">kubernetes 集群</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Jenkins-master"><span class="nav-number">3.</span> <span class="nav-text">Jenkins master</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Jenkinsfile"><span class="nav-number">4.</span> <span class="nav-text">Jenkinsfile</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#流水线"><span class="nav-number">5.</span> <span class="nav-text">流水线</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#踩坑"><span class="nav-number">6.</span> <span class="nav-text">踩坑</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#结束"><span class="nav-number">7.</span> <span class="nav-text">结束</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考"><span class="nav-number">8.</span> <span class="nav-text">参考</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木子"
+      src="https://blog.k8s.li/avatar.png">
+  <p class="site-author-name" itemprop="name">木子</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">91</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">114</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/muzi502" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;muzi502" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:blog@502.li" title="E-Mail → mailto:blog@502.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://twitter.com/muzi_ii" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;muzi_ii" rel="noopener" target="_blank"><i class="fa fa-fw fa-twitter"></i>Twitter</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://t.me/muzi_ii" title="Telegram → https:&#x2F;&#x2F;t.me&#x2F;muzi_ii" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Telegram</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://kindle.502.li/" title="Kindle → https:&#x2F;&#x2F;kindle.502.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-book"></i>Kindle</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://tg.k8s.li/" title="Channel → https:&#x2F;&#x2F;tg.k8s.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Channel</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-fw fa-rss"></i>RSS</a>
+      </span>
+  </div>
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+      </div>
+    </main>
+    <footer class="footer">
+      <div class="footer-inner">
+<div class="copyright">
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木子</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">1.3m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">36:28</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">主题 – <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a>
+  </div>
+      </div>
+    </footer>
+  </div>
+  <script src="/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script>
+<script src="/js/schemes/pisces.js"></script>
+<script src="/js/next-boot.js"></script>
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://muzi.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: {page: {
+            url: "https://blog.k8s.li/jenkins-with-kubernetes.html",
+            identifier: "jenkins-with-kubernetes.html",
+            title: "Jenkins 大叔与 kubernetes 船长手牵手 🧑‍🤝‍🧑"
+          }
+        }
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://muzi.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+</body>
+</html>
