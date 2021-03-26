@@ -55,7 +55,7 @@
 <meta property="og:image" content="https://p.k8s.li/registry-storage.jpeg">
 <meta property="og:image" content="https://p.k8s.li/registry-storage.jpeg">
 <meta property="og:image" content="https://p.k8s.li/2021-03-01_09-18-19.jpg">
-<meta property="og:image" content="https://blog.k8s.li/img/2021-03-01-002.jpeg">
+<meta property="og:image" content="https://p.k8s.li/2021-03-01-002.jpeg">
 <meta property="article:published_time" content="2021-03-01T16:00:00.000Z">
 <meta property="article:modified_time" content="2021-03-01T16:00:00.000Z">
 <meta property="article:author" content="木子">
@@ -313,7 +313,7 @@
 <p>解决办法就是使用我在 <a href="https://blog.k8s.li/registry-gc.html">docker registry GC 原理分析</a> 文章中提到的方案：自制 registry GC 脚本🙃。</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#!/bin/bash</span></span><br><span class="line">v2=<span class="variable">$1</span></span><br><span class="line">v2=<span class="variable">$&#123;v2:="/var/lib/registry/docker/registry/v2"&#125;</span></span><br><span class="line"><span class="built_in">cd</span> <span class="variable">$&#123;v2&#125;</span></span><br><span class="line">all_blobs=/tmp/all_blobs.list</span><br><span class="line">: &gt; <span class="variable">$&#123;all_blobs&#125;</span></span><br><span class="line"><span class="comment"># delete unlink blob's link file in _layers</span></span><br><span class="line"><span class="keyword">for</span> link <span class="keyword">in</span> $(find repositories -<span class="built_in">type</span> f -name <span class="string">"link"</span> | grep -E <span class="string">"_layers\/sha256\/.*"</span>); <span class="keyword">do</span></span><br><span class="line">    link_sha256=$(<span class="built_in">echo</span> <span class="variable">$&#123;link&#125;</span> | grep -Eo <span class="string">"_layers\/sha256\/.*"</span> | sed <span class="string">'s/_layers\/sha256\///g;s/\/link//g'</span>)</span><br><span class="line">    link_short=<span class="variable">$&#123;link:0:2&#125;</span></span><br><span class="line">    link_dir=$(<span class="built_in">echo</span> <span class="variable">$&#123;link&#125;</span> | sed <span class="string">'s/\/link//'</span>)</span><br><span class="line">    data_file=blobs/sha256/<span class="variable">$&#123;link_short&#125;</span>/<span class="variable">$&#123;link&#125;</span></span><br><span class="line">    <span class="keyword">if</span> [[ ! -d <span class="variable">$&#123;data_file&#125;</span> ]]; <span class="keyword">then</span> rm -rf <span class="variable">$&#123;link_dir&#125;</span>; <span class="keyword">fi</span></span><br><span class="line"><span class="keyword">done</span></span><br><span class="line"><span class="comment">#marking all the blob by all images manifest</span></span><br><span class="line"><span class="keyword">for</span> tag <span class="keyword">in</span> $(find repositories -name <span class="string">"link"</span> | grep current); <span class="keyword">do</span></span><br><span class="line">    link=$(cat <span class="variable">$&#123;tag&#125;</span> | cut -c8-71)</span><br><span class="line">    mfs=blobs/sha256/<span class="variable">$&#123;link:0:2&#125;</span>/<span class="variable">$&#123;link&#125;</span>/data</span><br><span class="line">    <span class="built_in">echo</span> <span class="variable">$&#123;link&#125;</span> &gt;&gt; <span class="variable">$&#123;all_blobs&#125;</span></span><br><span class="line">    grep -Eo <span class="string">"\b[a-f0-9]&#123;64&#125;\b"</span> <span class="variable">$&#123;mfs&#125;</span> | sort -n | uniq | cut -c1-12 &gt;&gt; <span class="variable">$&#123;all_blobs&#125;</span></span><br><span class="line"><span class="keyword">done</span></span><br><span class="line"><span class="comment">#delete blob if the blob doesn't exist in all_blobs.list</span></span><br><span class="line"><span class="keyword">for</span> blob <span class="keyword">in</span> $(find blobs -name <span class="string">"data"</span> | cut -d <span class="string">"/"</span> -f4); <span class="keyword">do</span></span><br><span class="line">    <span class="keyword">if</span> ! grep <span class="variable">$&#123;blob&#125;</span> <span class="variable">$&#123;all_blobs&#125;</span>; <span class="keyword">then</span></span><br><span class="line">        rm -rf blobs/sha256/<span class="variable">$&#123;blob:0:2&#125;</span>/<span class="variable">$&#123;blob&#125;</span></span><br><span class="line">    <span class="keyword">fi</span></span><br><span class="line"><span class="keyword">done</span></span><br></pre></td></tr></table></figure>
 <h2 id="流程"><a href="#流程" class="headerlink" title="流程"></a>流程</h2><p>好了，至此最终的优化方案已经定下来了，其流程上如下：</p>
-<p><img src="img/2021-03-01-002.jpeg" alt="img"></p>
+<p><img src="https://p.k8s.li/2021-03-01-002.jpeg" alt="img"></p>
 <ul>
 <li>第一次同步镜像的时候不再将镜像同步归档备份的镜像仓库（archive.registry.local） 而是同步到 overlay2 的镜像仓库，这个镜像仓库中的镜像将作为第二次镜像同步的 lower 层。</li>
 </ul>
@@ -433,7 +433,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
           <a href="/archives">
-          <span class="site-state-item-count">91</span>
+          <span class="site-state-item-count">92</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -444,7 +444,7 @@
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
-        <span class="site-state-item-count">114</span>
+        <span class="site-state-item-count">115</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -502,7 +502,7 @@
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">36:28</span>
+    <span title="站点阅读时长">36:55</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动
   </div>
