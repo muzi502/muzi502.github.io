@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon.ico">
+  <link rel="mask-icon" href="/favicon.ico" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+<link rel="stylesheet" href="/css/main.css">
+<link rel="stylesheet" href="//fonts.loli.net/css?family=Lato:300,300italic,400,400italic,700,700italic|Roboto Mono:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://blog.k8s.li').hostname,
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":true,"scrollpercent":true},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"buttons","active":null,"storage":true,"lazyload":true,"nav":{"disqus":{"text":"Load Disqus","order":-1}}},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":false,"async":true,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+  <meta name="description" content="苦命打包工具人😭目前在负责公司 PaaS toB 产品的打包发布工作（苦命发版+打包工具人😣）。日常的一项工作就是跑完自动化打包流水线，再将打出来的安装包更新到 QA 测试环境中。因为打包环境和测试环境分布在两个不同的机房，产品的安装包需要跨公网从打包机器上同步到 QA 环境中，因此产品安装包的大小就决定着两者间同步的耗时。优化和减少产品安装包的大小就成为了提升流水线效率的途径之一。最近做的一">
+<meta property="og:type" content="article">
+<meta property="og:title" content="如何使用 registry 存储的特性">
+<meta property="og:url" content="https://blog.k8s.li/skopeo-to-registry.html">
+<meta property="og:site_name" content="木子">
+<meta property="og:description" content="苦命打包工具人😭目前在负责公司 PaaS toB 产品的打包发布工作（苦命发版+打包工具人😣）。日常的一项工作就是跑完自动化打包流水线，再将打出来的安装包更新到 QA 测试环境中。因为打包环境和测试环境分布在两个不同的机房，产品的安装包需要跨公网从打包机器上同步到 QA 环境中，因此产品安装包的大小就决定着两者间同步的耗时。优化和减少产品安装包的大小就成为了提升流水线效率的途径之一。最近做的一">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://p.k8s.li/registry-storage.jpeg">
+<meta property="article:published_time" content="2021-04-16T16:00:00.000Z">
+<meta property="article:modified_time" content="2021-04-16T16:00:00.000Z">
+<meta property="article:author" content="木子">
+<meta property="article:tag" content="registry">
+<meta property="article:tag" content="image">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://p.k8s.li/registry-storage.jpeg">
+<link rel="canonical" href="https://blog.k8s.li/skopeo-to-registry.html">
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+  <title>如何使用 registry 存储的特性 | 木子</title>
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+<link rel="alternate" href="/atom.xml" title="木子" type="application/atom+xml">
+</head>
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">木子</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+    <a href="/" rel="section"><i class="fa fa-fw fa-desktop"></i>Home</a>
+  </li>
+        <li class="menu-item menu-item-books">
+    <a href="/booklist.html" rel="section"><i class="fa fa-fw fa-book"></i>Books</a>
+  </li>
+        <li class="menu-item menu-item-kindle">
+    <a href="https://kindle.502.li/" rel="noopener" target="_blank"><i class="fa fa-fw fa-book"></i>Kindle</a>
+  </li>
+        <li class="menu-item menu-item-friend">
+    <a href="/link/" rel="section"><i class="fa fa-fw fa-link"></i>Friend</a>
+  </li>
+        <li class="menu-item menu-item-about">
+    <a href="/about.html" rel="section"><i class="fa fa-fw fa-user-circle-o"></i>About</a>
+  </li>
+  </ul>
+</nav>
+</div>
+    </header>
+  <div class="reading-progress-bar"></div>
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div class="content">
+  <div class="posts-expand">
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.k8s.li/skopeo-to-registry.html">
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://blog.k8s.li/avatar.png">
+      <meta itemprop="name" content="木子">
+      <meta itemprop="description" content="">
+    </span>
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木子">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          如何使用 registry 存储的特性
+        </h2>
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              <time title="创建时间：2021-04-17 2021-04-17T00:00:00+08:00" itemprop="dateCreated datePublished" datetime="2021-04-17T00:00:00+08:00">2021-04-17</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%8A%80%E6%9C%AF/" itemprop="url" rel="index">
+                    <span itemprop="name">技术</span>
+                  </a>
+                </span>
+            </span>
+  <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-comment-o"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    <a title="disqus" href="/skopeo-to-registry.html#comments" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="skopeo-to-registry.html" itemprop="commentCount"></span>
+    </a>
+  </span>
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>13k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>21 分钟</span>
+            </span>
+        </div>
+      </header>
+    <div class="post-body" itemprop="articleBody">
+        <h2 id="苦命打包工具人😭"><a href="#苦命打包工具人😭" class="headerlink" title="苦命打包工具人😭"></a>苦命打包工具人😭</h2><p>目前在负责公司 PaaS toB 产品的打包发布工作（苦命发版+打包工具人😣）。日常的一项工作就是跑完自动化打包流水线，再将打出来的安装包更新到 QA 测试环境中。因为打包环境和测试环境分布在两个不同的机房，产品的安装包需要跨公网从打包机器上同步到 QA 环境中，因此产品安装包的大小就决定着两者间同步的耗时。优化和减少产品安装包的大小就成为了提升流水线效率的途径之一。最近做的一项工作就是将产品补丁包的大小减少 30%～60%，大大节省了补丁包上传下载和安装的耗时，提升了产品打包流水线的效率。因此今天就总结一下从中学到的一点人生经验 👓。</p>
+<h2 id="再次优化"><a href="#再次优化" class="headerlink" title="再次优化"></a>再次优化</h2><p>因为产品所有的组件都是容器化的形式部署的，所以产品的补丁包中最主要的就是镜像文件以及一些部署脚本，想要优化和见减小补丁包基本上等同于减小这些镜像的大小。众所周知 docker 镜像是由一层一层的 layer + 镜像的元数据信息构成的，其中镜像的元数据信息就是镜像的 image config + manifests，这些都是 json 格式的文本内容，相对于镜像的 layer 的大小，这些文本内容往往可以忽略不计。</p>
+<p>其实去年的时候已经做过了一次优化，将补丁包镜像打包的方式由原来的 docker save 的方式替换成了 skopeo copy 到目录的方式，优化的效果就是：将补丁包的大小减少了 60%～80%；流水线的速度提升了 5 倍；补丁包安装速度也提升了 5 倍。这项优化的原理可以参考我之前的博客 <a href="https://blog.k8s.li/Exploring-container-image.html">深入浅出容器镜像的一生</a>。虽然第一次已经有了这么明显的优化，但咱仍然觉得还有可以优化的空间。</p>
+<p>经过第一次优化之后，产品补丁包中镜像存在的形式如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">root@debian:/root/kube <span class="comment"># tree images -h</span></span><br><span class="line">images</span><br><span class="line">├── [4.0K]  kube-apiserver:v1.20.5</span><br><span class="line">│   ├── [707K]  742efefc8a44179dcc376b969cb5e3f8afff66f87ab618a15164638ad07bf722</span><br><span class="line">│   ├── [ 28M]  98d681774b176bb2fd6b3499377d63ff4b1b040886dd9d3641bb93840815a1e7</span><br><span class="line">│   ├── [2.6K]  d7e24aeb3b10210bf6a2dc39f77c1ea835b22af06dfd2933c06e0421ed6d35ac</span><br><span class="line">│   ├── [642K]  fefd475334af8255ba693de12951b5176a2853c2f0d5d2b053e188a1f3b611d9</span><br><span class="line">│   ├── [ 949]  manifest.json</span><br><span class="line">│   └── [  33]  version</span><br><span class="line">├── [4.0K]  kube-controller-manager:v1.20.5</span><br><span class="line">│   ├── [ 27M]  454a7944c47b608efb657a1bef7f4093f63ceb2db14fd78c5ecd2a08333da7cf</span><br><span class="line">│   ├── [2.6K]  6f0c3da8c99e99bbe82920a35653f286bd8130f0662884e77fa9fcdca079c07f</span><br><span class="line">│   ├── [707K]  742efefc8a44179dcc376b969cb5e3f8afff66f87ab618a15164638ad07bf722</span><br><span class="line">│   ├── [642K]  fefd475334af8255ba693de12951b5176a2853c2f0d5d2b053e188a1f3b611d9</span><br><span class="line">│   ├── [ 949]  manifest.json</span><br><span class="line">│   └── [  33]  version</span><br><span class="line">└── [4.0K]  kube-scheduler:v1.20.5</span><br><span class="line">    ├── [ 12M]  565677e452d17c4e2841250bbf0cc010d906fbf7877569bb2d69bfb4e68db1b5</span><br><span class="line">    ├── [707K]  742efefc8a44179dcc376b969cb5e3f8afff66f87ab618a15164638ad07bf722</span><br><span class="line">    ├── [2.6K]  8d13f1db8bfb498afb0caff6bf3f8c599ecc2ace74275f69886067f6af8ffdf6</span><br><span class="line">    ├── [642K]  fefd475334af8255ba693de12951b5176a2853c2f0d5d2b053e188a1f3b611d9</span><br><span class="line">    ├── [ 949]  manifest.json</span><br><span class="line">    └── [  33]  version</span><br></pre></td></tr></table></figure>
+<p>仔细分析可以发现这样打包出来的镜像要比它们在 registry 中的所占存储空间要大一些，这是因为每一个镜像存储目录下都保存在该镜像的所有 layer ，不能像 registry 存储那样可以复用相同的 layer。比如 <code>kube-apiserver</code>  <code>kube-controller-manager</code> <code>kube-scheduler</code> 这三个镜像都是使用的 <code>k8s.gcr.io/build-image/go-runner</code> 这个 base 镜像。在 registry 中，它只需要存储一份 <code>go-runner</code> base 镜像即可。而使用 skopeo copy 存储在目录中时，就需要分别存储一份这个 base 镜像了。</p>
+<p>从文件名和文件大小也可以大致推断出 <code>707K</code> 大小的 742efefc8a 就是 <code>go-runner</code> 镜像的跟文件系统；<code>642K</code> 大小的 fefd47533 就是 go-runner 的二进制文件；<code>2.x</code> 左右大小的应该就是镜像的 image config 文件；剩下那个十几二十几 M 的就是  <code>kube-apiserver</code>  <code>kube-controller-manager</code> <code>kube-scheduler</code>  的二进制文件；manifest.json 文件就是镜像在 registry 存储中的 manifest 。</p>
+<ul>
+<li>使用 find 来统计这些文件的数量，经过去重之后可以发现镜像的 layer 文件和 config 文件总数量从原来的 12 个减少到 8 个。做一个简单的加法计算也就是：3 个 image config 文件 + 3 个二进制文件 + 1 个 base 镜像 layer 文件 + 1 个 go-runner 二进制文件，这不正好就是 8 嘛😂</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">root@debian:/root/kube <span class="comment"># find images -type f | grep -Eo "\b[a-f0-9]&#123;64&#125;\b" | wc</span></span><br><span class="line">12</span><br><span class="line">root@debian:/root/kube <span class="comment"># find images -type f | grep -Eo "\b[a-f0-9]&#123;64&#125;\b" | sort -u | wc -l</span></span><br><span class="line">8</span><br></pre></td></tr></table></figure>
+<p>既然补丁包中的镜像文件有一些相同的 layer，那么去重这些相同的 layer 文件岂不就能减少补丁包的大小了？于是就拿了一个历史的补丁包测试一下。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">root@debian:/root $ du -sh images</span><br><span class="line">3.3G	images</span><br><span class="line">root@debian:/root $ find images -<span class="built_in">type</span> f ! -name <span class="string">'version'</span> ! -name <span class="string">'manifest.json'</span> | wc -l</span><br><span class="line">279</span><br><span class="line">root@debian:/root $ mkdir -p images2</span><br><span class="line">root@debian:/root $ find images -<span class="built_in">type</span> f -<span class="built_in">exec</span> mv &#123;&#125; images2 \;</span><br><span class="line">root@debian:/root $ du -sh images2</span><br><span class="line">1.3G	images2</span><br><span class="line">root@debian:/root $ $ find images2 -<span class="built_in">type</span> f ! -name <span class="string">'version'</span> ! -name <span class="string">'manifest.json'</span> | wc -l</span><br><span class="line">187</span><br></pre></td></tr></table></figure>
+<p>没有对比就没有伤害，经过测试之后发现：补丁包中镜像文件的总数量由原来的 279 个减小至 187 个，总大小从原来的 3.3G 减小到 1.3G，减小了 60%！当时兴奋得我拍案叫绝，如获珍宝。其实这得益于我们产品组件使用的 base 镜像基本上是相同的，因此可以去除掉很多相同的 base 镜像 layer 文件。</p>
+<p>既然找到了减小补丁包中镜像大小的思路，那么只要找到一种方式来去重这些镜像 layer 就可以了。首先想到的就是使用 registry 存储：根据 registry 存储的特性，镜像在 registry 中是可以复用相同的 layer 的。所以大体的思路就是将这些补丁包中的镜像转换为 registry 存储的格式，在安装的时候再将 registry 存储的格式转换为 skopeo copy 支持的 dir 格式。</p>
+<h2 id="构建-skopeo-dir-镜像存储"><a href="#构建-skopeo-dir-镜像存储" class="headerlink" title="构建 skopeo dir 镜像存储"></a>构建 skopeo dir 镜像存储</h2><ul>
+<li>为了方便演示，需要找个合适的镜像列表，看了一下 <a href="https://github.com/kubesphere/ks-installer" target="_blank" rel="noopener">ks-installer</a> 项目中有个镜像列表，看样子比较合适那就用它吧😃</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">root@debian:/root <span class="comment"># curl -L -O https://github.com/kubesphere/ks-installer/releases/download/v3.0.0/images-list.txt</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>首先将镜像使用 skopeo sync 同步到本地目录，并统计一下镜像的大小和文件的数量</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">root@debian:/root <span class="comment"># for img in $(cat cat images-list.txt | grep -v "#");do skopeo sync --insecure-policy --src docker --dest dir $&#123;img&#125; images; done</span></span><br><span class="line"></span><br><span class="line">root@debian:/root <span class="comment"># tree images -d -L 1</span></span><br><span class="line">images</span><br><span class="line">├── alpine:3.10.4</span><br><span class="line">├── busybox:1.31.1</span><br><span class="line">├── calico</span><br><span class="line">├── coredns</span><br><span class="line">├── csiplugin</span><br><span class="line">├── docker:19.03</span><br><span class="line">├── elastic</span><br><span class="line">├── fluent</span><br><span class="line">├── haproxy:2.0.4</span><br><span class="line">├── istio</span><br><span class="line">├── jaegertracing</span><br><span class="line">├── java:openjdk-8-jre-alpine</span><br><span class="line">├── jenkins</span><br><span class="line">├── jimmidyson</span><br><span class="line">├── joosthofman</span><br><span class="line">├── kubesphere</span><br><span class="line">├── minio</span><br><span class="line">├── mirrorgooglecontainers</span><br><span class="line">├── mysql:8.0.11</span><br><span class="line">├── nginx:1.14-alpine</span><br><span class="line">├── nginxdemos</span><br><span class="line">├── openpitrix</span><br><span class="line">├── osixia</span><br><span class="line">├── perl:latest</span><br><span class="line">├── prom</span><br><span class="line">├── redis:5.0.5-alpine</span><br><span class="line">└── wordpress:4.8-apache</span><br></pre></td></tr></table></figure>
+<ul>
+<li>使用 skopeo sync 将镜像同步到本地 images 目录后，统计可得所有镜像的大小为 11G、总的文件为 1264 个。</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">root@debian:/root <span class="comment"># du -sh images</span></span><br><span class="line">11G	images</span><br><span class="line">root@debian:/root <span class="comment"># find images -type f ! -name "version" | wc -l</span></span><br><span class="line">1264</span><br></pre></td></tr></table></figure>
+<h2 id="转换成-registry-存储目录"><a href="#转换成-registry-存储目录" class="headerlink" title="转换成 registry 存储目录"></a>转换成 registry 存储目录</h2><p>根据下图所示的 registry 存储结构，我们要将镜像的 layer、image config、manifests 这三种文件根据它们的 sha256 值存放到 blobs/sha256 目录下，然后再在 repositories 目录下创建相应link 文件，这样就可以将镜像转换成 registry 存储的格式了。</p>
+<p><img src="https://p.k8s.li/registry-storage.jpeg" alt=""></p>
+<p>为方便演示我们先以单个镜像为例，将 <code>images/alpine:3.10.4</code> 这个镜像在转换成 docker registry 存储目录的形式</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">root@debian:/root <span class="comment"># tree -h images/alpine:3.10.4</span></span><br><span class="line">images/alpine:3.10.4</span><br><span class="line">└── [4.0K]  alpine:3.10.4</span><br><span class="line">    ├── [2.7M]  4167d3e149762ea326c26fc2fd4e36fdeb7d4e639408ad30f37b8f25ac285a98</span><br><span class="line">    ├── [1.5K]  af341ccd2df8b0e2d67cf8dd32e087bfda4e5756ebd1c76bbf3efa0dc246590e</span><br><span class="line">    ├── [ 528]  manifest.json</span><br><span class="line">    └── [  33]  version</span><br></pre></td></tr></table></figure>
+<p> 根据镜像文件大小我们可以得知： <code>2.7M</code> 大小的 <code>4167d3e1497……</code> 文件就是镜像的 layer 文件，由于 alpine 是一个 base 镜像，该 layer 就是 alpine 的根文件系统；<code>1.5K</code> 大小的 <code>af341ccd2……</code> 显而易见就是镜像的 images config 文件；<code>manifest.json</code> 文件则是镜像在 registry 存储中的 manifest.json 文件。</p>
+<ul>
+<li>先创建该镜像在 registry 存储中的目录结构</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">root@debian:/root <span class="comment"># mkdir -p docker/registry/v2/&#123;blobs/sha256,repositories/alpine&#125;</span></span><br><span class="line">root@debian:/root <span class="comment"># tree docker</span></span><br><span class="line">docker</span><br><span class="line">└── registry</span><br><span class="line">    └── v2</span><br><span class="line">        ├── blobs</span><br><span class="line">        │   └── sha256</span><br><span class="line">        └── repositories</span><br><span class="line">            └── alpine</span><br></pre></td></tr></table></figure>
+<ul>
+<li>构建镜像 layer 的 link 文件</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">grep -Eo <span class="string">"\b[a-f0-9]&#123;64&#125;\b"</span> images/alpine:3.10.4/manifest.json | sort -u | xargs -L1 -I &#123;&#125; mkdir -p docker/registry/v2/repositories/alpine/_layers/sha256/&#123;&#125;</span><br><span class="line"></span><br><span class="line">grep -Eo <span class="string">"\b[a-f0-9]&#123;64&#125;\b"</span> images/alpine:3.10.4/manifest.json | sort -u | xargs -L1 -I &#123;&#125; sh -c <span class="string">"echo -n 'sha256:&#123;&#125;' &gt; docker/registry/v2/repositories/alpine/_layers/sha256/&#123;&#125;/link"</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>构建镜像 tag 的 link 文件</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">manifests_sha256=$(sha256sum images/alpine:3.10.4/manifest.json | awk <span class="string">'&#123;print $1&#125;'</span>)</span><br><span class="line">mkdir -p docker/registry/v2/repositories/alpine/_manifests/revisions/sha256/<span class="variable">$&#123;manifests_sha256&#125;</span></span><br><span class="line"><span class="built_in">echo</span> -n <span class="string">"sha256:<span class="variable">$&#123;manifests_sha256&#125;</span>"</span> &gt; docker/registry/v2/repositories/alpine/_manifests/revisions/sha256/<span class="variable">$&#123;manifests_sha256&#125;</span>/link</span><br><span class="line"></span><br><span class="line">mkdir -p docker/registry/v2/repositories/alpine/_manifests/tags/3.10.4/index/sha256/<span class="variable">$&#123;manifests_sha256&#125;</span></span><br><span class="line"><span class="built_in">echo</span> -n <span class="string">"sha256:<span class="variable">$&#123;manifests_sha256&#125;</span>"</span> &gt; docker/registry/v2/repositories/alpine/_manifests/tags/3.10.4/index/sha256/<span class="variable">$&#123;manifests_sha256&#125;</span>/link</span><br><span class="line"></span><br><span class="line">mkdir -p docker/registry/v2/repositories/alpine/_manifests/tags/3.10.4/current</span><br><span class="line"><span class="built_in">echo</span> -n <span class="string">"sha256:<span class="variable">$&#123;manifests_sha256&#125;</span>"</span> &gt; docker/registry/v2/repositories/alpine/_manifests/tags/3.10.4/current/link</span><br></pre></td></tr></table></figure>
+<ul>
+<li>构建镜像的 blobs 目录</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">mkdir -p docker/registry/v2/blobs/sha256/<span class="variable">$&#123;manifests_sha256:0:2&#125;</span>/<span class="variable">$&#123;manifests_sha256&#125;</span></span><br><span class="line">ln -f images/alpine:3.10.4/manifest.json docker/registry/v2/blobs/sha256/<span class="variable">$&#123;manifests_sha256:0:2&#125;</span>/<span class="variable">$&#123;manifests_sha256&#125;</span>/data</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> layer <span class="keyword">in</span> $(grep -Eo <span class="string">"\b[a-f0-9]&#123;64&#125;\b"</span> images/alpine:3.10.4/manifest.json); <span class="keyword">do</span></span><br><span class="line">    mkdir -p docker/registry/v2/blobs/sha256/<span class="variable">$&#123;layer:0:2&#125;</span>/<span class="variable">$&#123;layer&#125;</span></span><br><span class="line">    ln -f  images/alpine:3.10.4/<span class="variable">$&#123;layer&#125;</span> docker/registry/v2/blobs/sha256/<span class="variable">$&#123;layer:0:2&#125;</span>/<span class="variable">$&#123;layer&#125;</span>/data</span><br><span class="line"><span class="keyword">done</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>最终得到的 registry 存储目录如下</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line">docker</span><br><span class="line">└── registry</span><br><span class="line">    └── v2</span><br><span class="line">        ├── blobs</span><br><span class="line">        │   └── sha256</span><br><span class="line">        │       ├── 41</span><br><span class="line">        │       │   └── 4167d3e149762ea326c26fc2fd4e36fdeb7d4e639408ad30f37b8f25ac285a98</span><br><span class="line">        │       │       └── data</span><br><span class="line">        │       ├── af</span><br><span class="line">        │       │   └── af341ccd2df8b0e2d67cf8dd32e087bfda4e5756ebd1c76bbf3efa0dc246590e</span><br><span class="line">        │       │       └── data</span><br><span class="line">        │       └── de</span><br><span class="line">        │           └── de78803598bc4c940fc4591d412bffe488205d5d953f94751c6308deeaaa7eb8</span><br><span class="line">        │               └── data</span><br><span class="line">        └── repositories</span><br><span class="line">            └── alpine</span><br><span class="line">                ├── _layers</span><br><span class="line">                │   └── sha256</span><br><span class="line">                │       ├── 4167d3e149762ea326c26fc2fd4e36fdeb7d4e639408ad30f37b8f25ac285a98</span><br><span class="line">                │       │   └── link</span><br><span class="line">                │       └── af341ccd2df8b0e2d67cf8dd32e087bfda4e5756ebd1c76bbf3efa0dc246590e</span><br><span class="line">                │           └── link</span><br><span class="line">                └── _manifests</span><br><span class="line">                    ├── revisions</span><br><span class="line">                    │   └── sha256</span><br><span class="line">                    │       └── de78803598bc4c940fc4591d412bffe488205d5d953f94751c6308deeaaa7eb8</span><br><span class="line">                    │           └── link</span><br><span class="line">                    └── tags</span><br><span class="line">                        └── 3.10.4</span><br><span class="line">                            ├── current</span><br><span class="line">                            │   └── link</span><br><span class="line">                            └── index</span><br><span class="line">                                └── sha256</span><br><span class="line">                                    └── de78803598bc4c940fc4591d412bffe488205d5d953f94751c6308deeaaa7eb8</span><br><span class="line">                                        └── link</span><br></pre></td></tr></table></figure>
+<ul>
+<li>测试是否正常，本地 docker run 一个 registry 容器，将刚刚转换的 registry 存储目录挂载到容器的 /var/lib/registry，然后再使用 docker pull 的方式拉取镜像，在使用 docker run 测试一下能否正常使用。经过验证之后确实可以使用，那就说明这样的转换是没有问题的😊。</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">root@debian:/root <span class="comment"># docker pull localhost/alpine:3.10.4</span></span><br><span class="line">3.10.4: Pulling from alpine</span><br><span class="line">4167d3e14976: Pull complete</span><br><span class="line">Digest: sha256:de78803598bc4c940fc4591d412bffe488205d5d953f94751c6308deeaaa7eb8</span><br><span class="line">Status: Downloaded newer image <span class="keyword">for</span> localhost/alpine:3.10.4</span><br><span class="line">root@debian:/root <span class="comment"># docker run --rm -it localhost/alpine:3.10.4 cat /etc/os-release</span></span><br><span class="line">NAME=<span class="string">"Alpine Linux"</span></span><br><span class="line">ID=alpine</span><br><span class="line">VERSION_ID=3.10.4</span><br><span class="line">PRETTY_NAME=<span class="string">"Alpine Linux v3.10"</span></span><br><span class="line">HOME_URL=<span class="string">"https://alpinelinux.org/"</span></span><br><span class="line">BUG_REPORT_URL=<span class="string">"https://bugs.alpinelinux.org/"</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>将上述步骤整合成一个 shell 脚本，内容如下</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#!/bin/bash</span></span><br><span class="line"><span class="built_in">set</span> -eo pipefail</span><br><span class="line"></span><br><span class="line">IMAGES_DIR=<span class="string">"images"</span></span><br><span class="line">REGISTRY_DIR=<span class="string">"docker"</span></span><br><span class="line"></span><br><span class="line">rm -rf <span class="variable">$&#123;REGISTRY_DIR&#125;</span></span><br><span class="line">BLOBS_PATH=<span class="string">"<span class="variable">$&#123;REGISTRY_DIR&#125;</span>/registry/v2/blobs"</span></span><br><span class="line">REPO_PATH=<span class="string">"<span class="variable">$&#123;REGISTRY_DIR&#125;</span>/registry/v2/repositories"</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> image <span class="keyword">in</span> $(find <span class="variable">$&#123;IMAGES_DIR&#125;</span> -<span class="built_in">type</span> f | sed -n <span class="string">'s|/manifest.json||p'</span> | sort -u); <span class="keyword">do</span></span><br><span class="line">    image_name=$(<span class="built_in">echo</span> <span class="variable">$&#123;image%%:*&#125;</span> | sed <span class="string">"s|<span class="variable">$&#123;IMAGES_DIR&#125;</span>/||g"</span>)</span><br><span class="line">    image_tag=<span class="variable">$&#123;image##*:&#125;</span>; mfs=<span class="string">"<span class="variable">$&#123;image&#125;</span>/manifest.json"</span></span><br><span class="line">    mfs_sha256=$(sha256sum <span class="variable">$&#123;image&#125;</span>/manifest.json | awk <span class="string">'&#123;print $1&#125;'</span>)</span><br><span class="line">    mkdir -p <span class="variable">$&#123;BLOBS_PATH&#125;</span>/sha256/<span class="variable">$&#123;mfs_sha256:0:2&#125;</span>/<span class="variable">$&#123;mfs_sha256&#125;</span></span><br><span class="line">    ln -f <span class="variable">$&#123;mfs&#125;</span> <span class="variable">$&#123;BLOBS_PATH&#125;</span>/sha256/<span class="variable">$&#123;mfs_sha256:0:2&#125;</span>/<span class="variable">$&#123;mfs_sha256&#125;</span>/data</span><br><span class="line"></span><br><span class="line">    <span class="comment"># make image repositories dir</span></span><br><span class="line">    mkdir -p <span class="variable">$&#123;REPO_PATH&#125;</span>/<span class="variable">$&#123;image_name&#125;</span>/&#123;_layers,_manifests/revisions&#125;/sha256</span><br><span class="line">    mkdir -p <span class="variable">$&#123;REPO_PATH&#125;</span>/<span class="variable">$&#123;image_name&#125;</span>/_manifests/revisions/sha256/<span class="variable">$&#123;mfs_sha256&#125;</span></span><br><span class="line">    mkdir -p <span class="variable">$&#123;REPO_PATH&#125;</span>/<span class="variable">$&#123;image_name&#125;</span>/_manifests/tags/<span class="variable">$&#123;image_tag&#125;</span>/&#123;current,index/sha256&#125;</span><br><span class="line">    mkdir -p <span class="variable">$&#123;REPO_PATH&#125;</span>/<span class="variable">$&#123;image_name&#125;</span>/_manifests/tags/<span class="variable">$&#123;image_tag&#125;</span>/index/sha256/<span class="variable">$&#123;mfs_sha256&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># create image tag manifest link file</span></span><br><span class="line">    <span class="built_in">echo</span> -n <span class="string">"sha256:<span class="variable">$&#123;mfs_sha256&#125;</span>"</span> &gt; <span class="variable">$&#123;REPO_PATH&#125;</span>/<span class="variable">$&#123;image_name&#125;</span>/_manifests/tags/<span class="variable">$&#123;image_tag&#125;</span>/current/link</span><br><span class="line">    <span class="built_in">echo</span> -n <span class="string">"sha256:<span class="variable">$&#123;mfs_sha256&#125;</span>"</span> &gt; <span class="variable">$&#123;REPO_PATH&#125;</span>/<span class="variable">$&#123;image_name&#125;</span>/_manifests/revisions/sha256/<span class="variable">$&#123;mfs_sha256&#125;</span>/link</span><br><span class="line">    <span class="built_in">echo</span> -n <span class="string">"sha256:<span class="variable">$&#123;mfs_sha256&#125;</span>"</span> &gt; <span class="variable">$&#123;REPO_PATH&#125;</span>/<span class="variable">$&#123;image_name&#125;</span>/_manifests/tags/<span class="variable">$&#123;image_tag&#125;</span>/index/sha256/<span class="variable">$&#123;mfs_sha256&#125;</span>/link</span><br><span class="line"></span><br><span class="line">    <span class="comment"># link image layers file to registry blobs file</span></span><br><span class="line">    <span class="keyword">for</span> layer <span class="keyword">in</span> $(grep -Eo <span class="string">"\b[a-f0-9]&#123;64&#125;\b"</span> <span class="variable">$&#123;mfs&#125;</span>); <span class="keyword">do</span></span><br><span class="line">        mkdir -p <span class="variable">$&#123;BLOBS_PATH&#125;</span>/sha256/<span class="variable">$&#123;layer:0:2&#125;</span>/<span class="variable">$&#123;layer&#125;</span></span><br><span class="line">        mkdir -p <span class="variable">$&#123;REPO_PATH&#125;</span>/<span class="variable">$&#123;image_name&#125;</span>/_layers/sha256/<span class="variable">$&#123;layer&#125;</span></span><br><span class="line">        <span class="built_in">echo</span> -n <span class="string">"sha256:<span class="variable">$&#123;layer&#125;</span>"</span> &gt; <span class="variable">$&#123;REPO_PATH&#125;</span>/<span class="variable">$&#123;image_name&#125;</span>/_layers/sha256/<span class="variable">$&#123;layer&#125;</span>/link</span><br><span class="line">        ln -f <span class="variable">$&#123;image&#125;</span>/<span class="variable">$&#123;layer&#125;</span> <span class="variable">$&#123;BLOBS_PATH&#125;</span>/sha256/<span class="variable">$&#123;layer:0:2&#125;</span>/<span class="variable">$&#123;layer&#125;</span>/data</span><br><span class="line">    <span class="keyword">done</span></span><br><span class="line"><span class="keyword">done</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>使用该脚本对 images 中所有镜像进行一下转换，最终得到的 registry 存储大小为 8.3 G，比之前减少了 2.7G。</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">root@debian:/root <span class="comment"># du -sh docker</span></span><br><span class="line">8.3G	docker</span><br><span class="line">root@debian:/root <span class="comment"># find docker -type f -name "data" | wc -l</span></span><br><span class="line">1046</span><br></pre></td></tr></table></figure>
+<h2 id="再还原回-Dir-格式"><a href="#再还原回-Dir-格式" class="headerlink" title="再还原回 Dir 格式"></a>再还原回 Dir 格式</h2><p>经过上述步骤一番折腾之后，将补丁包中镜像文件的总大小的确实减少了很多，但同时又引入了另一个问题：skopeo 无法直接使用 registry 存储的格式。因此我们还需要再做一次转换，将镜像由 registry 存储的格式还原回 skopeo 所支持的 dir 格式。至于还原的原理和方法我在 <a href="https://blog.k8s.li/docker-registry-to-harbor.html">docker registry 迁移至 harbor</a> 中有详细地介绍，感兴趣的小伙伴可以再去看一下。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#!/bin/bash</span></span><br><span class="line">REGISTRY_DOMAIN=<span class="string">"harbor.k8s.li"</span></span><br><span class="line">REGISTRY_PATH=<span class="string">"/var/lib/registry"</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 切换到 registry 存储主目录下</span></span><br><span class="line"><span class="built_in">cd</span> <span class="variable">$&#123;REGISTRY_PATH&#125;</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">gen_skopeo_dir</span></span>() &#123;</span><br><span class="line">   <span class="comment"># 定义 registry 存储的 blob 目录 和 repositories 目录，方便后面使用</span></span><br><span class="line">    BLOB_DIR=<span class="string">"docker/registry/v2/blobs/sha256"</span></span><br><span class="line">    REPO_DIR=<span class="string">"docker/registry/v2/repositories"</span></span><br><span class="line">    <span class="comment"># 定义生成 skopeo 目录</span></span><br><span class="line">    SKOPEO_DIR=<span class="string">"docker/skopeo"</span></span><br><span class="line">    <span class="comment"># 通过 find 出 current 文件夹可以得到所有带 tag 的镜像，因为一个 tag 对应一个 current 目录</span></span><br><span class="line">    <span class="keyword">for</span> image <span class="keyword">in</span> $(find <span class="variable">$&#123;REPO_DIR&#125;</span> -<span class="built_in">type</span> d -name <span class="string">"current"</span>); <span class="keyword">do</span></span><br><span class="line">        <span class="comment"># 根据镜像的 tag 提取镜像的名字</span></span><br><span class="line">        name=$(<span class="built_in">echo</span> <span class="variable">$&#123;image&#125;</span> | awk -F <span class="string">'/'</span> <span class="string">'&#123;print $5"/"$6":"$9&#125;'</span>)</span><br><span class="line">        link=$(cat <span class="variable">$&#123;image&#125;</span>/link | sed <span class="string">'s/sha256://'</span>)</span><br><span class="line">        mfs=<span class="string">"<span class="variable">$&#123;BLOB_DIR&#125;</span>/<span class="variable">$&#123;link:0:2&#125;</span>/<span class="variable">$&#123;link&#125;</span>/data"</span></span><br><span class="line">        <span class="comment"># 创建镜像的硬链接需要的目录</span></span><br><span class="line">        mkdir -p <span class="string">"<span class="variable">$&#123;SKOPEO_DIR&#125;</span>/<span class="variable">$&#123;name&#125;</span>"</span></span><br><span class="line">        <span class="comment"># 硬链接镜像的 manifests 文件到目录的 manifest 文件</span></span><br><span class="line">        ln <span class="variable">$&#123;mfs&#125;</span> <span class="variable">$&#123;SKOPEO_DIR&#125;</span>/<span class="variable">$&#123;name&#125;</span>/manifest.json</span><br><span class="line">        <span class="comment"># 使用正则匹配出所有的 sha256 值，然后排序去重</span></span><br><span class="line">        layers=$(grep -Eo <span class="string">"\b[a-f0-9]&#123;64&#125;\b"</span> <span class="variable">$&#123;mfs&#125;</span> | sort -u)</span><br><span class="line">        <span class="keyword">for</span> layer <span class="keyword">in</span> <span class="variable">$&#123;layers&#125;</span>; <span class="keyword">do</span></span><br><span class="line">          <span class="comment"># 硬链接 registry 存储目录里的镜像 layer 和 images config 到镜像的 dir 目录</span></span><br><span class="line">            ln <span class="variable">$&#123;BLOB_DIR&#125;</span>/<span class="variable">$&#123;layer:0:2&#125;</span>/<span class="variable">$&#123;layer&#125;</span>/data <span class="variable">$&#123;SKOPEO_DIR&#125;</span>/<span class="variable">$&#123;name&#125;</span>/<span class="variable">$&#123;layer&#125;</span></span><br><span class="line">        <span class="keyword">done</span></span><br><span class="line">    <span class="keyword">done</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">sync_image</span></span>() &#123;</span><br><span class="line">    <span class="comment"># 使用 skopeo sync 将 dir 格式的镜像同步到 harbor</span></span><br><span class="line">    <span class="keyword">for</span> project <span class="keyword">in</span> $(ls <span class="variable">$&#123;SKOPEO_DIR&#125;</span>); <span class="keyword">do</span></span><br><span class="line">        skopeo sync --insecure-policy --src-tls-verify=<span class="literal">false</span> --dest-tls-verify=<span class="literal">false</span> \</span><br><span class="line">        --src dir --dest docker <span class="variable">$&#123;SKOPEO_DIR&#125;</span>/<span class="variable">$&#123;project&#125;</span> <span class="variable">$&#123;REGISTRY_DOMAIN&#125;</span>/<span class="variable">$&#123;project&#125;</span></span><br><span class="line">    <span class="keyword">done</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">gen_skopeo_dir</span><br><span class="line">sync_image</span><br></pre></td></tr></table></figure>
+    </div>
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/registry/" rel="tag"><i class="fa fa-tag"></i> registry</a>
+              <a href="/tags/image/" rel="tag"><i class="fa fa-tag"></i> image</a>
+          </div>
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/gitlab-cli.html" rel="prev" title="python-gitlab CLI 使用记录">
+      <i class="fa fa-chevron-left"></i> python-gitlab CLI 使用记录
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+  </article>
+  </div>
+          </div>
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+        </div>
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#苦命打包工具人😭"><span class="nav-number">1.</span> <span class="nav-text">苦命打包工具人😭</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#再次优化"><span class="nav-number">2.</span> <span class="nav-text">再次优化</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#构建-skopeo-dir-镜像存储"><span class="nav-number">3.</span> <span class="nav-text">构建 skopeo dir 镜像存储</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#转换成-registry-存储目录"><span class="nav-number">4.</span> <span class="nav-text">转换成 registry 存储目录</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#再还原回-Dir-格式"><span class="nav-number">5.</span> <span class="nav-text">再还原回 Dir 格式</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木子"
+      src="https://blog.k8s.li/avatar.png">
+  <p class="site-author-name" itemprop="name">木子</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">93</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">115</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/muzi502" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;muzi502" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:blog@502.li" title="E-Mail → mailto:blog@502.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://twitter.com/muzi_ii" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;muzi_ii" rel="noopener" target="_blank"><i class="fa fa-fw fa-twitter"></i>Twitter</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://t.me/muzi_ii" title="Telegram → https:&#x2F;&#x2F;t.me&#x2F;muzi_ii" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Telegram</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://kindle.502.li/" title="Kindle → https:&#x2F;&#x2F;kindle.502.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-book"></i>Kindle</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://tg.k8s.li/" title="Channel → https:&#x2F;&#x2F;tg.k8s.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Channel</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-fw fa-rss"></i>RSS</a>
+      </span>
+  </div>
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+      </div>
+    </main>
+    <footer class="footer">
+      <div class="footer-inner">
+<div class="copyright">
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木子</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">1.3m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">37:16</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">主题 – <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a>
+  </div>
+      </div>
+    </footer>
+  </div>
+  <script src="/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script>
+<script src="/js/schemes/pisces.js"></script>
+<script src="/js/next-boot.js"></script>
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://muzi.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: {page: {
+            url: "https://blog.k8s.li/skopeo-to-registry.html",
+            identifier: "skopeo-to-registry.html",
+            title: "如何使用 registry 存储的特性"
+          }
+        }
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://muzi.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+</body>
+</html>
