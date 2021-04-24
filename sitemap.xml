@@ -2,7 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
-    <loc>https://blog.k8s.li/link/index.html</loc>
+    <loc>https://blog.k8s.li/Brick-removal-note.html</loc>
     
     <lastmod>2021-04-24</lastmod>
     
@@ -10,13 +10,6 @@
   
   <url>
     <loc>https://blog.k8s.li/docker-registry-to-harbor.html</loc>
-    
-    <lastmod>2021-04-24</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://blog.k8s.li/Brick-removal-note.html</loc>
     
     <lastmod>2021-04-24</lastmod>
     
@@ -45,6 +38,27 @@
   
   <url>
     <loc>https://blog.k8s.li/My-brick-lifting-tools.html</loc>
+    
+    <lastmod>2021-04-24</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>https://blog.k8s.li/wd-hc310-dc-hdd.html</loc>
+    
+    <lastmod>2021-04-24</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>https://blog.k8s.li/2019-review.html</loc>
+    
+    <lastmod>2021-04-24</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>https://blog.k8s.li/Kubernetes-Introduction-for-VMware-Users-zh.html</loc>
     
     <lastmod>2021-04-24</lastmod>
     
@@ -93,35 +107,14 @@
   </url>
   
   <url>
-    <loc>https://blog.k8s.li/telegram-tips.html</loc>
-    
-    <lastmod>2021-04-24</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://blog.k8s.li/wd-hc310-dc-hdd.html</loc>
-    
-    <lastmod>2021-04-24</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://blog.k8s.li/2019-review.html</loc>
-    
-    <lastmod>2021-04-24</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://blog.k8s.li/Kubernetes-Introduction-for-VMware-Users-zh.html</loc>
-    
-    <lastmod>2021-04-24</lastmod>
-    
-  </url>
-  
-  <url>
     <loc>https://blog.k8s.li/pc-e5v3-e3v3-amd2600.html</loc>
+    
+    <lastmod>2021-04-24</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>https://blog.k8s.li/telegram-tips.html</loc>
     
     <lastmod>2021-04-24</lastmod>
     
@@ -149,6 +142,34 @@
   </url>
   
   <url>
+    <loc>https://blog.k8s.li/docker-deploy-fastdfs.html</loc>
+    
+    <lastmod>2021-04-24</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>https://blog.k8s.li/esp8266-pc-switch.html</loc>
+    
+    <lastmod>2021-04-24</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>https://blog.k8s.li/esxi-openwrt.html</loc>
+    
+    <lastmod>2021-04-24</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>https://blog.k8s.li/fastdfs-lua-redis.html</loc>
+    
+    <lastmod>2021-04-24</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>https://blog.k8s.li/ffmepg-rtsp.html</loc>
     
     <lastmod>2021-04-24</lastmod>
@@ -156,7 +177,21 @@
   </url>
   
   <url>
+    <loc>https://blog.k8s.li/frps-prot-monitor.html</loc>
+    
+    <lastmod>2021-04-24</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>https://blog.k8s.li/life-sciences.html</loc>
+    
+    <lastmod>2021-04-24</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>https://blog.k8s.li/ovf-to-ova.html</loc>
     
     <lastmod>2021-04-24</lastmod>
     
@@ -191,6 +226,20 @@
   </url>
   
   <url>
+    <loc>https://blog.k8s.li/Code-It-s-Trivial.html</loc>
+    
+    <lastmod>2021-04-24</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>https://blog.k8s.li/RMS.html</loc>
+    
+    <lastmod>2021-04-24</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>https://blog.k8s.li/The-Dictator%E2%80%99s-Handbook.html</loc>
     
     <lastmod>2021-04-24</lastmod>
@@ -199,6 +248,20 @@
   
   <url>
     <loc>https://blog.k8s.li/amd-yes.html</loc>
+    
+    <lastmod>2021-04-24</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>https://blog.k8s.li/android-taibackup.html</loc>
+    
+    <lastmod>2021-04-24</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>https://blog.k8s.li/buffon.html</loc>
     
     <lastmod>2021-04-24</lastmod>
     
@@ -226,42 +289,7 @@
   </url>
   
   <url>
-    <loc>https://blog.k8s.li/docker-deploy-fastdfs.html</loc>
-    
-    <lastmod>2021-04-24</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://blog.k8s.li/esp8266-pc-switch.html</loc>
-    
-    <lastmod>2021-04-24</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://blog.k8s.li/esxi-openwrt.html</loc>
-    
-    <lastmod>2021-04-24</lastmod>
-    
-  </url>
-  
-  <url>
     <loc>https://blog.k8s.li/esxi-vmbase.html</loc>
-    
-    <lastmod>2021-04-24</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://blog.k8s.li/fastdfs-lua-redis.html</loc>
-    
-    <lastmod>2021-04-24</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://blog.k8s.li/frps-prot-monitor.html</loc>
     
     <lastmod>2021-04-24</lastmod>
     
@@ -289,7 +317,21 @@
   </url>
   
   <url>
+    <loc>https://blog.k8s.li/kernel-note-book.html</loc>
+    
+    <lastmod>2021-04-24</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>https://blog.k8s.li/mirrors-test.html</loc>
+    
+    <lastmod>2021-04-24</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>https://blog.k8s.li/networktools.html</loc>
     
     <lastmod>2021-04-24</lastmod>
     
@@ -310,7 +352,14 @@
   </url>
   
   <url>
-    <loc>https://blog.k8s.li/ovf-to-ova.html</loc>
+    <loc>https://blog.k8s.li/play-with-docker.html</loc>
+    
+    <lastmod>2021-04-24</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>https://blog.k8s.li/python-cnni.html</loc>
     
     <lastmod>2021-04-24</lastmod>
     
@@ -324,56 +373,28 @@
   </url>
   
   <url>
-    <loc>https://blog.k8s.li/Code-It-s-Trivial.html</loc>
+    <loc>https://blog.k8s.li/link/index.html</loc>
     
     <lastmod>2021-04-24</lastmod>
     
   </url>
   
   <url>
-    <loc>https://blog.k8s.li/RMS.html</loc>
+    <loc>https://blog.k8s.li/tags/index.html</loc>
     
     <lastmod>2021-04-24</lastmod>
     
   </url>
   
   <url>
-    <loc>https://blog.k8s.li/android-taibackup.html</loc>
+    <loc>https://blog.k8s.li/about.html</loc>
     
     <lastmod>2021-04-24</lastmod>
     
   </url>
   
   <url>
-    <loc>https://blog.k8s.li/buffon.html</loc>
-    
-    <lastmod>2021-04-24</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://blog.k8s.li/kernel-note-book.html</loc>
-    
-    <lastmod>2021-04-24</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://blog.k8s.li/networktools.html</loc>
-    
-    <lastmod>2021-04-24</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://blog.k8s.li/play-with-docker.html</loc>
-    
-    <lastmod>2021-04-24</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://blog.k8s.li/python-cnni.html</loc>
+    <loc>https://blog.k8s.li/categories/index.html</loc>
     
     <lastmod>2021-04-24</lastmod>
     
@@ -397,27 +418,6 @@
     <loc>https://blog.k8s.li/gitlab-cli.html</loc>
     
     <lastmod>2021-03-19</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://blog.k8s.li/about.html</loc>
-    
-    <lastmod>2021-03-10</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://blog.k8s.li/categories/index.html</loc>
-    
-    <lastmod>2021-03-10</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://blog.k8s.li/tags/index.html</loc>
-    
-    <lastmod>2021-03-10</lastmod>
     
   </url>
   
