@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon.ico">
+  <link rel="mask-icon" href="/favicon.ico" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+<link rel="stylesheet" href="/css/main.css">
+<link rel="stylesheet" href="//fonts.loli.net/css?family=Lato:300,300italic,400,400italic,700,700italic|Roboto Mono:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://blog.k8s.li').hostname,
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.7.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":true,"scrollpercent":true},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"buttons","active":null,"storage":true,"lazyload":true,"nav":{"disqus":{"text":"Load Disqus","order":-1}}},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":false,"async":true,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+  <meta name="description" content="离线部署对于 PaaS toB 产品来讲，客户往往会要求产品的部署方案必须做到离线安装，即在部署时不能依赖任何在线的资源，比如安装一些 OS 软件包时依赖的 yum&#x2F;apt 源；docker.io、k8s.gcr.io 、quay.io 上面的容器镜像；GitHub 上开源软件的二进制下载文件等。 作为平台部署工具的开发者，始终被离线部署这个难题困扰着。在线的容器镜像和二进制文件比较好解决，因为这">
+<meta property="og:type" content="article">
+<meta property="og:title" content="使用 docker build 制作 yum&#x2F;apt 离线源">
+<meta property="og:url" content="https://blog.k8s.li/make-offline-mirrors.html">
+<meta property="og:site_name" content="木子">
+<meta property="og:description" content="离线部署对于 PaaS toB 产品来讲，客户往往会要求产品的部署方案必须做到离线安装，即在部署时不能依赖任何在线的资源，比如安装一些 OS 软件包时依赖的 yum&#x2F;apt 源；docker.io、k8s.gcr.io 、quay.io 上面的容器镜像；GitHub 上开源软件的二进制下载文件等。 作为平台部署工具的开发者，始终被离线部署这个难题困扰着。在线的容器镜像和二进制文件比较好解决，因为这">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2021-05-22T16:00:00.000Z">
+<meta property="article:modified_time" content="2021-05-22T16:00:00.000Z">
+<meta property="article:author" content="木子">
+<meta property="article:tag" content="docker">
+<meta property="article:tag" content="centos">
+<meta property="article:tag" content="ubuntu">
+<meta name="twitter:card" content="summary">
+<link rel="canonical" href="https://blog.k8s.li/make-offline-mirrors.html">
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+  <title>使用 docker build 制作 yum/apt 离线源 | 木子</title>
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+<link rel="alternate" href="/atom.xml" title="木子" type="application/atom+xml">
+</head>
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">木子</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+    <a href="/" rel="section"><i class="fa fa-fw fa-desktop"></i>Home</a>
+  </li>
+        <li class="menu-item menu-item-books">
+    <a href="/booklist.html" rel="section"><i class="fa fa-fw fa-book"></i>Books</a>
+  </li>
+        <li class="menu-item menu-item-kindle">
+    <a href="https://kindle.502.li/" rel="noopener" target="_blank"><i class="fa fa-fw fa-book"></i>Kindle</a>
+  </li>
+        <li class="menu-item menu-item-friend">
+    <a href="/link/" rel="section"><i class="fa fa-fw fa-link"></i>Friend</a>
+  </li>
+        <li class="menu-item menu-item-about">
+    <a href="/about.html" rel="section"><i class="fa fa-fw fa-user-circle-o"></i>About</a>
+  </li>
+  </ul>
+</nav>
+</div>
+    </header>
+  <div class="reading-progress-bar"></div>
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div class="content">
+  <div class="posts-expand">
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.k8s.li/make-offline-mirrors.html">
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://blog.k8s.li/avatar.png">
+      <meta itemprop="name" content="木子">
+      <meta itemprop="description" content="">
+    </span>
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木子">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          使用 docker build 制作 yum/apt 离线源
+        </h2>
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              <time title="创建时间：2021-05-23 2021-05-23T00:00:00+08:00" itemprop="dateCreated datePublished" datetime="2021-05-23T00:00:00+08:00">2021-05-23</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%8A%80%E6%9C%AF/" itemprop="url" rel="index">
+                    <span itemprop="name">技术</span>
+                  </a>
+                </span>
+            </span>
+  <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-comment-o"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    <a title="disqus" href="/make-offline-mirrors.html#comments" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="make-offline-mirrors.html" itemprop="commentCount"></span>
+    </a>
+  </span>
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-file-word-o"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>20k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-clock-o"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>34 分钟</span>
+            </span>
+        </div>
+      </header>
+    <div class="post-body" itemprop="articleBody">
+        <h2 id="离线部署"><a href="#离线部署" class="headerlink" title="离线部署"></a>离线部署</h2><p>对于 PaaS toB 产品来讲，客户往往会要求产品的部署方案必须做到离线安装，即在部署时不能依赖任何在线的资源，比如安装一些 OS 软件包时依赖的 yum/apt 源；docker.io、k8s.gcr.io 、quay.io 上面的容器镜像；GitHub 上开源软件的二进制下载文件等。</p>
+<p>作为平台部署工具的开发者，始终被离线部署这个难题困扰着。在线的容器镜像和二进制文件比较好解决，因为这些资源是与 OS 无关的，只要下载下来放到安装包里，部署的时候启动一个 HTTP 服务器和镜像仓库服务提供这些资源的下载即可。</p>
+<p>但是对于 yum/apt 之类的软件来讲并不那么简单：</p>
+<ul>
+<li>首先由于各个包之间的依赖关系比较复杂，并不能将它们直接下载下来；</li>
+<li>其次即便下载下来之后也无法直接通过 yum/apt 的方式安装指定的软件包，虽然也可以使用 scp 的方式将这些包复制到部署节点，通过 rpm 或 dpkg 的方式来安装上，但这样并不是很优雅，而且通用性能也不是很好；</li>
+<li>最后需要适配的 Linux 发行版和包管理器种类也有多种，而且有些包的包名或者版本号在不同的包管理之间也相差甚大，无法做到统一管理。</li>
+</ul>
+<p>综上，将平台部署依赖的在线 yum/apt 之类的软件包资源制作成离线安装包是一件很棘手的事情。个人就这个问题折腾了一段时间，终于找到了一个比较合适的解决方案：即通过一个 YAML 配置文件来管理包，然后使用 Dockerfile 来构建成离线的 tar 包或者容器镜像。如果有类似需求的小伙伴，可以参考一下本方案。</p>
+<h2 id="Docker-build"><a href="#Docker-build" class="headerlink" title="Docker build"></a>Docker build</h2><p>传统制作离线源的方式是找一台相应的 Linux 机器，在上面通过包管理器下载这些软件包，然后再创建这些软件包的 repo 索引文件。</p>
+<p>可以看出这种方式十分不灵活，假如我想要制作 Debian 9 的 apt 离线源，我就需要一台 Debian 9 的机器。如果要适配多个 Linux 发行版就需要多个相应的 OS 机器。要管理和使用这么多种类的 OS 不是一件容易的事儿，而如今已经十分普遍使用的容器技术恰恰能帮助我们解决这类问题。比如我想运行一个 Debian9 的操作系统，我只需要运行一个 Debian 9 镜像的容器即可，而且不需要额外的管理成本，使用起来也十分地轻量。</p>
+<p>日常工作中我们常使用容器来构建一些 Golang 写的后端组件，那么构建离线源是不是也可以这样做？实践证明确实可以，我们只需要为不同的 OS 和包管理器写一个相应的 Dockerfile 即可。使用 docker build 多阶段构建的特性，可以将多个 Dockerfile 合并成一个，然后最后使用 COPY –from 的方式将这个构建的产物复制到同一个镜像中，比如提供 HTTP 的 nginx 容器，或者使用 BuildKit 的特性将这些构建产物导出为 tar包 或者为本地目录。</p>
+<h2 id="适配-OS"><a href="#适配-OS" class="headerlink" title="适配 OS"></a>适配 OS</h2><p>根据自己的 PaaS toB 从业经验可知，目前国内的私有云客户生产环境中使用的 OS 中， CentOS 应该是最多的，其次是 Ubuntu 和 Debian。至于 RedHat 则需要付费订阅才能使用，DockerHub 上更是没有免费可使用的镜像，因此本方案无法确保适用于 RedHat。产品方面 CentOS 需要的版本只有 7.9；Ubuntu 需要支持 18.04 和 20.04；Debian 需要支持 9 和 10。因为时间和精力有限，本方案支持的 Linux 发行版和相应的版本只有 CentOS 7, Debian 9/10, Ubuntu 18.04/20.04 这五个。如果要支持其他 OS 的离线源比如 OpenSUSE，也可以参考本方案编写一个 Dockerfile 文件来实现适配。</p>
+<h2 id="构建"><a href="#构建" class="headerlink" title="构建"></a>构建</h2><p>构建的过程十分简单，使用一个 YAML 格式的配置文件来管理不同的包管理器或 Linux 发行版安装不同的包，并在一个 Dockerfile 里完成所有的构建操作。实现源码在 <a href="https://github.com/muzi502/scripts/tree/master/build-packages-repo" target="_blank" rel="noopener">github.com/muzi502/scripts/build-packages-repo</a>。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">build</span><br><span class="line">├── Dockerfile</span><br><span class="line">├── Dockerfile.centos</span><br><span class="line">├── Dockerfile.debian</span><br><span class="line">├── Dockerfile.ubuntu</span><br><span class="line">└── packages.yaml</span><br></pre></td></tr></table></figure>
+<h3 id="构建过程"><a href="#构建过程" class="headerlink" title="构建过程"></a>构建过程</h3><p>使用 docker build 的方式构建离线源大致可以分为如下几个步骤：</p>
+<ul>
+<li>在构建容器内配置 yum/apt 源，安装构建时需要工具；</li>
+<li>生成系统内的 rpm/deb 包的列表和需要下载的包列表，解决一些软件包依赖的问题；</li>
+<li>根据生成的包列表使用相应的包管理器工具下载需要的软件包；</li>
+<li>生用相应的包管理器生成这些包的 index 文件，如 repodata 或 Packages.gz 文件；</li>
+<li>将上述的构建产物 COPY 到同一个容器镜像里，比如 nginx ；也可以导出为 tar 包或目录；</li>
+</ul>
+<h3 id="packages-yaml"><a href="#packages-yaml" class="headerlink" title="packages.yaml"></a>packages.yaml</h3><p>这个文件用来管理不同的包管理器或者 Linux 发行版需要安装的软件包。根据不同的包管理器和发行版我们可以将这些包大致划分为 4 类。</p>
+<ul>
+<li><p>common：适用于一些所有包管理器中包名相同或者对版本无要求的包，比如 vim 、curl、wget 这类工具。一般情况下使用这些工具我们并不关心它的版本，并且这类包的包名在所有的包管理器中都是相同的，所以这类可以划分为公共包。</p>
+</li>
+<li><p>yum/apt/dnf：适用于不同的发行版使用相同的包管理器。比如 nfs 的包，在 yum 中包名为 nfs-utils 但在 apt 中为 nfs-common，这类软件包可以划分为一类。</p>
+</li>
+<li><p>OS：适用于一些该 OS 独有的包，比如安装一个 Ubuntu 中有但 Debian 中没有的包（比如 debian-builder 或 ubuntu-dev-tools）。</p>
+</li>
+<li><p>OS-发行版代号：这类包的版本和发行版代号绑定在一起，比如 <code>docker-ce=5:19.03.15~3-0~debian-stretch。</code></p>
+</li>
+</ul>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">common:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">vim</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">curl</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">wget</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">tree</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">lvm2</span></span><br><span class="line"></span><br><span class="line"><span class="attr">yum:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">nfs-utils</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">yum-utils</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">createrepo</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">centos-release-gluster</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">epel-release</span></span><br><span class="line"></span><br><span class="line"><span class="attr">apt:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">nfs-common</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">apt-transport-https</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">ca-certificates</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">lsb-release</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">software-properties-common</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">aptitude</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">dpkg-dev</span></span><br><span class="line"></span><br><span class="line"><span class="attr">centos:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">centos-release</span></span><br><span class="line"></span><br><span class="line"><span class="attr">debian:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">debian-builder</span></span><br><span class="line"></span><br><span class="line"><span class="attr">debian-buster:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">docker-ce=5:19.03.15~3-0~debian-buster</span></span><br><span class="line"></span><br><span class="line"><span class="attr">ubuntu:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">ubuntu-dev-tools</span></span><br></pre></td></tr></table></figure>
+<p>在这里需要额外注意一下，在不同的包管理器之间指定包版本的方式也各不相同，比如在 yum 中如果要安装 19.03.15 版本的 docker-ce 包名为 <code>docker-ce-19.03.15</code>，而在 debian 中包名则为 <code>docker-ce=5:19.03.15~3-0~debian-stretch</code>。可以使用包管理器查看相同的一个包如 docker-ce 在不同的包管理器之前的差异，如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">[root@centos:]<span class="comment"># yum list docker-ce --showduplicates | grep 19.03.15</span></span><br><span class="line">docker-ce.x86_64            3:19.03.15-3.el7                    docker-ce-stable</span><br><span class="line"></span><br><span class="line">root@debian:/<span class="comment"># apt-cache policy docker-ce</span></span><br><span class="line">docker-ce:</span><br><span class="line">  Installed: (none)</span><br><span class="line">  Candidate: 5:19.03.15~3-0~debian-stretch</span><br><span class="line">  Version table:</span><br><span class="line">     5:19.03.15~3-0~debian-stretch 500</span><br><span class="line">        500 https://download.docker.com/linux/debian stretch/stable amd64 Packages</span><br></pre></td></tr></table></figure>
+<p>这个版本号的问题在 kubespray 的源码中也是同样做了特殊处理，目前确实没有太好的方案来解决，只能手动维护这个版本号。</p>
+<ul>
+<li>roles/container-engine/docker/vars/redhat.yml</li>
+</ul>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">---</span></span><br><span class="line"><span class="comment"># https://docs.docker.com/engine/installation/linux/centos/#install-from-a-package</span></span><br><span class="line"><span class="comment"># https://download.docker.com/linux/centos/&lt;centos_version&gt;&gt;/x86_64/stable/Packages/</span></span><br><span class="line"><span class="comment"># or do 'yum --showduplicates list docker-engine'</span></span><br><span class="line"><span class="attr">docker_versioned_pkg:</span></span><br><span class="line">  <span class="attr">'latest':</span> <span class="string">docker-ce</span></span><br><span class="line">  <span class="attr">'18.09':</span> <span class="string">docker-ce-18.09.9-3.el7</span></span><br><span class="line">  <span class="attr">'19.03':</span> <span class="string">docker-ce-19.03.15-3.el&#123;&#123;</span> <span class="string">ansible_distribution_major_version</span> <span class="string">&#125;&#125;</span></span><br><span class="line">  <span class="attr">'20.10':</span> <span class="string">docker-ce-20.10.5-3.el&#123;&#123;</span> <span class="string">ansible_distribution_major_version</span> <span class="string">&#125;&#125;</span></span><br><span class="line">  <span class="attr">'stable':</span> <span class="string">docker-ce-19.03.15-3.el&#123;&#123;</span> <span class="string">ansible_distribution_major_version</span> <span class="string">&#125;&#125;</span></span><br><span class="line">  <span class="attr">'edge':</span> <span class="string">docker-ce-19.03.15-3.el&#123;&#123;</span> <span class="string">ansible_distribution_major_version</span> <span class="string">&#125;&#125;</span></span><br><span class="line"></span><br><span class="line"><span class="attr">docker_cli_versioned_pkg:</span></span><br><span class="line">  <span class="attr">'latest':</span> <span class="string">docker-ce-cli</span></span><br><span class="line">  <span class="attr">'18.09':</span> <span class="string">docker-ce-cli-18.09.9-3.el7</span></span><br><span class="line">  <span class="attr">'19.03':</span> <span class="string">docker-ce-cli-19.03.15-3.el&#123;&#123;</span> <span class="string">ansible_distribution_major_version</span> <span class="string">&#125;&#125;</span></span><br><span class="line">  <span class="attr">'20.10':</span> <span class="string">docker-ce-cli-20.10.5-3.el&#123;&#123;</span> <span class="string">ansible_distribution_major_version</span> <span class="string">&#125;&#125;</span></span><br><span class="line"></span><br><span class="line"><span class="attr">docker_package_info:</span></span><br><span class="line">  <span class="attr">enablerepo:</span> <span class="string">"docker-ce"</span></span><br><span class="line">  <span class="attr">pkgs:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">"<span class="template-variable">&#123;&#123; containerd_versioned_pkg[containerd_version | string] &#125;&#125;</span>"</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">"<span class="template-variable">&#123;&#123; docker_cli_versioned_pkg[docker_cli_version | string] &#125;&#125;</span>"</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">"<span class="template-variable">&#123;&#123; docker_versioned_pkg[docker_version | string] &#125;&#125;</span>"</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>roles/container-engine/docker/vars/ubuntu.yml</li>
+</ul>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># https://download.docker.com/linux/ubuntu/</span></span><br><span class="line"><span class="attr">docker_versioned_pkg:</span></span><br><span class="line">  <span class="attr">'latest':</span> <span class="string">docker-ce</span></span><br><span class="line">  <span class="attr">'18.09':</span> <span class="string">docker-ce=5:18.09.9~3-0~ubuntu-&#123;&#123;</span> <span class="string">ansible_distribution_release|lower</span> <span class="string">&#125;&#125;</span></span><br><span class="line">  <span class="attr">'19.03':</span> <span class="string">docker-ce=5:19.03.15~3-0~ubuntu-&#123;&#123;</span> <span class="string">ansible_distribution_release|lower</span> <span class="string">&#125;&#125;</span></span><br><span class="line">  <span class="attr">'20.10':</span> <span class="string">docker-ce=5:20.10.5~3-0~ubuntu-&#123;&#123;</span> <span class="string">ansible_distribution_release|lower</span> <span class="string">&#125;&#125;</span></span><br><span class="line">  <span class="attr">'stable':</span> <span class="string">docker-ce=5:19.03.15~3-0~ubuntu-&#123;&#123;</span> <span class="string">ansible_distribution_release|lower</span> <span class="string">&#125;&#125;</span></span><br><span class="line">  <span class="attr">'edge':</span> <span class="string">docker-ce=5:19.03.15~3-0~ubuntu-&#123;&#123;</span> <span class="string">ansible_distribution_release|lower</span> <span class="string">&#125;&#125;</span></span><br><span class="line"></span><br><span class="line"><span class="attr">docker_cli_versioned_pkg:</span></span><br><span class="line">  <span class="attr">'latest':</span> <span class="string">docker-ce-cli</span></span><br><span class="line">  <span class="attr">'18.09':</span> <span class="string">docker-ce-cli=5:18.09.9~3-0~ubuntu-&#123;&#123;</span> <span class="string">ansible_distribution_release|lower</span> <span class="string">&#125;&#125;</span></span><br><span class="line">  <span class="attr">'19.03':</span> <span class="string">docker-ce-cli=5:19.03.15~3-0~ubuntu-&#123;&#123;</span> <span class="string">ansible_distribution_release|lower</span> <span class="string">&#125;&#125;</span></span><br><span class="line">  <span class="attr">'20.10':</span> <span class="string">docker-ce-cli=5:20.10.5~3-0~ubuntu-&#123;&#123;</span> <span class="string">ansible_distribution_release|lower</span> <span class="string">&#125;&#125;</span></span><br><span class="line"></span><br><span class="line"><span class="attr">docker_package_info:</span></span><br><span class="line">  <span class="attr">pkgs:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">"<span class="template-variable">&#123;&#123; containerd_versioned_pkg[containerd_version | string] &#125;&#125;</span>"</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">"<span class="template-variable">&#123;&#123; docker_cli_versioned_pkg[docker_cli_version | string] &#125;&#125;</span>"</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">"<span class="template-variable">&#123;&#123; docker_versioned_pkg[docker_version | string] &#125;&#125;</span>"</span></span><br></pre></td></tr></table></figure>
+<h3 id="CentOS7"><a href="#CentOS7" class="headerlink" title="CentOS7"></a>CentOS7</h3><p>介绍完上述的包配置文件之后，接下来我们就根据这个 packages.yml 配置文件使用 Dockerfile 构建这些包的离线源。以下是构建 CentOS 7 离线源的 Dockerfile。</p>
+<figure class="highlight dockerfile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 使用 centos 7.9 作为 base 构建镜像</span></span><br><span class="line"><span class="keyword">FROM</span> centos:<span class="number">7.9</span>.<span class="number">2009</span> as builder</span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义 centos 的版本和处理器体系架构</span></span><br><span class="line"><span class="keyword">ARG</span> OS_VERSION=<span class="number">7</span></span><br><span class="line"><span class="keyword">ARG</span> ARCH=x86_64</span><br><span class="line"></span><br><span class="line"><span class="comment"># 在这里定义一些构建时需要的软件包</span></span><br><span class="line"><span class="keyword">ARG</span> BUILD_TOOLS=<span class="string">"yum-utils createrepo centos-release-gluster epel-release curl"</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 安装构建工具和配置一些软件源 repo</span></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> yum install -q -y <span class="variable">$BUILD_TOOLS</span> \</span></span><br><span class="line"><span class="bash">    &amp;&amp; yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo \</span></span><br><span class="line"><span class="bash">    &amp;&amp; yum makecache &amp;&amp; yum update -y -q</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 需要安装 yq 和 jq 这两个工具来处理 packages.yaml 配置文件</span></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> curl -sL -o /usr/<span class="built_in">local</span>/bin/yq https://github.com/mikefarah/yq/releases/download/v4.9.3/yq_linux_amd64 \</span></span><br><span class="line"><span class="bash">    &amp;&amp; chmod a+x /usr/<span class="built_in">local</span>/bin/yq \</span></span><br><span class="line"><span class="bash">    &amp;&amp; curl -sL -o /usr/<span class="built_in">local</span>/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 \</span></span><br><span class="line"><span class="bash">    &amp;&amp; chmod a+x /usr/<span class="built_in">local</span>/bin/jq</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 解析 packages.yml 配置文件，生成所需要的 packages.list 文件</span></span><br><span class="line"><span class="keyword">WORKDIR</span><span class="bash"> /centos/<span class="variable">$OS_VERSION</span>/os/<span class="variable">$ARCH</span></span></span><br><span class="line"><span class="keyword">COPY</span><span class="bash"> packages.yaml packages.yaml</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用 yq 先将 YAML 文件转换成 json 格式的内容，再使用 jq 过滤出所需要的包，输出为一个列表</span></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> yq <span class="built_in">eval</span> packages.yaml -j | jq -r <span class="string">'.common[],.yum[],.centos[]'</span> | sort -u &gt; packages.list \</span></span><br><span class="line"><span class="bash">    &amp;&amp; rpm -qa &gt;&gt; packages.list</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 下载 packages.list 中的软件包，并生成 repo 索引文件</span></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> cat packages.list | xargs yumdownloader --resolve \</span></span><br><span class="line"><span class="bash">    &amp;&amp; createrepo -d .</span></span><br><span class="line"><span class="comment"># 将构建产物复制到一层空的镜像中，方便导出为 tar 包或目录的格式</span></span><br><span class="line"><span class="keyword">FROM</span> scratch</span><br><span class="line"><span class="keyword">COPY</span><span class="bash"> --from=centos7 /centos /centos</span></span><br></pre></td></tr></table></figure>
+<p>在最后的一个 FROM 镜像中，这里指定的是 <code>scratch</code>，这是一个特殊的镜像名，它代表的是一个空的镜像 layer。</p>
+<figure class="highlight dockerfile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 将构建产物复制到一层空的镜像中，方便导出为 tar 包或目录的格式</span></span><br><span class="line"><span class="keyword">FROM</span> scratch</span><br><span class="line"><span class="keyword">COPY</span><span class="bash"> --from=centos7 /centos /centos</span></span><br></pre></td></tr></table></figure>
+<p>也可以直接将构建出来的产物放到 nginx 容器中，这样直接运行 nginx 容器就能提供 yum/apt 源的服务</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">FROM nginx:1.19</span><br><span class="line">COPY --from=centos7 /centos /usr/share/nginx/html</span><br></pre></td></tr></table></figure>
+<ul>
+<li>如果要构建为 tar 包或者本地目录的方式，需要为 Docker 开启 <code>DOCKER_BUILDKIT=1</code> 这个特性</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 构建为本地目录</span></span><br><span class="line">root@debian: ~ <span class="comment"># DOCKER_BUILDKIT=1 docker build -o type=local,dest=$PWD -f Dockerfile.centos .</span></span><br><span class="line"><span class="comment"># 构建为 tar 包</span></span><br><span class="line">root@debian: ~ <span class="comment"># DOCKER_BUILDKIT=1 docker build -o type=tar,dest=$PWD/centos7.tar -f Dockerfile.centos .</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>构建日志如下</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">[+] Building 30.9s (13/13) FINISHED</span><br><span class="line"> =&gt; [internal] load .dockerignore                                                                                                                                            0.0s</span><br><span class="line"> =&gt; =&gt; transferring context: 109B                                                                                                                                            0.0s</span><br><span class="line"> =&gt; [internal] load build definition from Dockerfile.centos                                                                                                                  0.0s</span><br><span class="line"> =&gt; =&gt; transferring dockerfile: 979B                                                                                                                                         0.0s</span><br><span class="line"> =&gt; [internal] load metadata <span class="keyword">for</span> docker.io/library/centos:7.9.2009                                                                                                           2.6s</span><br><span class="line"> =&gt; [centos7 1/7] FROM docker.io/library/centos:7.9.2009@sha256:0f4ec88e21daf75124b8a9e5ca03c37a5e937e0e108a255d890492430789b60e                                             0.0s</span><br><span class="line"> =&gt; [internal] load build context                                                                                                                                            0.0s</span><br><span class="line"> =&gt; =&gt; transferring context: 818B                                                                                                                                            0.0s</span><br><span class="line"> =&gt; CACHED [centos7 2/7] RUN yum install -q -y yum-utils createrepo centos-release-gluster epel-release curl     &amp;&amp; yum-config-manager --add-repo https://download.docker.c  0.0s</span><br><span class="line"> =&gt; [centos7 3/7] WORKDIR /centos/7/os/x86_64                                                                                                                                0.0s</span><br><span class="line"> =&gt; [centos7 4/7] RUN curl -sL -o /usr/<span class="built_in">local</span>/bin/yq https://github.com/mikefarah/yq/releases/download/v4.9.3/yq_linux_amd64     &amp;&amp; chmod a+x /usr/<span class="built_in">local</span>/bin/yq     &amp;&amp; curl   3.2s</span><br><span class="line"> =&gt; [centos7 5/7] COPY packages.yaml packages.yaml                                                                                                                           0.1s</span><br><span class="line"> =&gt; [centos7 6/7] RUN yq <span class="built_in">eval</span> packages.yaml -j | jq -r <span class="string">'.common[],.yum[],.centos[]'</span> | sort -u &gt; packages.list     &amp;&amp; rpm -qa &gt;&gt; packages.list                                1.0s</span><br><span class="line"> =&gt; [centos7 7/7] RUN cat packages.list | xargs yumdownloader --resolve     &amp;&amp; createrepo -d .                                                                              21.6s</span><br><span class="line"> =&gt; [stage-1 1/1] COPY --from=centos7 /centos /centos                                                                                                                        0.5s</span><br><span class="line"> =&gt; exporting to client                                                                                                                                                      0.7s</span><br><span class="line"> =&gt; =&gt; copying files 301.37MB</span><br></pre></td></tr></table></figure>
+<ul>
+<li>构建产物如下</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">root@debian:/build <span class="comment"># tree centos</span></span><br><span class="line">centos</span><br><span class="line">└── 7</span><br><span class="line">    └── os</span><br><span class="line">        └── x86_64</span><br><span class="line">            ├── acl-2.2.51-15.el7.x86_64.rpm</span><br><span class="line">            ├── ansible-2.9.21-1.el7.noarch.rpm</span><br><span class="line">            ├── at-3.1.13-24.el7.x86_64.rpm</span><br><span class="line">            ├── attr-2.4.46-13.el7.x86_64.rpm</span><br><span class="line">            ├── audit-libs-2.8.5-4.el7.x86_64.rpm</span><br><span class="line">            ├── audit-libs-python-2.8.5-4.el7.x86_64.rpm</span><br><span class="line">            ├── avahi-libs-0.6.31-20.el7.x86_64.rpm</span><br><span class="line">            ├── basesystem-10.0-7.el7.centos.noarch.rpm</span><br><span class="line">            ├── bash-4.2.46-34.el7.x86_64.rpm</span><br><span class="line">            ……………………………………</span><br><span class="line">            ├── redhat-lsb-submod-security-4.1-27.el7.centos.1.x86_64.rpm</span><br><span class="line">            ├── repodata</span><br><span class="line">            │   ├── 28d2fe2d1dbd9b76d3e5385d42cf628ac9fc34d69e151edfe8d134fe6ac6a6d9-primary.xml.gz</span><br><span class="line">            │   ├── 5264ca1af13ec7c870f25b2a28edb3c2843556ca201d07ac681eb4af7a28b47c-primary.sqlite.bz2</span><br><span class="line">            │   ├── 591d9c2d5be714356e8db39f006d07073f0e1e024a4a811d5960d8e200a874fb-other.xml.gz</span><br><span class="line">            │   ├── c035d2112d55d23a72b6d006b9e86a2f67db78c0de45345e415884aa0782f40c-other.sqlite.bz2</span><br><span class="line">            │   ├── cd756169c3718d77201d08590c0613ebed80053f84a2db7acc719b5b9bca866f-filelists.xml.gz</span><br><span class="line">            │   ├── ed0c5a36b12cf1d4100f90b4825b93dac832e6e21f83b23ae9d9753842801cee-filelists.sqlite.bz2</span><br><span class="line">            │   └── repomd.xml</span><br><span class="line">            ├── yum-utils-1.1.31-54.el7_8.noarch.rpm</span><br><span class="line">            └── zlib-1.2.7-19.el7_9.x86_64.rpm</span><br><span class="line"></span><br><span class="line">4 directories, 368 files</span><br></pre></td></tr></table></figure>
+<h3 id="Debian9"><a href="#Debian9" class="headerlink" title="Debian9"></a>Debian9</h3><p>下面是 Debian9 构建 Dockerfile，流程上和 CentOS 相差不多，只是包管理器的使用方式不太相同而已，这里就不再做详细的源码介绍。</p>
+<ul>
+<li>Dockerfile.debian</li>
+</ul>
+<figure class="highlight dockerfile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">FROM</span> debian:stretch-slim as stretch</span><br><span class="line"><span class="keyword">ARG</span> OS_VERSION=stretch</span><br><span class="line"><span class="keyword">ARG</span> ARCH=amd64</span><br><span class="line"></span><br><span class="line"><span class="keyword">ARG</span> DEP_PACKAGES=<span class="string">"apt-transport-https ca-certificates curl gnupg aptitude dpkg-dev"</span></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> apt update -y -q \</span></span><br><span class="line"><span class="bash">    &amp;&amp; apt install -y --no-install-recommends <span class="variable">$DEP_PACKAGES</span> \</span></span><br><span class="line"><span class="bash">    &amp;&amp; curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg \</span></span><br><span class="line"><span class="bash">    &amp;&amp; <span class="built_in">echo</span> <span class="string">"deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian <span class="variable">$&#123;OS_VERSION&#125;</span> stable"</span> \</span></span><br><span class="line"><span class="bash">    | tee /etc/apt/sources.list.d/docker.list &gt; /dev/null \</span></span><br><span class="line"><span class="bash">    &amp;&amp; apt update -y -q</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">WORKDIR</span><span class="bash"> /debian/<span class="variable">$&#123;OS_VERSION&#125;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> curl -sL -o /usr/<span class="built_in">local</span>/bin/yq https://github.com/mikefarah/yq/releases/download/v4.9.3/yq_linux_amd64 \</span></span><br><span class="line"><span class="bash">    &amp;&amp; chmod a+x /usr/<span class="built_in">local</span>/bin/yq \</span></span><br><span class="line"><span class="bash">    &amp;&amp; curl -sL -o /usr/<span class="built_in">local</span>/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 \</span></span><br><span class="line"><span class="bash">    &amp;&amp; chmod a+x /usr/<span class="built_in">local</span>/bin/jq</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">COPY</span><span class="bash"> packages.yaml packages.yaml</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> yq <span class="built_in">eval</span> packages.yaml -j | jq -r <span class="string">'.common[],.apt[],.debian[]'</span> | sort -u &gt; packages.list \</span></span><br><span class="line"><span class="bash">    &amp;&amp; dpkg --get-selections | grep -v deinstall | cut -f1 &gt;&gt; packages.list</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> chown -R _apt /debian/<span class="variable">$OS_VERSION</span> \</span></span><br><span class="line"><span class="bash">    &amp;&amp; cat packages.list | xargs -L1 -I &#123;&#125; apt-cache depends --recurse --no-recommends --no-suggests \</span></span><br><span class="line"><span class="bash">    --no-conflicts --no-breaks --no-replaces --no-enhances &#123;&#125;  | grep <span class="string">'^\w'</span> | sort -u | xargs apt-get download</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> <span class="built_in">cd</span> ../ &amp;&amp; dpkg-scanpackages <span class="variable">$OS_VERSION</span> | gzip -9c &gt; <span class="variable">$OS_VERSION</span>/Packages.gz</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">FROM</span> scratch</span><br><span class="line"><span class="keyword">COPY</span><span class="bash"> --from=builder /debian /debian</span></span><br></pre></td></tr></table></figure>
+<h3 id="Ubuntu"><a href="#Ubuntu" class="headerlink" title="Ubuntu"></a>Ubuntu</h3><p>Ubuntu 离线源的制作步骤和 Debian 差不太多，只需要简单修改一下 Debian 的 Dockerfile 应该就 OK ，比如 <code>&#39;s/debian/ubuntu/g&#39;</code> ，毕竟 Debian 是 Ubuntu 的爸爸嘛～～，所以 apt 使用的方式和包名几乎一模一样，这里就不再赘述了。</p>
+<h3 id="All-in-Oone"><a href="#All-in-Oone" class="headerlink" title="All-in-Oone"></a>All-in-Oone</h3><p>将上述几个 Linux 发行版的 Dockerfile 整合成一个，这样只需要一个 docker build 命令就能构建出所需要的所有 OS 的离线源了。</p>
+<ul>
+<li>Dockerfile</li>
+</ul>
+<figure class="highlight dockerfile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># CentOS 7.9 2009</span></span><br><span class="line"><span class="keyword">FROM</span> centos:<span class="number">7.9</span>.<span class="number">2009</span> as centos7</span><br><span class="line"><span class="keyword">ARG</span> OS_VERSION=<span class="number">7</span></span><br><span class="line"><span class="keyword">ARG</span> ARCH=x86_64</span><br><span class="line"><span class="keyword">ARG</span> BUILD_TOOLS=<span class="string">"yum-utils createrepo centos-release-gluster epel-release curl"</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> yum install -q -y <span class="variable">$BUILD_TOOLS</span> \</span></span><br><span class="line"><span class="bash">    &amp;&amp; yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo \</span></span><br><span class="line"><span class="bash">    &amp;&amp; yum makecache &amp;&amp; yum update -y -q</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> curl -sL -o /usr/<span class="built_in">local</span>/bin/yq https://github.com/mikefarah/yq/releases/download/v4.9.3/yq_linux_amd64 \</span></span><br><span class="line"><span class="bash">    &amp;&amp; chmod a+x /usr/<span class="built_in">local</span>/bin/yq \</span></span><br><span class="line"><span class="bash">    &amp;&amp; curl -sL -o /usr/<span class="built_in">local</span>/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 \</span></span><br><span class="line"><span class="bash">    &amp;&amp; chmod a+x /usr/<span class="built_in">local</span>/bin/jq</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">WORKDIR</span><span class="bash"> /centos/<span class="variable">$OS_VERSION</span>/os/<span class="variable">$ARCH</span></span></span><br><span class="line"><span class="keyword">COPY</span><span class="bash"> packages.yaml packages.yaml</span></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> yq <span class="built_in">eval</span> packages.yaml -j | jq -r <span class="string">'.common[],.yum[],.centos[]'</span> | sort -u &gt; packages.list \</span></span><br><span class="line"><span class="bash">    &amp;&amp; rpm -qa &gt;&gt; packages.list</span></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> cat packages.list | xargs yumdownloader --resolve \</span></span><br><span class="line"><span class="bash">    &amp;&amp; createrepo -d .</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Debian 9 stretch</span></span><br><span class="line"><span class="keyword">FROM</span> debian:stretch-slim as stretch</span><br><span class="line"><span class="keyword">ARG</span> OS_VERSION=stretch</span><br><span class="line"><span class="keyword">ARG</span> ARCH=amd64</span><br><span class="line"></span><br><span class="line"><span class="keyword">ARG</span> DEP_PACKAGES=<span class="string">"apt-transport-https ca-certificates curl gnupg aptitude dpkg-dev"</span></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> apt update -y -q \</span></span><br><span class="line"><span class="bash">    &amp;&amp; apt install -y --no-install-recommends <span class="variable">$DEP_PACKAGES</span> \</span></span><br><span class="line"><span class="bash">    &amp;&amp; curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg \</span></span><br><span class="line"><span class="bash">    &amp;&amp; <span class="built_in">echo</span> <span class="string">"deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian <span class="variable">$&#123;OS_VERSION&#125;</span> stable"</span> \</span></span><br><span class="line"><span class="bash">    | tee /etc/apt/sources.list.d/docker.list &gt; /dev/null \</span></span><br><span class="line"><span class="bash">    &amp;&amp; apt update -y -q</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> curl -sL -o /usr/<span class="built_in">local</span>/bin/yq https://github.com/mikefarah/yq/releases/download/v4.9.3/yq_linux_amd64 \</span></span><br><span class="line"><span class="bash">    &amp;&amp; chmod a+x /usr/<span class="built_in">local</span>/bin/yq \</span></span><br><span class="line"><span class="bash">    &amp;&amp; curl -sL -o /usr/<span class="built_in">local</span>/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 \</span></span><br><span class="line"><span class="bash">    &amp;&amp; chmod a+x /usr/<span class="built_in">local</span>/bin/jq</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">WORKDIR</span><span class="bash"> /debian/<span class="variable">$&#123;OS_VERSION&#125;</span></span></span><br><span class="line"><span class="keyword">COPY</span><span class="bash"> packages.yaml packages.yaml</span></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> yq <span class="built_in">eval</span> packages.yaml -j | jq -r <span class="string">'.common[],.apt[],.debian[]'</span> | sort -u &gt; packages.list \</span></span><br><span class="line"><span class="bash">    &amp;&amp; dpkg --get-selections | grep -v deinstall | cut -f1 &gt;&gt; packages.list</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> chown -R _apt /debian/<span class="variable">$OS_VERSION</span> \</span></span><br><span class="line"><span class="bash">    &amp;&amp; cat packages.list | xargs -L1 -I &#123;&#125; apt-cache depends --recurse --no-recommends --no-suggests \</span></span><br><span class="line"><span class="bash">    --no-conflicts --no-breaks --no-replaces --no-enhances &#123;&#125;  | grep <span class="string">'^\w'</span> | sort -u | xargs apt-get download</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> <span class="built_in">cd</span> ../ &amp;&amp; dpkg-scanpackages <span class="variable">$OS_VERSION</span> | gzip -9c &gt; <span class="variable">$OS_VERSION</span>/Packages.gz</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Debian 10 buster</span></span><br><span class="line"><span class="keyword">FROM</span> debian:buster-slim as buster</span><br><span class="line"><span class="keyword">ARG</span> OS_VERSION=buster</span><br><span class="line"><span class="keyword">ARG</span> ARCH=amd64</span><br><span class="line"></span><br><span class="line"><span class="keyword">ARG</span> DEP_PACKAGES=<span class="string">"apt-transport-https ca-certificates curl gnupg aptitude dpkg-dev"</span></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> apt update -y -q \</span></span><br><span class="line"><span class="bash">    &amp;&amp; apt install -y --no-install-recommends <span class="variable">$DEP_PACKAGES</span> \</span></span><br><span class="line"><span class="bash">    &amp;&amp; curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg \</span></span><br><span class="line"><span class="bash">    &amp;&amp; <span class="built_in">echo</span> <span class="string">"deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian <span class="variable">$&#123;OS_VERSION&#125;</span> stable"</span> \</span></span><br><span class="line"><span class="bash">    | tee /etc/apt/sources.list.d/docker.list &gt; /dev/null \</span></span><br><span class="line"><span class="bash">    &amp;&amp; apt update -y -q</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> curl -sL -o /usr/<span class="built_in">local</span>/bin/yq https://github.com/mikefarah/yq/releases/download/v4.9.3/yq_linux_amd64 \</span></span><br><span class="line"><span class="bash">    &amp;&amp; chmod a+x /usr/<span class="built_in">local</span>/bin/yq \</span></span><br><span class="line"><span class="bash">    &amp;&amp; curl -sL -o /usr/<span class="built_in">local</span>/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 \</span></span><br><span class="line"><span class="bash">    &amp;&amp; chmod a+x /usr/<span class="built_in">local</span>/bin/jq</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">WORKDIR</span><span class="bash"> /debian/<span class="variable">$&#123;OS_VERSION&#125;</span></span></span><br><span class="line"><span class="keyword">COPY</span><span class="bash"> packages.yaml packages.yaml</span></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> yq <span class="built_in">eval</span> packages.yaml -j | jq -r <span class="string">'.common[],.apt[],.debian[]'</span> | sort -u &gt; packages.list \</span></span><br><span class="line"><span class="bash">    &amp;&amp; dpkg --get-selections | grep -v deinstall | cut -f1 &gt;&gt; packages.list</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> chown -R _apt /debian/<span class="variable">$OS_VERSION</span> \</span></span><br><span class="line"><span class="bash">    &amp;&amp; cat packages.list | xargs -L1 -I &#123;&#125; apt-cache depends --recurse --no-recommends --no-suggests \</span></span><br><span class="line"><span class="bash">    --no-conflicts --no-breaks --no-replaces --no-enhances &#123;&#125;  | grep <span class="string">'^\w'</span> | sort -u | xargs apt-get download</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> <span class="built_in">cd</span> ../ &amp;&amp; dpkg-scanpackages <span class="variable">$OS_VERSION</span> | gzip -9c &gt; <span class="variable">$OS_VERSION</span>/Packages.gz</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Ubuntu 18.04 bionic</span></span><br><span class="line"><span class="keyword">FROM</span> ubuntu:bionic as bionic</span><br><span class="line"><span class="keyword">ARG</span> OS_VERSION=bionic</span><br><span class="line"><span class="keyword">ARG</span> ARCH=amd64</span><br><span class="line"></span><br><span class="line"><span class="keyword">ARG</span> DEP_PACKAGES=<span class="string">"apt-transport-https ca-certificates curl gnupg aptitude dpkg-dev"</span></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> apt update -y -q \</span></span><br><span class="line"><span class="bash">    &amp;&amp; apt install -y --no-install-recommends <span class="variable">$DEP_PACKAGES</span> \</span></span><br><span class="line"><span class="bash">    &amp;&amp; curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg \</span></span><br><span class="line"><span class="bash">    &amp;&amp; <span class="built_in">echo</span> <span class="string">"deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu <span class="variable">$&#123;OS_VERSION&#125;</span> stable"</span> \</span></span><br><span class="line"><span class="bash">    | tee /etc/apt/sources.list.d/docker.list &gt; /dev/null \</span></span><br><span class="line"><span class="bash">    &amp;&amp; apt update -y -q</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> curl -sL -o /usr/<span class="built_in">local</span>/bin/yq https://github.com/mikefarah/yq/releases/download/v4.9.3/yq_linux_amd64 \</span></span><br><span class="line"><span class="bash">    &amp;&amp; chmod a+x /usr/<span class="built_in">local</span>/bin/yq \</span></span><br><span class="line"><span class="bash">    &amp;&amp; curl -sL -o /usr/<span class="built_in">local</span>/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 \</span></span><br><span class="line"><span class="bash">    &amp;&amp; chmod a+x /usr/<span class="built_in">local</span>/bin/jq</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">WORKDIR</span><span class="bash"> /ubuntu/<span class="variable">$&#123;OS_VERSION&#125;</span></span></span><br><span class="line"><span class="keyword">COPY</span><span class="bash"> packages.yaml packages.yaml</span></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> yq <span class="built_in">eval</span> packages.yaml -j | jq -r <span class="string">'.common[],.apt[],.ubuntu[]'</span> | sort -u &gt; packages.list \</span></span><br><span class="line"><span class="bash">    &amp;&amp; dpkg --get-selections | grep -v deinstall | cut -f1 &gt;&gt; packages.list</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> chown -R _apt /ubuntu/<span class="variable">$OS_VERSION</span> \</span></span><br><span class="line"><span class="bash">    &amp;&amp; cat packages.list | xargs -L1 -I &#123;&#125; apt-cache depends --recurse --no-recommends --no-suggests \</span></span><br><span class="line"><span class="bash">    --no-conflicts --no-breaks --no-replaces --no-enhances &#123;&#125;  | grep <span class="string">'^\w'</span> | sort -u | xargs apt-get download</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> <span class="built_in">cd</span> ../ &amp;&amp; dpkg-scanpackages <span class="variable">$OS_VERSION</span> | gzip -9c &gt; <span class="variable">$OS_VERSION</span>/Packages.gz</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Ubuntu 20.04 focal</span></span><br><span class="line"><span class="keyword">FROM</span> ubuntu:focal as focal</span><br><span class="line"><span class="keyword">ARG</span> OS_VERSION=focal</span><br><span class="line"><span class="keyword">ARG</span> ARCH=amd64</span><br><span class="line"></span><br><span class="line"><span class="keyword">ARG</span> DEP_PACKAGES=<span class="string">"apt-transport-https ca-certificates curl gnupg aptitude dpkg-dev"</span></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> apt update -y -q \</span></span><br><span class="line"><span class="bash">    &amp;&amp; apt install -y --no-install-recommends <span class="variable">$DEP_PACKAGES</span> \</span></span><br><span class="line"><span class="bash">    &amp;&amp; curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg \</span></span><br><span class="line"><span class="bash">    &amp;&amp; <span class="built_in">echo</span> <span class="string">"deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu <span class="variable">$&#123;OS_VERSION&#125;</span> stable"</span> \</span></span><br><span class="line"><span class="bash">    | tee /etc/apt/sources.list.d/docker.list &gt; /dev/null \</span></span><br><span class="line"><span class="bash">    &amp;&amp; apt update -y -q</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> curl -sL -o /usr/<span class="built_in">local</span>/bin/yq https://github.com/mikefarah/yq/releases/download/v4.9.3/yq_linux_amd64 \</span></span><br><span class="line"><span class="bash">    &amp;&amp; chmod a+x /usr/<span class="built_in">local</span>/bin/yq \</span></span><br><span class="line"><span class="bash">    &amp;&amp; curl -sL -o /usr/<span class="built_in">local</span>/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 \</span></span><br><span class="line"><span class="bash">    &amp;&amp; chmod a+x /usr/<span class="built_in">local</span>/bin/jq</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">WORKDIR</span><span class="bash"> /ubuntu/<span class="variable">$&#123;OS_VERSION&#125;</span></span></span><br><span class="line"><span class="keyword">COPY</span><span class="bash"> packages.yaml packages.yaml</span></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> yq <span class="built_in">eval</span> packages.yaml -j | jq -r <span class="string">'.common[],.apt[],.ubuntu[]'</span> | sort -u &gt; packages.list \</span></span><br><span class="line"><span class="bash">    &amp;&amp; dpkg --get-selections | grep -v deinstall | cut -f1 &gt;&gt; packages.list</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> chown -R _apt /ubuntu/<span class="variable">$OS_VERSION</span> \</span></span><br><span class="line"><span class="bash">    &amp;&amp; cat packages.list | xargs -L1 -I &#123;&#125; apt-cache depends --recurse --no-recommends --no-suggests \</span></span><br><span class="line"><span class="bash">    --no-conflicts --no-breaks --no-replaces --no-enhances &#123;&#125;  | grep <span class="string">'^\w'</span> | sort -u | xargs apt-get download</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> <span class="built_in">cd</span> ../ &amp;&amp; dpkg-scanpackages <span class="variable">$OS_VERSION</span> | gzip -9c &gt; <span class="variable">$OS_VERSION</span>/Packages.gz</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">FROM</span> scratch</span><br><span class="line"><span class="keyword">COPY</span><span class="bash"> --from=centos7 /centos /centos</span></span><br><span class="line"><span class="keyword">COPY</span><span class="bash"> --from=stretch /debian /debian</span></span><br><span class="line"><span class="keyword">COPY</span><span class="bash"> --from=buster /debian /debian</span></span><br><span class="line"><span class="keyword">COPY</span><span class="bash"> --from=bionic /ubuntu /ubuntu</span></span><br><span class="line"><span class="keyword">COPY</span><span class="bash"> --from=focal /ubuntu /ubuntu</span></span><br></pre></td></tr></table></figure>
+<h2 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h2><p>构建好了离线源之后，在部署的机器上运行一个 Nginx 服务，用于提供 HTTP 方式下载这些软件包，同时需要配置一下机器的包管理器 repo 配置文件。</p>
+<ul>
+<li>CentOS 7</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[Inra-Mirror]</span><br><span class="line">name=Infra Mirror Repository</span><br><span class="line">baseurl=http://172.20.0.10/centos/7/</span><br><span class="line">enabled=1</span><br><span class="line">gpgcheck=1</span><br></pre></td></tr></table></figure>
+<ul>
+<li>Debian 9 stretch</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">deb [trusted=yes] http://172.20.0.10:8080/debian stretch/</span><br></pre></td></tr></table></figure>
+<ul>
+<li>Debian 10 buster</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">deb [trusted&#x3D;yes] http:&#x2F;&#x2F;172.20.0.10:8080&#x2F;debian buster&#x2F;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>Ubuntu 18.04 bionic</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">deb [trusted=yes] http://172.20.0.10:8080/ubuntu bionic/</span><br></pre></td></tr></table></figure>
+<ul>
+<li>Ubuntu 20.04 focal</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">deb [trusted&#x3D;yes] http:&#x2F;&#x2F;172.20.0.10:8080&#x2F;debian focal&#x2F;</span><br></pre></td></tr></table></figure>
+<h2 id="优化"><a href="#优化" class="headerlink" title="优化"></a>优化</h2><h3 id="Dockerfile"><a href="#Dockerfile" class="headerlink" title="Dockerfile"></a>Dockerfile</h3><p>可以考虑将 Dockerfile 中的构建过程合并成一个 shell 脚本，然后在 Dockerfile 中调用这个脚本即可，这样可优化 Dockerfile 代码的可维护性，同时后续适配多种 OS 的时候也可以复用部分相同的代码，但这样可能会导致 docker build 缓存的失效问题。</p>
+<p>当然也可以使用脚本将多个 Dockerfile 合并成一个，如下：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> Merge all Dockerfile.xx to an all-in-one file</span></span><br><span class="line">ls Dockerfile.* | xargs -L1 grep -Ev 'FROM scratch|COPY --from=' &gt; Dockerfile</span><br><span class="line">echo "FROM scratch" &gt;&gt; Dockerfile</span><br><span class="line">ls Dockerfile.* | xargs -L1 grep 'COPY --from=' &gt;&gt; Dockerfile</span><br></pre></td></tr></table></figure>
+<h3 id="Package-version"><a href="#Package-version" class="headerlink" title="Package version"></a>Package version</h3><p>对于一些版本中包含 Linux 发行版本代号的包来讲，手动维护这个代号不太方便，可以考虑将它魔改成占位变量的方式，在构建容器内生成 package.list 文件后统一使用 sed 把这些占位的变量给替换一下，如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">apt:</span><br><span class="line">  - docker-ce=5:19.03.15~3-0~__ID__-__VERSION_CODENAME__</span><br></pre></td></tr></table></figure>
+<p>使用 sed 处理一下生成的 packages.list 中的这些占位符变量</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed -i <span class="string">"s|__ID__|<span class="variable">$(sed -n 's|^ID=||p' /etc/os-release)</span>|;s|__VERSION_CODENAME__|<span class="variable">$(sed -n 's|^VERSION_CODENAME=||p' /etc/os-release)</span>|"</span> packages.list</span><br></pre></td></tr></table></figure>
+<p>虽然这样做很不美观，但这种方式确实可行 😂，最终能够的到正确的版本号。总之我们尽量地少维护一些包的版本，比如使用这种方式就可以将某个版本的 docker-ce 包放在配置文件的 apt 中，而不是 debian/ubuntu 中，通过一些环境变量或者 shell 脚本自动添加上这些特殊项，这样能减少一些维护成本。</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ul>
+<li><a href="https://www.aptly.info/tutorial/mirror/" target="_blank" rel="noopener">aptly.info</a></li>
+<li><a href="https://mozillazg.com/2018/01/jq-use-examples-cookbook.html" target="_blank" rel="noopener">jq 常用操作</a></li>
+<li><a href="https://lyyao09.github.io/2019/08/02/tools/The-usage-of-yq-read-write/" target="_blank" rel="noopener">yq 之读写篇</a></li>
+<li><a href="https://docs.docker.com/develop/develop-images/build_enhancements/" target="_blank" rel="noopener">Build images with BuildKit</a></li>
+<li><a href="https://github.com/kubernetes-sigs/kubespray/pull/6766" target="_blank" rel="noopener">kubernetes-sigs/kubespray/pull/6766</a></li>
+<li><a href="https://moelove.info/2021/03/14/万字长文彻底搞懂容器镜像构建/" target="_blank" rel="noopener">万字长文：彻底搞懂容器镜像构建</a></li>
+<li><a href="https://www.xiaocoder.com/2017/09/12/offline-local-source/" target="_blank" rel="noopener">为 CentOS 与 Ubuntu 制作离线本地源</a></li>
+</ul>
+    </div>
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/docker/" rel="tag"><i class="fa fa-tag"></i> docker</a>
+              <a href="/tags/centos/" rel="tag"><i class="fa fa-tag"></i> centos</a>
+              <a href="/tags/ubuntu/" rel="tag"><i class="fa fa-tag"></i> ubuntu</a>
+          </div>
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/kubespray-tips.html" rel="prev" title="kubespray 部署常见问题和优化汇总">
+      <i class="fa fa-chevron-left"></i> kubespray 部署常见问题和优化汇总
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+  </article>
+  </div>
+          </div>
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+        </div>
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#离线部署"><span class="nav-number">1.</span> <span class="nav-text">离线部署</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Docker-build"><span class="nav-number">2.</span> <span class="nav-text">Docker build</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#适配-OS"><span class="nav-number">3.</span> <span class="nav-text">适配 OS</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#构建"><span class="nav-number">4.</span> <span class="nav-text">构建</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#构建过程"><span class="nav-number">4.1.</span> <span class="nav-text">构建过程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#packages-yaml"><span class="nav-number">4.2.</span> <span class="nav-text">packages.yaml</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#CentOS7"><span class="nav-number">4.3.</span> <span class="nav-text">CentOS7</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Debian9"><span class="nav-number">4.4.</span> <span class="nav-text">Debian9</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Ubuntu"><span class="nav-number">4.5.</span> <span class="nav-text">Ubuntu</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#All-in-Oone"><span class="nav-number">4.6.</span> <span class="nav-text">All-in-Oone</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#使用"><span class="nav-number">5.</span> <span class="nav-text">使用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#优化"><span class="nav-number">6.</span> <span class="nav-text">优化</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Dockerfile"><span class="nav-number">6.1.</span> <span class="nav-text">Dockerfile</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Package-version"><span class="nav-number">6.2.</span> <span class="nav-text">Package version</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考"><span class="nav-number">7.</span> <span class="nav-text">参考</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木子"
+      src="https://blog.k8s.li/avatar.png">
+  <p class="site-author-name" itemprop="name">木子</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">97</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">119</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/muzi502" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;muzi502" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:blog@502.li" title="E-Mail → mailto:blog@502.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://twitter.com/muzi_ii" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;muzi_ii" rel="noopener" target="_blank"><i class="fa fa-fw fa-twitter"></i>Twitter</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://t.me/muzi_ii" title="Telegram → https:&#x2F;&#x2F;t.me&#x2F;muzi_ii" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Telegram</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://kindle.502.li/" title="Kindle → https:&#x2F;&#x2F;kindle.502.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-book"></i>Kindle</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://tg.k8s.li/" title="Channel → https:&#x2F;&#x2F;tg.k8s.li" rel="noopener" target="_blank"><i class="fa fa-fw fa-telegram"></i>Channel</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="fa fa-fw fa-rss"></i>RSS</a>
+      </span>
+  </div>
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+      </div>
+    </main>
+    <footer class="footer">
+      <div class="footer-inner">
+<div class="copyright">
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木子</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-area-chart"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">1.4m</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">39:44</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">主题 – <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a>
+  </div>
+      </div>
+    </footer>
+  </div>
+  <script src="/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script>
+<script src="/js/schemes/pisces.js"></script>
+<script src="/js/next-boot.js"></script>
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://muzi.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: {page: {
+            url: "https://blog.k8s.li/make-offline-mirrors.html",
+            identifier: "make-offline-mirrors.html",
+            title: "使用 docker build 制作 yum/apt 离线源"
+          }
+        }
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://muzi.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+</body>
+</html>
